@@ -1,0 +1,1 @@
+export { useTarotStore } from './tarot'

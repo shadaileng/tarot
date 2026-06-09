@@ -1,0 +1,104 @@
+@import './variables.scss';
+
+page {
+  background-color: $bg-primary;
+  font-family: $font-family;
+  color: $text-primary;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+// 重置
+view, text, image, scroll-view, swiper, swiper-item {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+// 通用工具类
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-gold {
+  color: $accent-gold;
+}
+
+.text-muted {
+  color: $text-muted;
+}
+
+// 按钮
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  background: linear-gradient(135deg, $accent-gold, #b8943f);
+  color: #1a1a2e;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: $radius-lg;
+  border: none;
+  padding: 0 48rpx;
+  transition: all $transition-fast;
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.97);
+  }
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  background: transparent;
+  color: $accent-gold;
+  font-size: 32rpx;
+  border: 2rpx solid $accent-gold;
+  border-radius: $radius-lg;
+  padding: 0 48rpx;
+  transition: all $transition-fast;
+
+  &:active {
+    background: rgba($accent-gold, 0.1);
+  }
+}
+
+// 卡片
+.card {
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: 32rpx;
+  box-shadow: $shadow-sm;
+}
+
+// 页面容器
+.page-container {
+  min-height: 100vh;
+  padding-bottom: calc($tabbar-height + $safe-bottom);
+}
+
+// 安全区
+.safe-bottom {
+  padding-bottom: $safe-bottom;
+}
