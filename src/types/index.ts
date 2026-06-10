@@ -44,6 +44,8 @@ export interface DrawnCard {
   orientation: CardOrientation
   /** 在牌阵中的位置描述，如 "过去"、"现在"、"未来" */
   position: string
+  /** AI 个性化解读（针对此牌在此位置、此问题的解读） */
+  aiMeaning?: string
 }
 
 /** 牌阵类型 */
@@ -64,6 +66,10 @@ export interface Reading {
   question: string
   timestamp: number
   date: string
+  /** AI 综合解读文本 */
+  interpretation?: string
+  /** 是否为 AI 生成（false 表示本地降级） */
+  isAIInterpretation?: boolean
 }
 
 /** 占卜记录（持久化） */

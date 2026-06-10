@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { TarotCard, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
 import { drawRandomCards } from '@/data/tarot-cards'
 import { getSpread } from '@/data/spreads'
+import { fetchAIReading } from '@/services/reading'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -26,9 +27,16 @@ export const useTarotStore = defineStore('tarot', () => {
     cards: DrawnCard[]
     spreadType: SpreadType
     question: string
+    /** AI 综合解读文本 */
+    interpretation: string
+    /** 是否为 AI 生成（false 表示本地降级） */
+    isAIInterpretation: boolean
   } | null>(null)
 
   const records = ref<ReadingRecord[]>([])
+
+  /** AI 解读加载状态 */
+  const isLoadingInterpretation = ref(false)
 
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
@@ -47,7 +55,7 @@ export const useTarotStore = defineStore('tarot', () => {
     }))
 
     const timestamp = Date.now()
-    currentReading.value = { cards, spreadType, question }
+    currentReading.value = { cards, spreadType, question, interpretation: '', isAIInterpretation: false }
 
     // 保存到记录
     records.value.unshift({
@@ -69,9 +77,28 @@ export const useTarotStore = defineStore('tarot', () => {
     saveRecords()
   }
 
+  /** 获取 AI 个性化解读 */
+  async function fetchInterpretation() {
+    if (!currentReading.value || currentReading.value.interpretation) return
+
+    isLoadingInterpretation.value = true
+    try {
+      const result = await fetchAIReading(currentReading.value.question, currentReading.value.cards)
+      if (currentReading.value) {
+        currentReading.value.interpretation = result.reading
+        currentReading.value.isAIInterpretation = result.isAI
+      }
+    } catch (e) {
+      console.error('获取 AI 解读失败:', e)
+    } finally {
+      isLoadingInterpretation.value = false
+    }
+  }
+
   /** 清除当前占卜结果 */
   function clearReading() {
     currentReading.value = null
+    isLoadingInterpretation.value = false
   }
 
   /** 保存记录到本地存储 */
@@ -111,7 +138,9 @@ export const useTarotStore = defineStore('tarot', () => {
     currentReading,
     records,
     recordCount,
+    isLoadingInterpretation,
     drawCards,
+    fetchInterpretation,
     clearReading,
     loadRecords,
     deleteRecord,

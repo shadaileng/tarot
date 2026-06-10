@@ -6,13 +6,16 @@ const props = defineProps<{
   visible: boolean
   card: TarotCard | null
   orientation?: CardOrientation
+  /** AI 个性化解读文本 */
+  aiMeaning?: string
 }>()
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const activeTab = ref<'upright' | 'reversed'>('upright')
+const activeTab = ref<'upright' | 'reversed' | 'ai'>('upright')
+const imgLoaded = ref(false)
 
 watch(
   () => props.orientation,
@@ -28,8 +31,31 @@ watch(
     if (val && props.orientation) {
       activeTab.value = props.orientation
     }
+    // 重置图片加载状态
+    if (val) {
+      imgLoaded.value = false
+    }
   },
 )
+
+function getSuitColor(suit: string): string {
+  const map: Record<string, string> = {
+    wands: 'wands',
+    cups: 'cups',
+    swords: 'swords',
+    pentacles: 'pentacles',
+    major: 'major',
+  }
+  return map[suit] || 'major'
+}
+
+function onImgLoad() {
+  imgLoaded.value = true
+}
+
+function onImgError() {
+  imgLoaded.value = false
+}
 
 function handleClose() {
   emit('close')
@@ -49,14 +75,17 @@ function handleMaskClick() {
       </view>
 
       <!-- 牌面大图 -->
-      <view class="detail-image-wrap" :class="orientation">
+      <view class="detail-image-wrap" :class="[orientation, 'card-face-' + getSuitColor(card.type)]">
         <image
           class="detail-image"
+          :class="{ loaded: imgLoaded }"
           :src="card.image"
           mode="aspectFit"
+          @load="onImgLoad"
+          @error="onImgError"
         />
-        <view class="detail-image-placeholder">
-          <text class="detail-placeholder-icon">🃏</text>
+        <view class="detail-image-placeholder" v-if="!imgLoaded">
+          <text class="detail-placeholder-icon">{{ card.type === 'major' ? ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'][card.number] : '✦' }}</text>
           <text class="detail-placeholder-name">{{ card.name }}</text>
         </view>
       </view>
@@ -86,8 +115,8 @@ function handleMaskClick() {
         >{{ kw }}</text>
       </view>
 
-      <!-- 正位/逆位 Tab -->
-      <view class="detail-tabs">
+      <!-- 正位/逆位/AI解读 Tab -->
+      <view class="detail-tabs" :class="{ 'has-ai': !!aiMeaning }">
         <view
           class="detail-tab"
           :class="{ active: activeTab === 'upright' }"
@@ -102,23 +131,39 @@ function handleMaskClick() {
         >
           <text>逆位 ☽</text>
         </view>
+        <view
+          v-if="aiMeaning"
+          class="detail-tab tab-ai"
+          :class="{ active: activeTab === 'ai' }"
+          @click="activeTab = 'ai'"
+        >
+          <text>个性化解读 ✨</text>
+        </view>
       </view>
 
       <!-- 含义内容 -->
       <view class="detail-content">
-        <view class="detail-meaning">
-          <text class="detail-meaning-label">
-            {{ activeTab === 'upright' ? '正位含义' : '逆位含义' }}
-          </text>
-          <text class="detail-meaning-text">
-            {{ activeTab === 'upright' ? card.uprightMeaning : card.reversedMeaning }}
-          </text>
+        <!-- AI 个性化解读 -->
+        <view v-if="activeTab === 'ai' && aiMeaning" class="detail-meaning detail-ai-meaning">
+          <text class="detail-meaning-label">✨ 个性化解读</text>
+          <text class="detail-meaning-text">{{ aiMeaning }}</text>
         </view>
 
-        <view class="detail-desc">
-          <text class="detail-meaning-label">牌面描述</text>
-          <text class="detail-meaning-text">{{ card.description }}</text>
-        </view>
+        <template v-else>
+          <view class="detail-meaning">
+            <text class="detail-meaning-label">
+              {{ activeTab === 'upright' ? '正位含义' : '逆位含义' }}
+            </text>
+            <text class="detail-meaning-text">
+              {{ activeTab === 'upright' ? card.uprightMeaning : card.reversedMeaning }}
+            </text>
+          </view>
+
+          <view class="detail-desc">
+            <text class="detail-meaning-label">牌面描述</text>
+            <text class="detail-meaning-text">{{ card.description }}</text>
+          </view>
+        </template>
       </view>
     </view>
   </view>
@@ -203,12 +248,40 @@ function handleMaskClick() {
   &.reversed {
     transform: rotate(180deg);
   }
+
+  // 不同花色/类型背景
+  &.card-face-major {
+    background: linear-gradient(135deg, #3a1c61, #1a0a3e);
+    border: 2rpx solid rgba($accent-gold, 0.2);
+  }
+  &.card-face-wands {
+    background: linear-gradient(135deg, #6b3a1f, #2e1508);
+    border: 2rpx solid rgba(#e67e22, 0.2);
+  }
+  &.card-face-cups {
+    background: linear-gradient(135deg, #1e4d7b, #0a1a3a);
+    border: 2rpx solid rgba(#3498db, 0.2);
+  }
+  &.card-face-swords {
+    background: linear-gradient(135deg, #4a5568, #1a202c);
+    border: 2rpx solid rgba(#a0aec0, 0.2);
+  }
+  &.card-face-pentacles {
+    background: linear-gradient(135deg, #1e5c3a, #0a1f12);
+    border: 2rpx solid rgba(#2ecc71, 0.2);
+  }
 }
 
 .detail-image {
   width: 100%;
   height: 100%;
   position: absolute;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &.loaded {
+    opacity: 1;
+  }
 }
 
 .detail-image-placeholder {
@@ -220,7 +293,10 @@ function handleMaskClick() {
 
 .detail-placeholder-icon {
   font-size: 100rpx;
-  opacity: 0.25;
+  opacity: 0.5;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: bold;
+  color: rgba($accent-gold, 0.6);
 }
 
 .detail-placeholder-name {
@@ -296,6 +372,11 @@ function handleMaskClick() {
   overflow: hidden;
   background: rgba(0,0,0,0.2);
   margin-bottom: 24rpx;
+
+  &.has-ai .detail-tab {
+    font-size: 24rpx;
+    padding: 18rpx 0;
+  }
 }
 
 .detail-tab {
@@ -312,6 +393,16 @@ function handleMaskClick() {
     background: rgba($accent-gold, 0.1);
     box-shadow: inset 0 -4rpx 0 $accent-gold;
   }
+
+  &.tab-ai.active {
+    background: rgba(139, 92, 246, 0.1);
+    box-shadow: inset 0 -4rpx 0 #8b5cf6;
+  }
+}
+
+// AI 解读样式
+.detail-ai-meaning {
+  border-left-color: #8b5cf6;
 }
 
 // 含义内容
