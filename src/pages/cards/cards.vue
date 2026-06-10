@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { allCards, majorArcana, minorArcana } from '@/data/tarot-cards'
 import type { TarotCard } from '@/types'
 import TabBar from '@/components/TabBar/TabBar.vue'
@@ -8,6 +8,38 @@ type CardCategory = 'all' | 'major' | 'minor'
 
 const activeCategory = ref<CardCategory>('all')
 const searchText = ref('')
+
+// 图片加载状态：card.id -> true 表示图片加载成功
+const imgLoaded = reactive<Record<string, boolean>>({})
+
+function onImgLoad(cardId: string) {
+  imgLoaded[cardId] = true
+}
+
+function onImgError(cardId: string) {
+  imgLoaded[cardId] = false
+}
+
+function getSuitSymbol(suit: string): string {
+  const map: Record<string, string> = {
+    wands: '🪄',
+    cups: '🏆',
+    swords: '⚔️',
+    pentacles: '🪙',
+  }
+  return map[suit] || '✦'
+}
+
+function getSuitColor(suit: string): string {
+  const map: Record<string, string> = {
+    wands: 'wands',
+    cups: 'cups',
+    swords: 'swords',
+    pentacles: 'pentacles',
+    major: 'major',
+  }
+  return map[suit] || 'major'
+}
 
 const tabList = [
   { pagePath: 'pages/index/index', text: '首页' },
@@ -86,14 +118,19 @@ function handleTabChange(path: string) {
         :key="card.id"
         class="card-item"
       >
-        <view class="card-image-box">
+        <view class="card-image-box" :class="['card-face-' + getSuitColor(card.type)]">
           <image
             class="card-thumb"
+            :class="{ loaded: imgLoaded[card.id] }"
             :src="card.image"
             mode="aspectFit"
+            @load="onImgLoad(card.id)"
+            @error="onImgError(card.id)"
           />
-          <view class="card-thumb-placeholder">
-            <text class="placeholder-num">{{ card.type === 'major' ? card.number : '✦' }}</text>
+          <view class="card-thumb-placeholder" v-if="!imgLoaded[card.id]">
+            <text v-if="card.type === 'major'" class="placeholder-roman">{{ ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'][card.number] }}</text>
+            <text v-else class="placeholder-num">{{ card.name.slice(-1) }}</text>
+            <text class="placeholder-suit">{{ card.type === 'major' ? '★' : getSuitSymbol(card.type) }}</text>
           </view>
         </view>
         <view class="card-meta">
@@ -174,29 +211,77 @@ function handleTabChange(path: string) {
 .card-image-box {
   width: 100%;
   aspect-ratio: 2/3;
-  background: rgba(0,0,0,0.2);
   border-radius: $radius-sm;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12rpx;
   position: relative;
+  overflow: hidden;
+
+  // 不同花色/类型的背景渐变
+  &.card-face-major {
+    background: linear-gradient(135deg, #3a1c61, #1a0a3e);
+    border: 2rpx solid rgba($accent-gold, 0.2);
+  }
+  &.card-face-wands {
+    background: linear-gradient(135deg, #6b3a1f, #2e1508);
+    border: 2rpx solid rgba(#e67e22, 0.2);
+  }
+  &.card-face-cups {
+    background: linear-gradient(135deg, #1e4d7b, #0a1a3a);
+    border: 2rpx solid rgba(#3498db, 0.2);
+  }
+  &.card-face-swords {
+    background: linear-gradient(135deg, #4a5568, #1a202c);
+    border: 2rpx solid rgba(#a0aec0, 0.2);
+  }
+  &.card-face-pentacles {
+    background: linear-gradient(135deg, #1e5c3a, #0a1f12);
+    border: 2rpx solid rgba(#2ecc71, 0.2);
+  }
 }
 
 .card-thumb {
   width: 100%;
   height: 100%;
   position: absolute;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &.loaded {
+    opacity: 1;
+  }
 }
 
 .card-thumb-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   position: absolute;
+  width: 100%;
+  height: 100%;
+  gap: 6rpx;
+}
+
+.placeholder-roman {
+  font-size: 40rpx;
+  color: rgba($accent-gold, 0.7);
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 2rpx;
 }
 
 .placeholder-num {
-  font-size: 48rpx;
-  color: rgba($accent-gold, 0.3);
+  font-size: 44rpx;
+  color: rgba(#e8d5b7, 0.5);
   font-weight: bold;
+}
+
+.placeholder-suit {
+  font-size: 36rpx;
+  opacity: 0.5;
 }
 
 .card-meta {

@@ -23,11 +23,41 @@ const emit = defineEmits<{
 }>()
 
 const isFlipped = ref(props.flipped)
+const imgLoaded = ref(false)
 
 const cardSize = computed(() => {
   const map = { sm: { w: 120, h: 180 }, md: { w: 180, h: 270 }, lg: { w: 240, h: 360 } }
   return map[props.size]
 })
+
+function getSuitSymbol(suit: string): string {
+  const map: Record<string, string> = {
+    wands: '🪄',
+    cups: '🏆',
+    swords: '⚔️',
+    pentacles: '🪙',
+  }
+  return map[suit] || '✦'
+}
+
+function getSuitColor(suit: string): string {
+  const map: Record<string, string> = {
+    wands: 'wands',
+    cups: 'cups',
+    swords: 'swords',
+    pentacles: 'pentacles',
+    major: 'major',
+  }
+  return map[suit] || 'major'
+}
+
+function onImgLoad() {
+  imgLoaded.value = true
+}
+
+function onImgError() {
+  imgLoaded.value = false
+}
 
 function handleClick() {
   if (!isFlipped.value) {
@@ -54,14 +84,19 @@ function handleClick() {
     </view>
 
     <!-- 牌面 -->
-    <view v-else class="card-front-face">
+    <view v-else class="card-front-face" :class="['card-face-' + getSuitColor(card.type)]">
       <image
         class="card-image"
+        :class="{ loaded: imgLoaded }"
         :src="card.image"
         mode="aspectFill"
+        @load="onImgLoad"
+        @error="onImgError"
       />
-      <view class="card-placeholder">
-        <text class="card-number">{{ card.type === 'major' ? card.number : '✦' }}</text>
+      <view class="card-placeholder" v-if="!imgLoaded">
+        <text v-if="card.type === 'major'" class="card-number">{{ ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'][card.number] }}</text>
+        <text v-else class="card-number">{{ getSuitSymbol(card.type) }}</text>
+        <text class="card-suit-label">{{ card.type === 'major' ? '★' : card.name.slice(-1) }}</text>
       </view>
       <text class="card-label">{{ card.name }}</text>
     </view>
@@ -128,6 +163,29 @@ function handleClick() {
   flex-direction: column;
   position: relative;
   transition: transform $transition-normal;
+  overflow: hidden;
+
+  // 不同花色/类型背景
+  &.card-face-major {
+    background: linear-gradient(135deg, #3a1c61, #1a0a3e);
+    border: 2rpx solid rgba($accent-gold, 0.25);
+  }
+  &.card-face-wands {
+    background: linear-gradient(135deg, #6b3a1f, #2e1508);
+    border: 2rpx solid rgba(#e67e22, 0.25);
+  }
+  &.card-face-cups {
+    background: linear-gradient(135deg, #1e4d7b, #0a1a3a);
+    border: 2rpx solid rgba(#3498db, 0.25);
+  }
+  &.card-face-swords {
+    background: linear-gradient(135deg, #4a5568, #1a202c);
+    border: 2rpx solid rgba(#a0aec0, 0.25);
+  }
+  &.card-face-pentacles {
+    background: linear-gradient(135deg, #1e5c3a, #0a1f12);
+    border: 2rpx solid rgba(#2ecc71, 0.25);
+  }
 }
 
 .card-image {
@@ -136,20 +194,34 @@ function handleClick() {
   position: absolute;
   top: 0;
   left: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &.loaded {
+    opacity: 1;
+  }
 }
 
 .card-placeholder {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
+  gap: 4rpx;
 }
 
 .card-number {
   font-size: 80rpx;
   font-weight: bold;
-  color: rgba($accent-gold, 0.2);
+  color: rgba($accent-gold, 0.5);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.card-suit-label {
+  font-size: 32rpx;
+  color: rgba($text-primary, 0.35);
 }
 
 .card-label {

@@ -1,0 +1,5 @@
+name = "tarot-miniprogram"
+compatibility_date = "2024-01-01"
+
+[pages]
+build_output_directory = "dist/build/h5"

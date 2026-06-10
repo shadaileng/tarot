@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import type { SpreadType } from '@/types'
 import { spreadList } from '@/data/spreads'
 import { useTarotStore } from '@/store'
@@ -9,6 +9,19 @@ import TabBar from '@/components/TabBar/TabBar.vue'
 const store = useTarotStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
+
+// 星空粒子
+const stars = ref<{ x: number; y: number; size: number; delay: number; duration: number; opacity: number }[]>([])
+onMounted(() => {
+  stars.value = Array.from({ length: 40 }, () => ({
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 1 + Math.random() * 3,
+    delay: Math.random() * 4,
+    duration: 2 + Math.random() * 3,
+    opacity: 0.2 + Math.random() * 0.6,
+  }))
+})
 
 const spreadIcons: Record<SpreadType, string> = {
   single: '🃏',
@@ -24,6 +37,10 @@ const tabList = [
 ]
 
 function handleDraw() {
+  // 触觉反馈
+  // #ifdef MP-WEIXIN
+  wx.vibrateShort({ type: 'medium' })
+  // #endif
   store.drawCards(selectedSpread.value, question.value)
   navTo('/pages/result/result')
 }
@@ -35,6 +52,24 @@ function handleTabChange(path: string) {
 
 <template>
   <view class="page-container index-page">
+    <!-- 星空背景粒子 -->
+    <view class="starfield-bg">
+      <view
+        v-for="(star, i) in stars"
+        :key="i"
+        class="star-bg-particle"
+        :style="{
+          left: `${star.x}%`,
+          top: `${star.y}%`,
+          width: `${star.size * 2}rpx`,
+          height: `${star.size * 2}rpx`,
+          animationDelay: `${star.delay}s`,
+          animationDuration: `${star.duration}s`,
+          opacity: star.opacity,
+        }"
+      />
+    </view>
+
     <!-- 顶部区域 -->
     <view class="hero-section">
       <view class="hero-glow" />
@@ -100,6 +135,31 @@ function handleTabChange(path: string) {
   flex-direction: column;
   align-items: center;
   padding: 0 40rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+// 星空粒子背景
+.starfield-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.star-bg-particle {
+  position: absolute;
+  background: $accent-gold;
+  border-radius: 50%;
+  animation: starFloat 3s ease-in-out infinite alternate;
+}
+
+@keyframes starFloat {
+  0% { opacity: 0.1; transform: translateY(0) scale(0.8); }
+  100% { opacity: 0.8; transform: translateY(-10rpx) scale(1.3); }
 }
 
 // 顶部
@@ -110,6 +170,7 @@ function handleTabChange(path: string) {
   flex-direction: column;
   align-items: center;
   padding: 120rpx 0 80rpx;
+  z-index: 1;
 }
 
 .hero-glow {
@@ -158,6 +219,8 @@ function handleTabChange(path: string) {
 .spread-section {
   width: 100%;
   margin-bottom: 40rpx;
+  z-index: 1;
+  position: relative;
 }
 
 .section-title {
@@ -210,6 +273,8 @@ function handleTabChange(path: string) {
 .question-section {
   width: 100%;
   margin-bottom: 48rpx;
+  z-index: 1;
+  position: relative;
 }
 
 .question-input-wrap {
@@ -239,6 +304,8 @@ function handleTabChange(path: string) {
 .draw-btn-wrap {
   width: 100%;
   padding-bottom: 60rpx;
+  z-index: 1;
+  position: relative;
 }
 
 .draw-btn {
