@@ -2,8 +2,8 @@
 
 import type { DrawnCard } from '@/types'
 
-// Worker API 地址（部署后替换为实际地址）
-const API_URL = 'https://tarot-reading-api.xxx.workers.dev'
+// 从环境变量读取 Worker API 地址（Vite 构建时注入）
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 export interface AIReadingResult {
   /** AI 生成的完整解读文本 */

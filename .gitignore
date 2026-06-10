@@ -1,3 +1,8 @@
 node_modules/
 dist/
 .worker/
+
+# 环境变量文件（含敏感信息，不提交）
+.env.development
+.env.production
+.env.local
