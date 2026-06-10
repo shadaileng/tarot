@@ -1,68 +1,119 @@
 # AGENTS.md — AI 协作指南
 
-本文档为 AI 编程助手在 `tarot-miniprogram` 项目中协作时提供上下文与规范。
+> 本文档帮助 AI 编程助手快速理解 `tarot-miniprogram` 项目。
+> 修改代码前请先阅读本文档。
 
 ## 项目概述
 
-塔罗牌占卜微信小程序，基于 UniApp (Vue 3 + TypeScript + Pinia + Vite) 构建，使用 pnpm 管理依赖。
+塔罗牌占卜多端应用（微信小程序 + H5），基于 **UniApp Vue3 + TypeScript + Pinia + Vite** 构建，使用 **pnpm** 管理依赖。
 
-## 技术约束
+```
+tarot-miniprogram/
+├── src/
+│   ├── pages/        # 页面（index / draw / result / cards / history）
+│   ├── components/   # 组件（TarotCard / CardDetail / TabBar）
+│   ├── store/        # Pinia 状态管理
+│   ├── data/         # 静态数据（牌组数据 / 牌阵配置）
+│   ├── types/        # TypeScript 类型定义
+│   ├── utils/        # 工具函数
+│   ├── styles/       # 全局样式 & 设计 Token
+│   ├── static/       # 静态资源（图片）
+│   ├── pages.json    # 路由 & TabBar 配置
+│   └── manifest.json # 平台配置（AppID 等）
+├── public/
+│   └── _redirects   # Cloudflare Pages SPA 路由回退规则
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
+```
 
-1. **UniApp 兼容性**：`.npmrc` 中 `shamefully-hoist=true` 是必需的，确保 UniApp 能正确解析依赖。
-2. **微信小程序限制**：
-   - 不支持部分 CSS 属性（如 `position: fixed` 在 `scroll-view` 内表现异常）
-   - 包体积限制：单个分包 ≤ 2MB，总包 ≤ 20MB
-   - 所有图片资源应放在 `src/static/` 下
-3. **SCSS 变量**：所有颜色、尺寸等设计 Token 定义在 `src/styles/variables.scss`，通过 `vite.config.ts` 的 `additionalData` 全局注入。
-4. **TypeScript 严格模式**：`tsconfig.json` 中 `strict: true`。
+## 技术栈
 
-## 关键文件约定
-
-| 文件 | 作用 |
+| 类别 | 技术 |
 |------|------|
-| `src/pages.json` | 路由、TabBar、全局样式配置 |
-| `src/manifest.json` | 微信小程序 AppID 等平台配置 |
-| `src/types/index.ts` | 所有 TypeScript 接口定义 |
-| `src/data/tarot-cards.ts` | 78 张牌完整数据 |
-| `src/data/spreads.ts` | 牌阵配置 |
-| `src/store/tarot.ts` | Pinia Store（全局状态） |
-| `src/utils/index.ts` | 工具函数（洗牌、解读、存储） |
-| `.npmrc` | pnpm 配置（不可删除） |
+| 框架 | UniApp Vue3（`@dcloudio/uni-app`） |
+| 语言 | TypeScript（strict: true） |
+| 状态管理 | Pinia |
+| 构建工具 | Vite 5 + `@dcloudio/vite-plugin-uni` |
+| CSS | SCSS（设计 Token 在 `variables.scss`）+ TailwindCSS（通过 `weapp-tailwindcss`） |
+| 包管理 | pnpm（`.npmrc` 中 `shamefully-hoist=true` 不可删除） |
 
-## 组件约定
+## 规范与约束
 
-- TarotCard 组件通过 `pages.json` 中的 `easycom` 配置，以 `T-` 前缀自动注册（如 `<T-TarotCard />`）。
-- 所有新组件放在 `src/components/` 下，以目录 + `index.vue` 方式组织。
-
-## 编码规范
-
+### 编码规范
 - 使用 Composition API（`<script setup lang="ts">`）
-- 页面级组件使用 PascalCase 命名
-- CSS 类名使用 kebab-case
-- 优先使用 SCSS 变量而非硬编码颜色/尺寸
-- 所有用户可见的文本应直接写在模板中（本阶段不做 i18n）
+- 页面组件 PascalCase 命名，CSS 类名 kebab-case
+- 优先使用 `src/styles/variables.scss` 中的 SCSS 变量，禁止硬编码颜色/尺寸
+- 用户可见文本直接写在模板中（不做 i18n）
 
-## 当前进度
+### UniApp / 微信小程序约束
+- `shamefully-hoist=true` 是 UniApp 正确解析依赖的必要条件，不得删除
+- 微信小程序不支持某些 CSS（如 `position: fixed` 在 `scroll-view` 内异常）
+- 分包限制：单包 ≤ 2MB，总包 ≤ 20MB；图片资源放在 `src/static/`
+- `vite.config.ts` 通过 `additionalData` 全局注入 `variables.scss`，组件中直接使用变量无需 import
 
-项目基础架构约 50% 完成。详见 `docs/PLAN.md`。
+### easycom 组件自动注册
+`pages.json` 中配置了 `^T-(.*)` → `@/components/TarotCard/$1.vue`，
+目前只有 `TarotCard` 组件使用此规则，新组件放在 `src/components/<Name>/index.vue`。
 
-### 待开发功能（按优先级）
+## 核心数据结构
 
-1. 翻牌动画（CSS 3D `rotateY`）
-2. 发牌动画（牌堆飞入牌阵）
-3. 牌阵选择器组件
-4. 牌面详情弹窗
-5. Canvas 分享海报
-6. 星空背景粒子效果
-7. 触觉反馈
-8. 空状态/错误边界处理
+```
+TarotCard { id, name, nameEn, type('major'|Suit), number, image, keywords, uprightMeaning, reversedMeaning, description }
+  ↓ drawCards(spreadType, question)
+DrawnCard { card: TarotCard, orientation: 'upright'|'reversed', position: string }
+  ↓ 组成
+ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timestamp, date }
+```
+
+- 牌组数据：`src/data/tarot-cards.ts`（78 张，大阿卡纳 0-21 + 小阿卡纳 4 花色）
+- 牌阵配置：`src/data/spreads.ts`（single / three / celtic-cross）
+- 状态管理：`src/store/tarot.ts`（Pinia Store，管理当前占卜 + 历史记录，持久化到 `uni.storage`，最多 100 条）
+
+## 页面结构
+
+| 路径 | 说明 | TabBar |
+|------|------|--------|
+| `pages/index/index` | 首页（入口） | ✅ |
+| `pages/draw/draw` | 抽牌页（选择牌阵、执行抽牌） | ✅ |
+| `pages/result/result` | 占卜结果页（展示牌面、正逆位解读） | - |
+| `pages/cards/cards` | 牌库浏览（78 张牌列表） | ✅ |
+| `pages/history/history` | 占卜记录（历史列表、删除） | ✅ |
+
+> TabBar 为自定义组件（`src/components/TabBar/TabBar.vue`），`pages.json` 中 `"custom": true`。
 
 ## 命令
 
 ```bash
-pnpm install              # 安装依赖
-pnpm dev:mp-weixin        # 开发（微信小程序）
-pnpm build:mp-weixin      # 构建（微信小程序）
-pnpm dev:h5               # 开发（H5）
-pnpm build:h5             # 构建（H5）
+pnpm install               # 安装依赖（必须用 pnpm，不可用 npm/yarn）
+pnpm dev:mp-weixin         # 开发：微信小程序（HBuilderX 或微信开发者工具）
+pnpm build:mp-weixin       # 构建：微信小程序生产包 → dist/build/mp-weixin
+pnpm dev:h5                # 开发：H5（浏览器访问）
+pnpm build:h5              # 构建：H5 生产包 → dist/build/h5
+pnpm deploy:cf             # 构建 + 部署 H5 到 Cloudflare Pages（需先 npx wrangler login）
 ```
+
+## 部署
+
+### H5 本地预览
+```bash
+pnpm build:h5
+npx wrangler pages dev dist/build/h5   # 支持 _redirects SPA 路由回退
+```
+
+### Cloudflare Pages 部署
+
+| 方式 | 说明 |
+|------|------|
+| `pnpm deploy:cf` | Wrangler CLI（推荐，构建 + 上传一键完成） |
+| Dashboard 上传 | 构建后拖拽 `dist/build/h5/` 到 Cloudflare Pages Dashboard |
+| Git 集成 | 连接仓库，Build: `pnpm build:h5`，Output: `dist/build/h5` |
+
+> `public/_redirects` 已配置 `/* /index.html 200`，Cloudflare Pages 自动生效。
+
+### 微信小程序上传
+1. `pnpm build:mp-weixin` 构建生产版本
+2. 微信开发者工具导入 `dist/build/mp-weixin`
+3. 点击「上传」→ 填写版本号 → 在微信公众平台提交审核
+
+> 确认 `src/manifest.json` → `mp-weixin.appid` 已填写正确值。
