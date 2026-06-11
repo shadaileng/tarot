@@ -28,12 +28,29 @@ const minPosterH = 1334
 /** 从 interpretation 中提取「✨ 综合解读」部分 */
 function extractSummary(text: string): string {
   if (!text) return ''
-  const marker = '✨ 综合解读'
-  const idx = text.indexOf(marker)
-  if (idx === -1) return ''
-  const afterMarker = text.slice(idx + marker.length)
-  // 去掉开头的换行/冒号等
-  return afterMarker.replace(/^[：:\s\n]+/, '').trim()
+
+  // 正则匹配：支持多种格式
+  // - ✨ 综合解读 / ✨综合解读
+  // - ✨ **综合解读** (markdown 加粗)
+  // - ## 综合解读 / ### 综合解读
+  // - **综合解读** / 【综合解读】
+  const patterns = [
+    /✨\s*\**\s*综合解读\**/,
+    /[*#]*\s*综合解读\s*[*#]*/,
+    /【综合解读】/,
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match) {
+      const idx = match.index!
+      const markerLen = match[0].length
+      const afterMarker = text.slice(idx + markerLen)
+      return afterMarker.replace(/^[：:\s\n]+/, '').trim()
+    }
+  }
+
+  return ''
 }
 
 /** 生成海报 */
