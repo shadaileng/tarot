@@ -4,15 +4,19 @@ import type { SpreadType } from '@/types'
 import { spreadList } from '@/data/spreads'
 import { useTarotStore } from '@/store'
 import { navTo } from '@/utils'
+import { checkBackendHealth } from '@/services/reading'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 const store = useTarotStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
 
+// 后台服务状态
+const backendStatus = ref<'checking' | 'online' | 'offline'>('checking')
+
 // 星空粒子
 const stars = ref<{ x: number; y: number; size: number; delay: number; duration: number; opacity: number }[]>([])
-onMounted(() => {
+onMounted(async () => {
   stars.value = Array.from({ length: 40 }, () => ({
     x: Math.random() * 100,
     y: Math.random() * 100,
@@ -21,6 +25,9 @@ onMounted(() => {
     duration: 2 + Math.random() * 3,
     opacity: 0.2 + Math.random() * 0.6,
   }))
+
+  // 检测后台服务
+  backendStatus.value = await checkBackendHealth() ? 'online' : 'offline'
 })
 
 const spreadIcons: Record<SpreadType, string> = {
@@ -80,6 +87,14 @@ function handleTabChange(path: string) {
         <text class="star">✦</text>
         <text class="star">✦</text>
       </view>
+    </view>
+
+    <!-- 后台服务状态 -->
+    <view class="backend-status" :class="backendStatus">
+      <view class="status-dot" />
+      <text class="status-text">
+        {{ backendStatus === 'checking' ? '正在检测服务...' : backendStatus === 'online' ? 'AI 服务已连接' : 'AI 服务不可用，将使用本地解读' }}
+      </text>
     </view>
 
     <!-- 牌阵选择 -->
@@ -213,6 +228,40 @@ function handleTabChange(path: string) {
   font-size: 32rpx;
   color: $accent-gold-light;
   opacity: 0.6;
+}
+
+// 后台服务状态
+.backend-status {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.3);
+  margin-bottom: 32rpx;
+  z-index: 1;
+  position: relative;
+
+  &.checking .status-dot { background: #f0ad4e; animation: statusPulse 1s infinite; }
+  &.online .status-dot { background: #5cb85c; }
+  &.offline .status-dot { background: #d9534f; }
+}
+
+.status-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-text {
+  font-size: 22rpx;
+  color: $text-secondary;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 // 牌阵

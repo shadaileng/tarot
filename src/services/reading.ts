@@ -126,6 +126,29 @@ function generateSummary(question: string, cards: DrawnCard[], category: string)
 }
 
 /**
+ * 检测后台服务是否可用
+ * 通过发送一个轻量的 HEAD 请求到 API 根路径来判断
+ */
+export async function checkBackendHealth(): Promise<boolean> {
+  if (!API_URL) return false
+
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒超时
+
+    const res = await fetch(API_URL, {
+      method: 'HEAD', // 使用 HEAD 减少响应体开销
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/**
  * 根据问题关键词检测问题类别
  */
 function detectCategory(question: string): 'love' | 'career' | 'study' | 'general' {
