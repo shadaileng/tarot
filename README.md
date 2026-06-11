@@ -50,6 +50,21 @@ pnpm build:h5
 
 ---
 
+## 环境变量
+
+项目根目录的 `.env` 文件管理运行时配置：
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `VITE_API_URL` | AI 解读后台 API 地址（Vite 注入到 `import.meta.env`） | `https://tarot-reading-api.xxx.workers.dev` |
+| `TAROT_APPID` | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wx8011fd667bbb95dc` |
+
+如需为生产环境设置不同的值，创建 `.env.production` 覆盖即可。
+
+> `TAROT_APPID` 由 Vite 插件在构建时自动注入 `dist/*/mp-weixin/project.config.json`，无需手动修改 `src/manifest.json`。
+
+---
+
 ## 部署
 
 ### H5 本地预览
@@ -103,7 +118,7 @@ pnpm deploy:cf
 3. 在开发者工具中点击 **上传** 按钮，填写版本号和项目备注
 4. 登录 [微信公众平台](https://mp.weixin.qq.com)，在「版本管理」中提交审核
 
-> 确保 `src/manifest.json` 中已填写正确的 AppID。
+> AppID 通过 `TAROT_APPID` 环境变量配置（详见「环境变量」），构建时自动注入 `project.config.json`，无需手动修改 `src/manifest.json`。
 
 ## 项目结构
 
@@ -128,6 +143,7 @@ tarot-miniprogram/
 │   ├── types/               # TypeScript 类型
 │   ├── styles/              # SCSS 变量与全局样式
 │   └── static/              # 静态资源
+├── .env                     # 环境变量（VITE_API_URL / TAROT_APPID）
 ├── .npmrc                   # pnpm 配置
 ├── package.json
 ├── tsconfig.json

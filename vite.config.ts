@@ -1,7 +1,33 @@
 import path from 'node:path'
-import { defineConfig } from 'vite'
+import fs from 'node:fs'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
+
+function injectAppidPlugin(): Plugin {
+  return {
+    name: 'vite-plugin-inject-appid',
+    closeBundle() {
+      const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '')
+      const appid = env.TAROT_APPID
+      if (!appid) return
+
+      const dirs = ['dist/dev/mp-weixin', 'dist/build/mp-weixin']
+      for (const dir of dirs) {
+        const configPath = path.resolve(__dirname, dir, 'project.config.json')
+        try {
+          if (fs.existsSync(configPath)) {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+            if (config.appid !== appid) {
+              config.appid = appid
+              fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
+            }
+          }
+        } catch {}
+      }
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
@@ -10,6 +36,7 @@ export default defineConfig({
       rem2rpx: true,
       cssEntries: [path.resolve(__dirname, 'src/app.css')],
     }),
+    injectAppidPlugin(),
   ],
   css: {
     preprocessorOptions: {

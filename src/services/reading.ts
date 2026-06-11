@@ -19,10 +19,11 @@ export interface AIReadingResult {
  */
 export async function fetchAIReading(question: string, cards: DrawnCard[]): Promise<AIReadingResult> {
   try {
-    const res = await fetch(API_URL, {
+    const res = await uni.request({
+      url: API_URL,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      header: { 'Content-Type': 'application/json' },
+      data: {
         question,
         cards: cards.map((c) => ({
           position: c.position,
@@ -32,18 +33,17 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
           reversedMeaning: c.card.reversedMeaning,
           keywords: c.card.keywords,
         })),
-      }),
+      },
+      timeout: 10000,
     })
 
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status}`)
+    if (res.statusCode !== 200) {
+      throw new Error(`API error: ${res.statusCode}`)
     }
 
-    const data = await res.json()
+    const data = res.data as { reading?: string; incomplete?: boolean }
     if (data.reading) {
-      // 检查是否格式不完整（缺少综合解读）
       if (data.incomplete && !data.reading.includes('✨ 综合解读')) {
-        // 方案A：保留AI单牌解读 + 本地补偿综合解读
         const summary = generateSummaryOnly(question, cards)
         const compensated = data.reading + summary
         return { reading: compensated, isAI: true, isPartialAI: true }
@@ -52,7 +52,6 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
     }
     throw new Error('Empty reading')
   } catch {
-    // 降级到本地生成
     return { reading: generateLocalReading(question, cards), isAI: false, isPartialAI: false }
   }
 }
@@ -198,21 +197,17 @@ export async function checkBackendHealth(): Promise<BackendStatus> {
   }
 
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    const res = await fetch(`${API_URL}/health`, {
+    const res = await uni.request({
+      url: `${API_URL}/health`,
       method: 'GET',
-      signal: controller.signal,
+      timeout: 5000,
     })
 
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
+    if (res.statusCode !== 200) {
       return { status: 'error', worker: 'up', gemini: 'unconfigured' }
     }
 
-    const data = await res.json()
+    const data = res.data as { status?: string; worker?: string; gemini?: string }
     return {
       status: data.status || 'error',
       worker: data.worker || 'down',

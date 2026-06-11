@@ -19,7 +19,8 @@ tarot-miniprogram/
 │   ├── styles/       # 全局样式 & 设计 Token
 │   ├── static/       # 静态资源（图片）
 │   ├── pages.json    # 路由 & TabBar 配置
-│   └── manifest.json # 平台配置（AppID 等）
+│   └── manifest.json # 平台配置（AppID 由 env 注入，不硬编码）
+├── .env              # 环境变量（VITE_API_URL / TAROT_APPID）
 ├── public/
 │   └── _redirects   # Cloudflare Pages SPA 路由回退规则
 ├── vite.config.ts
@@ -91,7 +92,15 @@ pnpm build:mp-weixin       # 构建：微信小程序生产包 → dist/build/mp
 pnpm dev:h5                # 开发：H5（浏览器访问）
 pnpm build:h5              # 构建：H5 生产包 → dist/build/h5
 pnpm deploy:cf             # 构建 + 部署 H5 到 Cloudflare Pages（需先 npx wrangler login）
-```
+
+## 环境变量
+
+| 变量 | 用途 | 说明 |
+|------|------|------|
+| `VITE_API_URL` | AI 解读后台地址 | 构建时注入 `import.meta.env.VITE_API_URL`，值在 `.env` 中配置 |
+| `TAROT_APPID` | 微信小程序 AppID | 构建时由 `injectAppidPlugin` 自动写入 `project.config.json`，值在 `.env` 中配置 |
+
+> 如需为不同环境设置不同值，可创建 `.env.development` 或 `.env.production` 覆盖。
 
 ## 部署
 
@@ -116,4 +125,4 @@ npx wrangler pages dev dist/build/h5   # 支持 _redirects SPA 路由回退
 2. 微信开发者工具导入 `dist/build/mp-weixin`
 3. 点击「上传」→ 填写版本号 → 在微信公众平台提交审核
 
-> 确认 `src/manifest.json` → `mp-weixin.appid` 已填写正确值。
+> AppID 通过 `TAROT_APPID` 环境变量配置（详见「环境变量」），构建时由 `injectAppidPlugin` 自动注入 `project.config.json`，无需手动修改 `src/manifest.json`。
