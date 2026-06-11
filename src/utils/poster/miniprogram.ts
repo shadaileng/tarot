@@ -1,4 +1,4 @@
-// ========== 海报生成 - 小程序端 (Canvas 2x 绘制) ==========
+// ========== 海报生成 - 小程序端 (Canvas 2D API) ==========
 
 import type { PosterData, PosterResult, PosterCard } from './types'
 
@@ -88,7 +88,7 @@ function extractSummary(text: string): string {
 
 /** 文本换行 */
 function wrapText(
-  ctx: ReturnType<typeof uni.createCanvasContext>,
+  ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
   fontSize: number,
@@ -97,8 +97,7 @@ function wrapText(
   let line = ''
   for (let i = 0; i < text.length; i++) {
     const testLine = line + text[i]
-    const metrics = (ctx as any).measureText?.(testLine)
-    const w = metrics?.width ?? testLine.length * fontSize * 0.6
+    const w = ctx.measureText(testLine).width
     if (w > maxWidth && line.length > 0) {
       lines.push(line)
       line = text[i]
@@ -112,7 +111,7 @@ function wrapText(
 
 /** 圆角矩形路径 */
 function roundRect(
-  ctx: ReturnType<typeof uni.createCanvasContext>,
+  ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number, r: number,
 ) {
   ctx.beginPath()
@@ -130,259 +129,310 @@ function roundRect(
 
 /** 渐变填充圆角矩形 */
 function fillGradient(
-  ctx: ReturnType<typeof uni.createCanvasContext>,
+  ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
   r: number, colors: [string, string],
 ) {
   ctx.save()
   roundRect(ctx, x, y, w, h, r)
   ctx.clip()
-  const gradient = (ctx as any).createLinearGradient?.(x, y, x + w, y + h)
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h)
   if (gradient) {
     gradient.addColorStop(0, colors[0])
     gradient.addColorStop(1, colors[1])
-    ctx.setFillStyle(gradient)
+    ctx.fillStyle = gradient
   } else {
-    ctx.setFillStyle(colors[0])
+    ctx.fillStyle = colors[0]
   }
   ctx.fillRect(x, y, w, h)
   ctx.restore()
 }
 
-/** 计算布局并绘制海报 */
+/** 计算布局并绘制海报 (Canvas 2D API) */
 export function generateMiniProgramPoster(
   canvasId: string,
   data: PosterData,
+  componentScope?: any,
 ): Promise<PosterResult> {
   return new Promise((resolve, reject) => {
-    const ctx = uni.createCanvasContext(canvasId)
-    const cards = toPosterCards(data)
-    const summaryText = extractSummary(data.interpretation || '')
+    let settled = false
+    console.log('[MiniProgram] generateMiniProgramPoster called, canvasId=', canvasId)
 
-    // --- 布局计算 ---
-    const sideMargin = 60
-    const availableW = POSTER_W - sideMargin * 2
-    const cardGap = 16
-    const rowGap = 24
-    const maxCardW = 300
-    const minCardW = 180
-
-    // 动态列数
-    let cols = Math.min(cards.length, 3)
-    let cardW = (availableW - (cols - 1) * cardGap) / cols
-    if (cardW < minCardW && cols > 1) {
-      cols = 2
-      cardW = (availableW - (cols - 1) * cardGap) / cols
-    }
-    cardW = Math.min(maxCardW, Math.max(minCardW, cardW))
-    const cardH = Math.max(160, cardW * 1.45)
-    const rows = Math.ceil(cards.length / cols)
-    const totalW = cols * cardW + (cols - 1) * cardGap
-    const startX = (POSTER_W - totalW) / 2
-
-    // 字体适配
-    const isNarrow = cardW < 250
-    const nameFontSize = isNarrow ? 24 : 28
-    const meaningFontSize = isNarrow ? 20 : 22
-    const meaningLineHeight = isNarrow ? 26 : 30
-
-    // 问题区域
-    let questionH = 0
-    if (data.question) {
-      const qLines = wrapText(ctx, data.question, POSTER_W - 120, 24)
-      questionH = qLines.length * 36
-    }
-
-    // 牌阵卡片起始 Y
-    const cardAreaY = 280 + (data.question ? questionH + 40 : 0)
-    const cardsBottomY = cardAreaY + rows * (cardH + rowGap) - rowGap
-
-    // 综合解读区域
-    let summaryH = 0
-    let displaySummaryLines: string[] = []
-    if (summaryText) {
-      const summaryMaxW = POSTER_W - 100 - 48
-      const summaryLines = wrapText(ctx, summaryText, summaryMaxW, 22)
-      displaySummaryLines = summaryLines.slice(0, 20)
-      summaryH = 32 + 50 + 12 + displaySummaryLines.length * 44 + 32
-    }
-
-    // 底部
-    const summaryY = cardsBottomY + 40
-    const footerY = summaryH > 0 ? summaryY + summaryH + 20 : cardsBottomY
-    const actualPosterH = footerY + 120
-
-    // --- 绘制 ---
-    // 1. 背景
-    ctx.setFillStyle(COLORS.bg)
-    ctx.fillRect(0, 0, POSTER_W, actualPosterH)
-
-    // 2. 顶部装饰线
-    ctx.setFillStyle(COLORS.gold)
-    ctx.fillRect(60, 80, POSTER_W - 120, 2)
-
-    // 3. 标题
-    ctx.setFillStyle(COLORS.gold)
-    ctx.setFontSize(44)
-    ctx.setTextAlign('center')
-    ctx.fillText('🔮 塔罗牌占卜', POSTER_W / 2, 170)
-
-    // 4. 牌阵名称
-    ctx.setFillStyle(COLORS.textSecondary)
-    ctx.setFontSize(28)
-    ctx.fillText(data.spreadName, POSTER_W / 2, 220)
-
-    // 5. 问题
-    if (data.question) {
-      ctx.setFillStyle(COLORS.textMuted)
-      ctx.setFontSize(24)
-      const qLines = wrapText(ctx, data.question, POSTER_W - 120, 24)
-      qLines.forEach((line, i) => {
-        ctx.fillText(line, POSTER_W / 2, 280 + i * 36)
-      })
-    }
-
-    // 6. 牌阵卡片
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i]
-      const col = i % cols
-      const row = Math.floor(i / cols)
-      const cx = startX + col * (cardW + cardGap)
-      const cy = cardAreaY + row * (cardH + rowGap)
-      const isReversed = card.orientation === 'reversed'
-      const gradient = CARD_GRADIENTS[card.type] || CARD_GRADIENTS.major
-      const borderColor = CARD_BORDERS[card.type] || CARD_BORDERS.major
-
-      // 卡片背景
-      fillGradient(ctx, cx, cy, cardW, cardH, 12, gradient)
-
-      // 边框
-      ctx.setStrokeStyle(borderColor)
-      ctx.setLineWidth(2)
-      roundRect(ctx, cx, cy, cardW, cardH, 12)
-      ctx.stroke()
-
-      // 占位符区域
-      const placeholderCY = cy + cardH * 0.3
-      const placeholderH = cardH * 0.35
-      ctx.setFillStyle('rgba(0,0,0,0.15)')
-      roundRect(ctx, cx + cardW * 0.15, placeholderCY - 20, cardW * 0.7, placeholderH + 40, 8)
-      ctx.fill()
-
-      // 数字
-      ctx.setTextAlign('center')
-      if (card.type === 'major') {
-        ctx.setFillStyle('rgba(201,169,110,0.7)')
-        ctx.setFontSize(Math.floor(cardW * 0.18))
-        ctx.fillText(ROMAN_NUMERALS[card.number] || '', cx + cardW / 2, placeholderCY)
-      } else {
-        ctx.setFillStyle('rgba(232,213,183,0.5)')
-        ctx.setFontSize(Math.floor(cardW * 0.22))
-        const numMatch = card.name.match(/(\d+)$/)
-        ctx.fillText(numMatch ? numMatch[1] : card.name.slice(-1), cx + cardW / 2, placeholderCY)
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true
+        console.log('[MiniProgram] Timeout fired (8s)')
+        reject(new Error('海报生成超时'))
       }
+    }, 8000)
 
-      // 花色符号
-      ctx.setFillStyle('rgba(201,169,110,0.4)')
-      ctx.setFontSize(Math.floor(cardW * 0.16))
-      ctx.fillText(SUIT_SYMBOLS[card.type] || '✦', cx + cardW / 2, placeholderCY + Math.floor(cardW * 0.14))
+    const query = componentScope
+      ? uni.createSelectorQuery().in(componentScope)
+      : uni.createSelectorQuery()
+    query
+      .select(`#${canvasId}`)
+      .node((res: any) => {
+        console.log('[MiniProgram] createSelectorQuery .node() fired')
+        if (settled) return
+        const canvas: HTMLCanvasElement = res.node
+        console.log('[MiniProgram] Canvas node found:', !!canvas)
+        if (!canvas || !canvas.getContext) {
+          console.log('[MiniProgram] Canvas node NOT FOUND or no getContext')
+          settled = true
+          clearTimeout(timeout)
+          reject(new Error('Canvas 节点未找到'))
+          return
+        }
 
-      // 逆位标记
-      if (isReversed) {
-        ctx.setFillStyle('rgba(220,100,80,0.8)')
-        ctx.setFontSize(Math.floor(cardW * 0.13))
-        ctx.fillText('▼ 逆位', cx + cardW / 2, placeholderCY + placeholderH + 30)
-      }
+        try {
+          console.log('[MiniProgram] Getting 2d context...')
+          const ctx = canvas.getContext('2d')!
+          console.log('[MiniProgram] 2d context obtained:', !!ctx)
+          const cards = toPosterCards(data)
+          const summaryText = extractSummary(data.interpretation || '')
 
-      // 底部信息区
-      const infoY = cy + cardH * 0.72
-      const padding = 16
+          // --- 布局计算 ---
+          const sideMargin = 60
+          const availableW = POSTER_W - sideMargin * 2
+          const cardGap = 16
+          const rowGap = 24
+          const maxCardW = 300
+          const minCardW = 180
 
-      ctx.setTextAlign('left')
-      ctx.setFillStyle(COLORS.gold)
-      ctx.setFontSize(18)
-      ctx.fillText(card.position, cx + padding, infoY)
+          let cols = Math.min(cards.length, 3)
+          let cardW = (availableW - (cols - 1) * cardGap) / cols
+          if (cardW < minCardW && cols > 1) {
+            cols = 2
+            cardW = (availableW - (cols - 1) * cardGap) / cols
+          }
+          cardW = Math.min(maxCardW, Math.max(minCardW, cardW))
+          const cardH = Math.max(160, cardW * 1.45)
+          const rows = Math.ceil(cards.length / cols)
+          const totalW = cols * cardW + (cols - 1) * cardGap
+          const startX = (POSTER_W - totalW) / 2
 
-      ctx.setFillStyle(COLORS.textLight)
-      ctx.setFontSize(nameFontSize)
-      ctx.fillText(card.name, cx + padding, infoY + 28)
+          const isNarrow = cardW < 250
+          const nameFontSize = isNarrow ? 24 : 28
+          const meaningFontSize = isNarrow ? 20 : 22
+          const meaningLineHeight = isNarrow ? 26 : 30
 
-      ctx.setFillStyle(COLORS.gold)
-      ctx.setFontSize(16)
-      ctx.fillText(card.keywords.slice(0, 2).join(' · '), cx + padding, infoY + 52)
+          let questionH = 0
+          if (data.question) {
+            ctx.font = '24px sans-serif'
+            const qLines = wrapText(ctx, data.question, POSTER_W - 120, 24)
+            questionH = qLines.length * 36
+          }
 
-      // 解读文字
-      ctx.setFillStyle(COLORS.textSecondary)
-      ctx.setFontSize(meaningFontSize)
-      const meaningMaxW = cardW - padding * 2
-      const meaningLines = wrapText(ctx, card.meaning, meaningMaxW, meaningFontSize)
-      const meaningMaxLines = Math.min(2, Math.floor((cardH - infoY - 52 - 8 - padding) / meaningLineHeight))
-      meaningLines.slice(0, meaningMaxLines).forEach((line, li) => {
-        ctx.fillText(line, cx + padding, infoY + 52 + 20 + li * meaningLineHeight)
-      })
-    }
+          const cardAreaY = 280 + (data.question ? questionH + 40 : 0)
+          const cardsBottomY = cardAreaY + rows * (cardH + rowGap) - rowGap
 
-    // 7. 综合解读
-    if (summaryText && displaySummaryLines.length > 0) {
-      const summaryCardW = POSTER_W - 100
-      ctx.setFillStyle(COLORS.summaryBg)
-      roundRect(ctx, 50, summaryY, summaryCardW, summaryH, 8)
-      ctx.fill()
+          let summaryH = 0
+          let displaySummaryLines: string[] = []
+          if (summaryText) {
+            ctx.font = '22px sans-serif'
+            const summaryMaxW = POSTER_W - 100 - 48
+            const summaryLines = wrapText(ctx, summaryText, summaryMaxW, 22)
+            displaySummaryLines = summaryLines.slice(0, 20)
+            summaryH = 32 + 50 + 12 + displaySummaryLines.length * 44 + 32
+          }
 
-      // 金色左边框
-      ctx.setFillStyle(COLORS.gold)
-      ctx.fillRect(50, summaryY + 8, 4, summaryH - 16)
+          const summaryY = cardsBottomY + 40
+          const footerY = summaryH > 0 ? summaryY + summaryH + 20 : cardsBottomY
+          const actualPosterH = footerY + 120
 
-      // 标题
-      ctx.setFillStyle(COLORS.gold)
-      ctx.setFontSize(26)
-      ctx.setTextAlign('left')
-      ctx.fillText('✨ 综合解读', 50 + 32, summaryY + 32 + 30)
+          // 设置 canvas 缓冲区大小
+          canvas.width = POSTER_W
+          canvas.height = actualPosterH
+          console.log('[MiniProgram] Canvas buffer:', canvas.width, 'x', canvas.height)
 
-      // 正文
-      ctx.setFillStyle(COLORS.textBody)
-      ctx.setFontSize(22)
-      displaySummaryLines.forEach((line, li) => {
-        ctx.fillText(
-          line,
-          50 + 32,
-          summaryY + 32 + 50 + 12 + li * 44 + 24,
-        )
-      })
-    }
+          // --- 绘制 ---
+          // 1. 背景
+          ctx.fillStyle = COLORS.bg
+          ctx.fillRect(0, 0, POSTER_W, actualPosterH)
 
-    // 8. 底部装饰
-    ctx.setFillStyle(COLORS.gold)
-    ctx.fillRect(60, footerY, POSTER_W - 120, 2)
+          // 2. 顶部装饰线
+          ctx.fillStyle = COLORS.gold
+          ctx.fillRect(60, 80, POSTER_W - 120, 2)
 
-    ctx.setFillStyle(COLORS.textMuted)
-    ctx.setFontSize(22)
-    ctx.setTextAlign('center')
-    ctx.fillText('命运之轮 · 塔罗占卜', POSTER_W / 2, footerY + 50)
-    ctx.fillText(data.date, POSTER_W / 2, footerY + 80)
+          // 3. 标题
+          ctx.fillStyle = COLORS.gold
+          ctx.font = '44px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText('🔮 塔罗牌占卜', POSTER_W / 2, 170)
 
-    // 9. 绘制并导出（2x 高清）
-    ctx.draw(false, () => {
-      setTimeout(() => {
-        uni.canvasToTempFilePath({
-          canvasId,
-          width: POSTER_W * SCALE,
-          height: actualPosterH * SCALE,
-          destWidth: POSTER_W * SCALE,
-          destHeight: actualPosterH * SCALE,
-          quality: 0.95,
-          success: (res) => {
-            resolve({
-              url: res.tempFilePath,
-              width: POSTER_W * SCALE,
-              height: actualPosterH * SCALE,
+          // 4. 牌阵名称
+          ctx.fillStyle = COLORS.textSecondary
+          ctx.font = '28px sans-serif'
+          ctx.fillText(data.spreadName, POSTER_W / 2, 220)
+
+          // 5. 问题
+          if (data.question) {
+            ctx.fillStyle = COLORS.textMuted
+            ctx.font = '24px sans-serif'
+            const qLines = wrapText(ctx, data.question, POSTER_W - 120, 24)
+            qLines.forEach((line, i) => {
+              ctx.fillText(line, POSTER_W / 2, 280 + i * 36)
             })
-          },
-          fail: (err) => {
-            reject(err)
-          },
-        })
-      }, 500)
-    })
+          }
+
+          // 6. 牌阵卡片
+          for (let i = 0; i < cards.length; i++) {
+            const card = cards[i]
+            const col = i % cols
+            const row = Math.floor(i / cols)
+            const cx = startX + col * (cardW + cardGap)
+            const cy = cardAreaY + row * (cardH + rowGap)
+            const isReversed = card.orientation === 'reversed'
+            const gradient = CARD_GRADIENTS[card.type] || CARD_GRADIENTS.major
+            const borderColor = CARD_BORDERS[card.type] || CARD_BORDERS.major
+
+            // 卡片背景
+            fillGradient(ctx, cx, cy, cardW, cardH, 12, gradient)
+
+            // 边框
+            ctx.strokeStyle = borderColor
+            ctx.lineWidth = 2
+            roundRect(ctx, cx, cy, cardW, cardH, 12)
+            ctx.stroke()
+
+            // 占位符区域
+            const placeholderCY = cy + cardH * 0.3
+            const placeholderH = cardH * 0.35
+            ctx.fillStyle = 'rgba(0,0,0,0.15)'
+            roundRect(ctx, cx + cardW * 0.15, placeholderCY - 20, cardW * 0.7, placeholderH + 40, 8)
+            ctx.fill()
+
+            // 数字
+            ctx.textAlign = 'center'
+            if (card.type === 'major') {
+              ctx.fillStyle = 'rgba(201,169,110,0.7)'
+              ctx.font = `${Math.floor(cardW * 0.18)}px sans-serif`
+              ctx.fillText(ROMAN_NUMERALS[card.number] || '', cx + cardW / 2, placeholderCY)
+            } else {
+              ctx.fillStyle = 'rgba(232,213,183,0.5)'
+              ctx.font = `${Math.floor(cardW * 0.22)}px sans-serif`
+              const numMatch = card.name.match(/(\d+)$/)
+              ctx.fillText(numMatch ? numMatch[1] : card.name.slice(-1), cx + cardW / 2, placeholderCY)
+            }
+
+            // 花色符号
+            ctx.fillStyle = 'rgba(201,169,110,0.4)'
+            ctx.font = `${Math.floor(cardW * 0.16)}px sans-serif`
+            ctx.fillText(SUIT_SYMBOLS[card.type] || '✦', cx + cardW / 2, placeholderCY + Math.floor(cardW * 0.14))
+
+            // 逆位标记
+            if (isReversed) {
+              ctx.fillStyle = 'rgba(220,100,80,0.8)'
+              ctx.font = `${Math.floor(cardW * 0.13)}px sans-serif`
+              ctx.fillText('▼ 逆位', cx + cardW / 2, placeholderCY + placeholderH + 30)
+            }
+
+            // 底部信息区
+            const infoY = cy + cardH * 0.72
+            const padding = 16
+
+            ctx.textAlign = 'left'
+            ctx.fillStyle = COLORS.gold
+            ctx.font = '18px sans-serif'
+            ctx.fillText(card.position, cx + padding, infoY)
+
+            ctx.fillStyle = COLORS.textLight
+            ctx.font = `${nameFontSize}px sans-serif`
+            ctx.fillText(card.name, cx + padding, infoY + 28)
+
+            ctx.fillStyle = COLORS.gold
+            ctx.font = '16px sans-serif'
+            ctx.fillText(card.keywords.slice(0, 2).join(' · '), cx + padding, infoY + 52)
+
+            // 解读文字
+            ctx.fillStyle = COLORS.textSecondary
+            ctx.font = `${meaningFontSize}px sans-serif`
+            const meaningMaxW = cardW - padding * 2
+            const meaningLines = wrapText(ctx, card.meaning, meaningMaxW, meaningFontSize)
+            const meaningMaxLines = Math.min(2, Math.floor((cardH - infoY - 52 - 8 - padding) / meaningLineHeight))
+            meaningLines.slice(0, meaningMaxLines).forEach((line, li) => {
+              ctx.fillText(line, cx + padding, infoY + 52 + 20 + li * meaningLineHeight)
+            })
+          }
+
+          // 7. 综合解读
+          if (summaryText && displaySummaryLines.length > 0) {
+            const summaryCardW = POSTER_W - 100
+            ctx.fillStyle = COLORS.summaryBg
+            roundRect(ctx, 50, summaryY, summaryCardW, summaryH, 8)
+            ctx.fill()
+
+            // 金色左边框
+            ctx.fillStyle = COLORS.gold
+            ctx.fillRect(50, summaryY + 8, 4, summaryH - 16)
+
+            // 标题
+            ctx.fillStyle = COLORS.gold
+            ctx.font = '26px sans-serif'
+            ctx.textAlign = 'left'
+            ctx.fillText('✨ 综合解读', 50 + 32, summaryY + 32 + 30)
+
+            // 正文
+            ctx.fillStyle = COLORS.textBody
+            ctx.font = '22px sans-serif'
+            displaySummaryLines.forEach((line, li) => {
+              ctx.fillText(line, 50 + 32, summaryY + 32 + 50 + 12 + li * 44 + 24)
+            })
+          }
+
+          // 8. 底部装饰
+          ctx.fillStyle = COLORS.gold
+          ctx.fillRect(60, footerY, POSTER_W - 120, 2)
+
+          ctx.fillStyle = COLORS.textMuted
+          ctx.font = '22px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText('命运之轮 · 塔罗占卜', POSTER_W / 2, footerY + 50)
+          ctx.fillText(data.date, POSTER_W / 2, footerY + 80)
+
+          // 9. 导出
+          clearTimeout(timeout)
+          console.log('[MiniProgram] Drawing complete, exporting in 300ms...')
+          setTimeout(() => {
+            uni.canvasToTempFilePath({
+              canvas: canvas as any,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              height: canvas.height,
+              destWidth: canvas.width * SCALE,
+              destHeight: canvas.height * SCALE,
+              fileType: 'png',
+              quality: 0.95,
+              success: (res: any) => {
+                console.log('[MiniProgram] Export success:', res.tempFilePath)
+                if (!settled) {
+                  settled = true
+                  resolve({
+                    url: res.tempFilePath,
+                    width: canvas.width * SCALE,
+                    height: canvas.height * SCALE,
+                  })
+                }
+              },
+              fail: (err: any) => {
+                console.log('[MiniProgram] Export fail:', err)
+                if (!settled) {
+                  settled = true
+                  reject(err)
+                }
+              },
+            } as any)
+          }, 300)
+        } catch (e) {
+          console.log('[MiniProgram] Drawing error:', e)
+          if (!settled) {
+            settled = true
+            clearTimeout(timeout)
+            reject(e)
+          }
+        }
+      })
+      .exec()
   })
 }

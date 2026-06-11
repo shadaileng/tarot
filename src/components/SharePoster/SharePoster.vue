@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, getCurrentInstance } from 'vue'
 import type { DrawnCard } from '@/types'
 import { generatePoster } from '@/utils/poster'
 import type { PosterData } from '@/utils/poster'
@@ -9,7 +9,6 @@ const props = defineProps<{
   cards: DrawnCard[]
   question: string
   spreadName: string
-  /** AI 综合解读全文（含各牌解读 + ✨ 综合解读部分） */
   interpretation?: string
 }>()
 
@@ -21,16 +20,30 @@ const emit = defineEmits<{
 const posterReady = ref(false)
 const posterUrl = ref('')
 const isSaving = ref(false)
+const posterError = ref('')
 const canvasId = 'share-poster-canvas'
 
-/** 海报尺寸（用于模板 canvas 占位） */
+const componentScope = getCurrentInstance()?.proxy
+
 const posterW = 750
 const minPosterH = 1334
 
+const contentW = ref(300)
+onMounted(() => {
+  const sys = uni.getSystemInfoSync()
+  const winW = sys.windowWidth || 375
+  const pr = winW / 750
+  const maxModalW = 600 * pr
+  const maxContentW = winW - 80 * pr
+  contentW.value = Math.floor(Math.min(maxModalW, maxContentW))
+})
+
 /** 使用统一海报生成入口 */
 async function generatePosterImage() {
+  console.log('[SharePoster] generatePosterImage called, visible=', props.visible, 'posterReady=', posterReady.value)
   if (posterReady.value) return
 
+  posterError.value = ''
   try {
     const data: PosterData = {
       cards: props.cards,
@@ -40,11 +53,14 @@ async function generatePosterImage() {
       date: new Date().toLocaleDateString('zh-CN'),
     }
 
-    const result = await generatePoster(data, { canvasId })
+    console.log('[SharePoster] calling generatePoster...')
+    const result = await generatePoster(data, { canvasId, componentScope })
+    console.log('[SharePoster] generatePoster success, url=', result.url)
     posterUrl.value = result.url
     posterReady.value = true
   } catch (e) {
-    console.error('生成海报失败:', e)
+    console.log('[SharePoster] generatePoster catch, error=', e)
+    posterError.value = '生成失败，请重试'
   }
 }
 
@@ -119,13 +135,22 @@ watch(
     if (val) {
       posterReady.value = false
       posterUrl.value = ''
-      nextTick(() => generatePosterImage())
+      posterError.value = ''
+      nextTick(() => setTimeout(() => generatePosterImage(), 300))
     }
   },
 )
 </script>
 
 <template>
+  <!-- Canvas 始终在 DOM 中（不在弹窗 v-if 内），确保微信原生组件初始化就绪 -->
+  <canvas
+    :id="canvasId"
+    type="2d"
+    class="poster-canvas"
+    :style="{ width: `${posterW}px`, height: `${minPosterH + 1200}px` }"
+  />
+
   <view v-if="visible" class="poster-overlay" @click.self="emit('close')">
     <view class="poster-modal">
       <!-- 顶部栏 -->
@@ -136,27 +161,24 @@ watch(
         </view>
       </view>
 
-      <!-- 加载中 -->
-      <view v-if="!posterReady" class="poster-loading">
-        <view class="loading-spinner" />
-        <text class="loading-text">正在生成海报...</text>
+      <!-- 居中加载（absolute） / scroll-view + 显式图片宽度（绕过微信 width:100% 计算异常） -->
+      <view class="poster-body">
+        <view v-if="!posterReady" class="poster-loading">
+          <view v-if="!posterError" class="loading-spinner" />
+          <text class="loading-text">{{ posterError || '正在生成海报...' }}</text>
+          <view v-if="posterError" class="poster-retry" @click="generatePosterImage">
+            <text>点击重试</text>
+          </view>
+        </view>
+
+        <scroll-view v-else class="poster-body-scroll" scroll-y>
+          <image
+            :src="posterUrl"
+            mode="widthFix"
+            :style="{ width: contentW + 'px' }"
+          />
+        </scroll-view>
       </view>
-
-      <!-- 海报图片 -->
-      <image
-        v-if="posterUrl"
-        class="poster-image"
-        :src="posterUrl"
-        mode="widthFix"
-      />
-
-      <!-- Canvas 隐藏画布 -->
-      <canvas
-        :id="canvasId"
-        canvas-id="share-poster-canvas"
-        class="poster-canvas"
-        :style="{ width: `${posterW}px`, height: `${minPosterH + 1200}px` }"
-      />
 
       <!-- 操作按钮 -->
       <view v-if="posterReady" class="poster-actions">
@@ -192,13 +214,35 @@ watch(
   max-height: 90vh;
   background: $bg-secondary;
   border-radius: $radius-lg;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+}
+
+.poster-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+// 加载中（absolute 撑满 body，居中）
+.poster-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+// 图片 scroll-view（填满 body，显式宽度由 JS 绑定）
+.poster-body-scroll {
+  width: 100%;
+  height: 100%;
 }
 
 .poster-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -224,11 +268,6 @@ watch(
 
 // 加载中
 .poster-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 120rpx 0;
 }
 
 .loading-spinner {
@@ -250,23 +289,39 @@ watch(
   color: $text-muted;
 }
 
-// 海报图片
+.poster-retry {
+  margin-top: 20rpx;
+  padding: 12rpx 32rpx;
+  border: 2rpx solid $accent-gold;
+  border-radius: $radius-md;
+  font-size: 24rpx;
+  color: $accent-gold;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+// 海报图片（宽度由 JS 显式绑定，避免微信 width:100% 在 scroll-view 内计算异常）
 .poster-image {
-  width: 100%;
   height: auto;
   border-radius: 0;
   display: block;
 }
 
-// 隐藏 canvas
+// 隐藏 canvas（保持视口内可见，否则微信原生 canvas 不渲染）
 .poster-canvas {
   position: fixed;
-  left: -9999px;
-  top: -9999px;
+  left: 0;
+  bottom: 0;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
 }
 
 // 操作按钮
 .poster-actions {
+  flex-shrink: 0;
   display: flex;
   gap: 24rpx;
   padding: 28rpx 32rpx;

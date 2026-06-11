@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, nextTick } from 'vue'
-import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { useTarotStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
@@ -140,23 +139,6 @@ watch(allFlipped, (flipped) => {
   }
 })
 
-// ========== 微信分享 ==========
-// #ifdef MP-WEIXIN
-onShareAppMessage(() => {
-  const cardNames = reading.value?.cards.map((c) => c.card.name).join('、') ?? ''
-  return {
-    title: `🔮 塔罗占卜：${cardNames}`,
-    path: '/pages/index/index',
-  }
-})
-
-onShareTimeline(() => {
-  return {
-    title: '🔮 塔罗牌占卜 - 探索命运的奥秘',
-    query: '',
-  }
-})
-// #endif
 </script>
 
 <template>

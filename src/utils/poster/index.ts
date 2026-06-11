@@ -25,11 +25,11 @@ let posterCanvasInstance = 0
  */
 export async function generatePoster(
   data: PosterData,
-  options?: { canvasId?: string },
+  options?: { canvasId?: string; componentScope?: any },
 ): Promise<PosterResult> {
   // #ifdef MP-WEIXIN
   const id = options?.canvasId || `${posterCanvasId}-${++posterCanvasInstance}`
-  return generateMiniProgramPoster(id, data)
+  return generateMiniProgramPoster(id, data, options?.componentScope)
   // #endif
 
   // #ifdef H5
