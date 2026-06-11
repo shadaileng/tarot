@@ -142,13 +142,19 @@ watch(
         <text class="loading-text">正在生成海报...</text>
       </view>
 
-      <!-- 海报图片 -->
-      <image
+      <!-- 海报图片（可滚动区域） -->
+      <scroll-view
         v-if="posterUrl"
-        class="poster-image"
-        :src="posterUrl"
-        mode="widthFix"
-      />
+        class="poster-scroll"
+        scroll-y
+        :show-scrollbar="true"
+      >
+        <image
+          class="poster-image"
+          :src="posterUrl"
+          mode="widthFix"
+        />
+      </scroll-view>
 
       <!-- Canvas 隐藏画布 -->
       <canvas
@@ -189,10 +195,10 @@ watch(
 .poster-modal {
   width: 100%;
   max-width: 600rpx;
+  max-height: 90vh;
   background: $bg-secondary;
   border-radius: $radius-lg;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -249,11 +255,18 @@ watch(
   color: $text-muted;
 }
 
+// 海报滚动区域
+.poster-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
 // 海报图片
 .poster-image {
   width: 100%;
   height: auto;
   border-radius: 0;
+  display: block;
 }
 
 // 隐藏 canvas
