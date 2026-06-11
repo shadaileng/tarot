@@ -135,66 +135,90 @@ async function generatePoster() {
       const row = Math.floor(i / cols)
       const cx = startX + col * (cardW + cardGap)
       const cy = cardAreaY + row * (cardH + rowGap)
+      const isReversed = item.orientation === 'reversed'
 
-      // 卡片背景
-      ctx.fillStyle = '#16213e'
-      roundRect(ctx, cx, cy, cardW, cardH, 12)
-      ctx.fill()
+      // 卡片背景（根据花色使用牌库样式渐变）
+      const cardType = item.card.type
+      const cardGradient = getCardGradient(cardType)
+      const cardBorderColor = getCardBorderColor(cardType)
+
+      // 用渐变填充
+      fillGradient(ctx, cx, cy, cardW, cardH, 12, cardGradient)
 
       // 卡片边框
-      ctx.strokeStyle = 'rgba(201,169,110,0.3)'
+      ctx.strokeStyle = cardBorderColor
       ctx.lineWidth = 2
       roundRect(ctx, cx, cy, cardW, cardH, 12)
       ctx.stroke()
 
-      // 根据卡片高度动态计算各元素的垂直位置
+      // 牌库风格的中央占位符区域
+      const placeholderCY = cy + cardH * 0.3
+      const placeholderH = cardH * 0.35
+
+      // 占位符区域背景（半透明暗色）
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      roundRect(ctx, cx + cardW * 0.15, placeholderCY - 20, cardW * 0.7, placeholderH + 40, 8)
+      ctx.fill()
+
+      // 罗马数字/数字（大阿卡纳用罗马数字，小阿卡纳用数字）
+      ctx.textAlign = 'center'
+      if (cardType === 'major') {
+        const romanNumerals = ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI']
+        ctx.fillStyle = 'rgba(201,169,110,0.7)'
+        ctx.font = `bold ${Math.floor(cardW * 0.18)}px Georgia, "Times New Roman", serif`
+        ctx.fillText(romanNumerals[item.card.number] || '', cx + cardW / 2, placeholderCY)
+      } else {
+        ctx.fillStyle = 'rgba(232,213,183,0.5)'
+        ctx.font = `bold ${Math.floor(cardW * 0.22)}px sans-serif`
+        // 显示牌名最后一位数字（如"权杖10"→"10"，取数字部分）
+        const numMatch = item.card.name.match(/(\d+)$/)
+        ctx.fillText(numMatch ? numMatch[1] : item.card.name.slice(-1), cx + cardW / 2, placeholderCY)
+      }
+
+      // 花色符号
+      ctx.fillStyle = 'rgba(201,169,110,0.4)'
+      ctx.font = `${Math.floor(cardW * 0.16)}px sans-serif`
+      const suitSymbol = getCardSuitSymbol(cardType)
+      ctx.fillText(suitSymbol, cx + cardW / 2, placeholderCY + Math.floor(cardW * 0.14))
+
+      // 如果是逆位，旋转占位符区域
+      if (isReversed) {
+        // 保存上下文，在占位符区域画逆位标记
+        ctx.fillStyle = 'rgba(220,100,80,0.8)'
+        ctx.font = `bold ${Math.floor(cardW * 0.13)}px sans-serif`
+        ctx.fillText('▼ 逆位', cx + cardW / 2, placeholderCY + placeholderH + 30)
+      }
+
+      // 卡片底部信息区
+      const infoY = cy + cardH * 0.72
       const padding = 16
-      const posY = cy + padding + 20      // 位置标签
-      const nameY = posY + 32             // 牌名
-      const oriY = nameY + 28             // 正逆位标签顶部
-      const oriH = 24                     // 正逆位标签高度
-      const kwY = oriY + oriH + 20        // 关键词
-      const meaningStartY = kwY + 20      // 解读文字起始
-      const meaningAvailableH = cardH - (meaningStartY - cy) - padding
-      const meaningMaxLines = Math.max(1, Math.floor(meaningAvailableH / meaningLineHeight))
 
       // 位置标签
+      ctx.textAlign = 'left'
       ctx.fillStyle = '#c9a96e'
       ctx.font = 'bold 18px sans-serif'
-      ctx.textAlign = 'left'
-      ctx.fillText(item.position, cx + padding, posY)
+      ctx.fillText(item.position, cx + padding, infoY)
 
       // 牌名（动态字号）
       ctx.fillStyle = '#e8d5b7'
       ctx.font = `bold ${nameFontSize}px sans-serif`
-      ctx.fillText(item.card.name, cx + padding, nameY)
-
-      // 正逆位
-      const isReversed = item.orientation === 'reversed'
-      ctx.font = 'bold 16px sans-serif'
-      const oriText = isReversed ? '逆位' : '正位'
-      const oriW = ctx.measureText(oriText).width
-      ctx.fillStyle = isReversed ? 'rgba(220,100,80,0.85)' : 'rgba(10,200,120,0.85)'
-      roundRect(ctx, cx + padding, oriY, oriW + 14, oriH, 6)
-      ctx.fill()
-      ctx.fillStyle = '#fff'
-      ctx.textAlign = 'center'
-      ctx.fillText(oriText, cx + padding + oriW / 2 + 7, oriY + 17)
+      ctx.fillText(item.card.name, cx + padding, infoY + 28)
 
       // 关键词
-      ctx.textAlign = 'left'
       ctx.fillStyle = '#c9a96e'
       ctx.font = '16px sans-serif'
-      const kwText = item.card.keywords.slice(0, 3).join(' · ')
-      ctx.fillText(kwText, cx + padding, kwY)
+      const kwText = item.card.keywords.slice(0, 2).join(' · ')
+      ctx.fillText(kwText, cx + padding, infoY + 52)
 
-      // 解读文字（动态字号和行数限制，确保不超出卡片）
+      // 解读文字（简短版本）
       ctx.fillStyle = '#a89b8c'
       ctx.font = `${meaningFontSize}px sans-serif`
       const meaning = isReversed ? item.card.reversedMeaning : item.card.uprightMeaning
-      const meaningLines = wrapText(ctx, meaning, cardW - padding * 2, meaningFontSize)
+      const meaningMaxW = cardW - padding * 2
+      const meaningLines = wrapText(ctx, meaning, meaningMaxW, meaningFontSize)
+      const meaningMaxLines = Math.min(2, Math.floor((cardH - infoY - 52 - 8 - padding) / meaningLineHeight))
       meaningLines.slice(0, meaningMaxLines).forEach((line, li) => {
-        ctx.fillText(line, cx + padding, meaningStartY + li * meaningLineHeight)
+        ctx.fillText(line, cx + padding, infoY + 52 + 20 + li * meaningLineHeight)
       })
     }
 
@@ -203,14 +227,14 @@ async function generatePoster() {
     let summaryH = 0
     if (summaryText) {
       const summaryPadding = 32
-      const summaryTitleH = 40
-      const summaryLineH = 36
+      const summaryTitleH = 50
+      const summaryLineH = 44
       const summaryCardW = posterW - 100
       const summaryMaxW = summaryCardW - 48 // 卡片内边距
       const summaryLines = wrapText(ctx, summaryText, summaryMaxW, 22)
       // 限制最多 20 行
       const displayLines = summaryLines.slice(0, 20)
-      summaryH = summaryTitleH + 16 + displayLines.length * summaryLineH + summaryPadding * 2
+      summaryH = summaryPadding + summaryTitleH + 12 + displayLines.length * summaryLineH + summaryPadding
 
       const summaryX = 50
       const summaryY = cardAreaY + rows * (cardH + rowGap) - rowGap + 40
@@ -237,7 +261,7 @@ async function generatePoster() {
         ctx.fillText(
           line,
           summaryX + summaryPadding,
-          summaryY + summaryPadding + summaryTitleH + 16 + li * summaryLineH + 22,
+          summaryY + summaryPadding + summaryTitleH + 12 + li * summaryLineH + 24,
         )
       })
 
@@ -382,6 +406,55 @@ function wrapText(ctx: any, text: string, maxWidth: number, fontSize: number): s
   }
   if (line) lines.push(line)
   return lines
+}
+
+// 辅助：根据花色获取渐变颜色对
+function getCardGradient(type: string): [string, string] {
+  const map: Record<string, [string, string]> = {
+    major: ['#3a1c61', '#1a0a3e'],
+    wands: ['#6b3a1f', '#2e1508'],
+    cups: ['#1e4d7b', '#0a1a3a'],
+    swords: ['#4a5568', '#1a202c'],
+    pentacles: ['#1e5c3a', '#0a1f12'],
+  }
+  return map[type] || map.major
+}
+
+// 辅助：根据花色获取边框颜色
+function getCardBorderColor(type: string): string {
+  const map: Record<string, string> = {
+    major: 'rgba(201,169,110,0.25)',
+    wands: 'rgba(230,126,34,0.25)',
+    cups: 'rgba(52,152,219,0.25)',
+    swords: 'rgba(160,174,192,0.25)',
+    pentacles: 'rgba(46,204,113,0.25)',
+  }
+  return map[type] || map.major
+}
+
+// 辅助：花色符号
+function getCardSuitSymbol(type: string): string {
+  const map: Record<string, string> = {
+    major: '★',
+    wands: '🪄',
+    cups: '🏆',
+    swords: '⚔️',
+    pentacles: '🪙',
+  }
+  return map[type] || '✦'
+}
+
+// 辅助：用线性渐变填充圆角矩形
+function fillGradient(ctx: any, x: number, y: number, w: number, h: number, r: number, colors: [string, string]) {
+  ctx.save()
+  roundRect(ctx, x, y, w, h, r)
+  ctx.clip()
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h)
+  gradient.addColorStop(0, colors[0])
+  gradient.addColorStop(1, colors[1])
+  ctx.fillStyle = gradient
+  ctx.fillRect(x, y, w, h)
+  ctx.restore()
 }
 
 // 辅助：圆角矩形
