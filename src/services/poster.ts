@@ -43,26 +43,35 @@ function toPosterPayload(data: PosterData) {
 export async function generatePoster(data: PosterData): Promise<string> {
   const payload = toPosterPayload(data)
 
-  const res = await fetch(`${POSTER_API}/poster`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  // uni.request 跨平台兼容 H5 / 小程序
+  const [err, res] = await new Promise<any[]>((resolve) => {
+    uni.request({
+      url: `${POSTER_API}/poster`,
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: payload,
+      responseType: 'arraybuffer',
+      success: (res) => resolve([null, res]),
+      fail: (err) => resolve([err, null]),
+    })
   })
 
-  if (!res.ok) {
-    const errBody = await res.text()
-    throw new Error(`海报生成失败 (${res.status}): ${errBody}`)
+  if (err) {
+    throw new Error(`海报生成失败: ${err.errMsg}`)
+  }
+  if (res.statusCode !== 200) {
+    throw new Error(`海报生成失败 (${res.statusCode})`)
   }
 
-  const blob = await res.blob()
+  const arrayBuffer = res.data as ArrayBuffer
 
   // #ifdef H5
+  const blob = new Blob([arrayBuffer], { type: 'image/png' })
   return URL.createObjectURL(blob)
   // #endif
 
   // #ifdef MP-WEIXIN
   // 小程序：保存为临时文件
-  const arrayBuffer = await blob.arrayBuffer()
   const fs = uni.getFileSystemManager()
   const tempPath = `${wx.env.USER_DATA_PATH}/poster-${Date.now()}.png`
   fs.writeFileSync(tempPath, arrayBuffer as unknown as string, 'binary')

@@ -51,6 +51,7 @@ tarot-miniprogram/
 - `shamefully-hoist=true` 是 UniApp 正确解析依赖的必要条件，不得删除
 - 微信小程序不支持某些 CSS（如 `position: fixed` 在 `scroll-view` 内异常）
 - 分包限制：单包 ≤ 2MB，总包 ≤ 20MB；图片资源放在 `src/static/`
+- 网络请求统一使用 `uni.request()`，**禁止使用** `fetch` 或 `wx.request`，确保跨平台兼容（`fetch` 在微信小程序运行时不可用）
 - `vite.config.ts` 通过 `additionalData` 全局注入 `variables.scss`，组件中直接使用变量无需 import
 
 ### easycom 组件自动注册
