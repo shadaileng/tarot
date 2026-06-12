@@ -157,7 +157,7 @@ watch(
       </view>
 
       <!-- 海报内容 -->
-      <view class="poster-body">
+      <view class="poster-body" :style="{ minHeight: bodyAvailableH + 'px' }">
         <view v-if="!posterReady" class="poster-loading">
           <view v-if="!posterError" class="loading-spinner" />
           <text class="loading-text">{{ posterError || '正在生成海报...' }}</text>
@@ -182,12 +182,12 @@ watch(
         </view>
       </view>
 
-      <!-- 操作按钮 -->
-      <view v-if="posterReady" class="poster-actions">
-        <view class="poster-btn save-btn" @click="savePoster">
+      <!-- 操作按钮 — 始终占据空间，按钮在就绪后才显示 -->
+      <view class="poster-actions">
+        <view v-if="posterReady" class="poster-btn save-btn" @click="savePoster">
           <text>{{ isSaving ? '保存中...' : '保存到相册' }}</text>
         </view>
-        <view class="poster-btn share-btn" @click="sharePoster">
+        <view v-if="posterReady" class="poster-btn share-btn" @click="sharePoster">
           <text>分享给好友</text>
         </view>
       </view>
