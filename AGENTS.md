@@ -115,9 +115,11 @@ npx wrangler pages dev dist/build/h5   # 支持 _redirects SPA 路由回退
 
 | 方式 | 说明 |
 |------|------|
-| `pnpm deploy:cf` | Wrangler CLI（推荐，构建 + 上传一键完成） |
+| `pnpm deploy:cf` | Wrangler CLI（构建 + 上传一键完成） |
+| 手动分步 | `pnpm build:h5` → `npx wrangler pages deploy dist/build/h5 --project-name=tarot` |
 | Dashboard 上传 | 构建后拖拽 `dist/build/h5/` 到 Cloudflare Pages Dashboard |
 | Git 集成 | 连接仓库，Build: `pnpm build:h5`，Output: `dist/build/h5` |
+| GitHub Actions | `.github/workflows/deploy.yml`，push `master` 自动部署，项目名通过 `vars.CLOUDFLARE_PAGES_NAME` 配置 |
 
 > `public/_redirects` 已配置 `/* /index.html 200`，Cloudflare Pages 自动生效。
 
