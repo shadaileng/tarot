@@ -35,12 +35,14 @@ onMounted(() => {
   const maxContentW = winW - 80 * pr
   contentW.value = Math.floor(Math.min(maxModalW, maxContentW))
 
-  // 计算 body 区域可用高度：弹窗最大高度 - overlay padding - header - actions
+  // 计算 body 区域可用高度：弹窗 90vh - header - actions
   const maxModalH = winH * 0.9
-  const overlayPadding = 80 * pr
   const headerH = 100 * pr
   const actionsH = 136 * pr
-  bodyAvailableH.value = Math.floor(maxModalH - overlayPadding - headerH - actionsH)
+  bodyAvailableH.value = Math.max(
+    Math.floor(maxModalH - headerH - actionsH),
+    300
+  )
 })
 
 /** 调用后端海报微服务生成海报 */
