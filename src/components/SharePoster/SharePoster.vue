@@ -23,13 +23,24 @@ const isSaving = ref(false)
 const posterError = ref('')
 
 const contentW = ref(300)
+const bodyAvailableH = ref(400)
+
 onMounted(() => {
   const sys = uni.getSystemInfoSync()
   const winW = sys.windowWidth || 375
+  const winH = sys.windowHeight || 667
   const pr = winW / 750
+
   const maxModalW = 600 * pr
   const maxContentW = winW - 80 * pr
   contentW.value = Math.floor(Math.min(maxModalW, maxContentW))
+
+  // 计算 body 区域可用高度：弹窗最大高度 - overlay padding - header - actions
+  const maxModalH = winH * 0.9
+  const overlayPadding = 80 * pr
+  const headerH = 100 * pr
+  const actionsH = 136 * pr
+  bodyAvailableH.value = Math.floor(maxModalH - overlayPadding - headerH - actionsH)
 })
 
 /** 调用后端海报微服务生成海报 */
@@ -153,13 +164,20 @@ watch(
           </view>
         </view>
 
-        <scroll-view v-else class="poster-body-scroll" scroll-y>
+        <view
+          v-else
+          class="poster-body-content"
+          :style="{
+            width: contentW + 'px',
+            height: bodyAvailableH + 'px',
+          }"
+        >
           <image
             :src="posterUrl"
-            mode="widthFix"
-            :style="{ width: contentW + 'px' }"
+            mode="aspectFit"
+            style="width: 100%; height: 100%;"
           />
-        </scroll-view>
+        </view>
       </view>
 
       <!-- 操作按钮 -->
@@ -205,6 +223,10 @@ watch(
   flex: 1;
   min-height: 0;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 // 加载中（absolute 撑满 body，居中）
@@ -217,10 +239,12 @@ watch(
   justify-content: center;
 }
 
-// 图片 scroll-view（填满 body，显式宽度由 JS 绑定）
-.poster-body-scroll {
-  width: 100%;
-  height: 100%;
+// 图片容器：显式宽高由 JS 绑定，配合 aspectFit 自适应缩放
+.poster-body-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .poster-header {
