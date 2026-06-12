@@ -126,8 +126,11 @@ npx wrangler pages deploy dist/build/h5 --project-name=tarot
 | Secrets | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token |
 | Secrets | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID |
 | Variables | `CLOUDFLARE_PAGES_NAME` | Cloudflare Pages 项目名（如 `tarot`） |
+| Variables | `VITE_API_URL` | 后台 API 地址（与 `.env.production` 中的值一致） |
 
 配置完成后，push 代码到 `master` 分支即可自动部署。
+
+> **注意**：`.env.production` 已被 `.gitignore` 排除，不会提交到仓库。GitHub Actions 构建时通过 `env:` 注入 `VITE_API_URL` 环境变量，等价于有 `.env.production` 文件的效果。
 
 > `public/_redirects` 已配置 SPA 路由回退规则，Cloudflare Pages 会自动读取。
 
