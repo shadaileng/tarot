@@ -2,11 +2,5 @@ allowBuilds:
   '@parcel/watcher': false
   core-js: false
   core-js-pure: false
-  esbuild: false
+  esbuild: true
   vue-demi: false
-ignoredBuiltDependencies:
-  - '@parcel/watcher'
-  - core-js
-  - core-js-pure
-  - esbuild
-  - vue-demi

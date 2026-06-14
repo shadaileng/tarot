@@ -31,10 +31,5 @@
     "typescript": "^5.4.2",
     "vite": "5.2.8",
     "weapp-tailwindcss": "^5.0.6"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }
