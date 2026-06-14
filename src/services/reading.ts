@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 
 /** 从 AI 解读文本中提取综合解读部分 */
 function extractComprehensiveFromAI(text: string): string | null {
-  const markerRegex = /✨\s*\*{0,2}综合解读/
+  const markerRegex = /✨\s*\*{0,2}综合解读\*{0,2}/
   const match = text.match(markerRegex)
   if (!match) return null
   const idx = match.index! + match[0].length
