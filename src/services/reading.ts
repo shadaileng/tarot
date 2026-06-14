@@ -5,6 +5,14 @@ import type { DrawnCard } from '@/types'
 // 从环境变量读取 Worker API 地址（Vite 构建时注入）
 const API_URL = import.meta.env.VITE_API_URL || ''
 
+/** 从 AI 解读文本中提取综合解读部分 */
+function extractComprehensiveFromAI(text: string): string | null {
+  const marker = '✨ 综合解读'
+  const idx = text.lastIndexOf(marker)
+  if (idx === -1) return null
+  return text.substring(idx + marker.length).trim()
+}
+
 export interface AIReadingResult {
   /** AI 生成的完整解读文本 */
   reading: string
@@ -12,6 +20,8 @@ export interface AIReadingResult {
   isAI: boolean
   /** AI 解读格式不完整，综合解读部分由本地补偿 */
   isPartialAI: boolean
+  /** 综合解读文本（优先 AI 生成的，没有则本地生成） */
+  comprehensiveInterpretation?: string
 }
 
 /**
@@ -44,15 +54,21 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
     const data = res.data as { reading?: string; incomplete?: boolean }
     if (data.reading) {
       if (data.incomplete && !data.reading.includes('✨ 综合解读')) {
+        // AI 解读不完整且缺少综合解读，用本地补偿
         const summary = generateSummaryOnly(question, cards)
         const compensated = data.reading + summary
-        return { reading: compensated, isAI: true, isPartialAI: true }
+        const localSummary = generateSummaryOnlyText(question, cards)
+        return { reading: compensated, isAI: true, isPartialAI: true, comprehensiveInterpretation: localSummary }
       }
-      return { reading: data.reading, isAI: true, isPartialAI: false }
+      // AI 解读完整或包含综合解读，提取 AI 的综合解读
+      const aiSummary = extractComprehensiveFromAI(data.reading)
+      return { reading: data.reading, isAI: true, isPartialAI: false, comprehensiveInterpretation: aiSummary || undefined }
     }
     throw new Error('Empty reading')
   } catch {
-    return { reading: generateLocalReading(question, cards), isAI: false, isPartialAI: false }
+    const localReading = generateLocalReading(question, cards)
+    const localSummary = generateSummaryOnlyText(question, cards)
+    return { reading: localReading, isAI: false, isPartialAI: false, comprehensiveInterpretation: localSummary }
   }
 }
 
@@ -135,6 +151,45 @@ function generateSummaryOnly(question: string, cards: DrawnCard[]): string {
   }
 
   return `\n\n✨ 综合解读（本地补充）\n${summaryBody}`
+}
+
+/**
+ * 仅生成综合解读文本（不含标记），用于 comprehensiveInterpretation 字段
+ */
+function generateSummaryOnlyText(question: string, cards: DrawnCard[]): string {
+  const category = detectCategory(question)
+  const uprightCount = cards.filter((c) => c.orientation === 'upright').length
+  const reversedCount = cards.length - uprightCount
+  const dominant = uprightCount >= reversedCount ? '积极' : '挑战'
+
+  const mainCard = cards[cards.length - 1]
+  const mainKeyword = mainCard.card.keywords[0]
+
+  if (category === 'love') {
+    return `关于你的感情问题「${question}」，从牌面整体来看，${dominant}的能量占主导。${
+      uprightCount >= reversedCount
+        ? '整体趋势向好，建议你保持开放和真诚的态度。'
+        : '虽然面临一些挑战，但逆位牌也暗示着成长的机会，勇敢面对问题才能突破。'
+    }${mainCard.card.name}作为关键牌，提醒你关注「${mainKeyword}」的力量。`
+  } else if (category === 'career') {
+    return `关于你的事业问题「${question}」，牌面呈现${dominant}的态势。${
+      uprightCount >= reversedCount
+        ? '发展方向是积极的，抓住机遇，脚踏实地前行。'
+        : '前路有阻碍，但这也是审视自身策略的好时机，调整方向后更能走稳。'
+    }关键在于「${mainKeyword}」——${mainCard.card.name}给你的启示。`
+  } else if (category === 'study') {
+    return `关于你的学业问题「${question}」，整体牌面${dominant}。${
+      uprightCount >= reversedCount
+        ? '学习状态良好，持续努力会有回报。'
+        : '可能遇到瓶颈，不妨换个方法或寻求帮助，逆位牌暗示突破需要新的视角。'
+    }记住「${mainKeyword}」的力量——这是${mainCard.card.name}给你的指引。`
+  } else {
+    return `关于「${question}」，牌面整体呈现${dominant}的能量。${
+      uprightCount >= reversedCount
+        ? '积极的力量引导你前行，保持信心和行动力。'
+        : '挑战虽然存在，但每张逆位牌都在提醒你需要调整的方面，勇敢面对才能转逆为顺。'
+    }让「${mainKeyword}」成为你的指引——这是${mainCard.card.name}给你的启示。`
+  }
 }
 
 /**

@@ -480,6 +480,7 @@ watch(allFlipped, (flipped) => {
       :question="reading.question"
       :spread-name="store.records[0]?.spreadName ?? ''"
       :interpretation="reading.interpretation"
+      :comprehensive-interpretation="reading.comprehensiveInterpretation"
       @close="posterVisible = false"
     />
   </view>

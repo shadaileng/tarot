@@ -10,6 +10,7 @@ const props = defineProps<{
   question: string
   spreadName: string
   interpretation?: string
+  comprehensiveInterpretation?: string
 }>()
 
 const emit = defineEmits<{
@@ -56,6 +57,7 @@ async function generatePosterImage() {
       question: props.question,
       spreadName: props.spreadName,
       interpretation: props.interpretation,
+      comprehensiveInterpretation: props.comprehensiveInterpretation,
       date: new Date().toLocaleDateString('zh-CN'),
     }
 

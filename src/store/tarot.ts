@@ -35,6 +35,8 @@ export const useTarotStore = defineStore('tarot', () => {
     isAIInterpretation: boolean
     /** AI 解读格式不完整，综合解读由本地补偿 */
     isPartialAIInterpretation: boolean
+    /** 综合解读文本（优先 AI 生成的，没有则本地生成） */
+    comprehensiveInterpretation?: string
   } | null>(null)
 
   const records = ref<ReadingRecord[]>([])
@@ -59,7 +61,7 @@ export const useTarotStore = defineStore('tarot', () => {
     }))
 
     const timestamp = Date.now()
-    currentReading.value = { cards, spreadType, question, useAI, interpretation: '', isAIInterpretation: false, isPartialAIInterpretation: false }
+    currentReading.value = { cards, spreadType, question, useAI, interpretation: '', isAIInterpretation: false, isPartialAIInterpretation: false, comprehensiveInterpretation: '' }
 
     // 保存到记录
     records.value.unshift({
@@ -94,6 +96,7 @@ export const useTarotStore = defineStore('tarot', () => {
           currentReading.value.interpretation = localReading
           currentReading.value.isAIInterpretation = false
           currentReading.value.isPartialAIInterpretation = false
+          currentReading.value.comprehensiveInterpretation = ''
         }
         return
       }
@@ -103,6 +106,7 @@ export const useTarotStore = defineStore('tarot', () => {
         currentReading.value.interpretation = result.reading
         currentReading.value.isAIInterpretation = result.isAI
         currentReading.value.isPartialAIInterpretation = result.isPartialAI
+        currentReading.value.comprehensiveInterpretation = result.comprehensiveInterpretation
       }
     } catch (e) {
       console.error('获取 AI 解读失败:', e)

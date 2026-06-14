@@ -29,6 +29,7 @@ function toPosterPayload(data: PosterData) {
     question: data.question,
     spreadName: data.spreadName,
     interpretation: data.interpretation,
+    comprehensiveInterpretation: data.comprehensiveInterpretation,
     date: data.date,
   }
 }
