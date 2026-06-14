@@ -52,15 +52,19 @@ pnpm build:h5
 
 ## 环境变量
 
-项目根目录的 `.env` 文件管理运行时配置：
+项目使用 `.env` 文件管理环境配置。`.env` 包含敏感数据（API 地址、AppID），**不会提交到仓库**。克隆项目后需复制模板并填入实际值：
+
+```bash
+cp .env.example .env
+```
 
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `VITE_API_URL` | AI 解读后台 API 地址（Vite 注入到 `import.meta.env`） | `https://tarot-reading-api.xxx.workers.dev` |
-| `TAROT_APPID` | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wx8011fd667bbb95dc` |
+| `TAROT_APPID` | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wxxxxxxxxxxxxxxx` |
 | `TAROT_URL_CHECK` | 是否校验域名白名单（构建时写入 `project.config.json`） | `false`（开发） / `true`（生产） |
 
-如需为生产环境设置不同的值，创建 `.env.production` 覆盖即可。
+如需为不同环境设置不同值，可创建 `.env.development` 或 `.env.production` 覆盖。所有 `.env*` 文件均被 `.gitignore` 忽略，不会提交到仓库。
 
 > `TAROT_APPID` 由 Vite 插件在构建时自动注入 `dist/*/mp-weixin/project.config.json`，无需手动修改 `src/manifest.json`。
 
@@ -166,7 +170,7 @@ tarot-miniprogram/
 │   ├── types/               # TypeScript 类型
 │   ├── styles/              # SCSS 变量与全局样式
 │   └── static/              # 静态资源
-├── .env                     # 环境变量（VITE_API_URL / TAROT_APPID）
+├── .env.example             # 环境变量模板
 ├── .npmrc                   # pnpm 配置
 ├── package.json
 ├── tsconfig.json

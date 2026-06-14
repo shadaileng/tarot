@@ -20,7 +20,7 @@ tarot-miniprogram/
 │   ├── static/       # 静态资源（图片）
 │   ├── pages.json    # 路由 & TabBar 配置
 │   └── manifest.json # 平台配置（AppID 由 env 注入，不硬编码）
-├── .env              # 环境变量（VITE_API_URL / TAROT_APPID）
+├── .env.example      # 环境变量模板
 ├── public/
 │   └── _redirects   # Cloudflare Pages SPA 路由回退规则
 ├── vite.config.ts
@@ -96,6 +96,12 @@ pnpm deploy:cf             # 构建 + 部署 H5 到 Cloudflare Pages（需先 np
 
 ## 环境变量
 
+`.env` 文件包含敏感数据（API 地址、AppID），**不会提交到仓库**。克隆项目后需复制 `.env.example` 为 `.env` 并填入实际值：
+
+```bash
+cp .env.example .env
+```
+
 | 变量 | 用途 | 说明 |
 |------|------|------|
 | `VITE_API_URL` | AI 解读后台地址 | 构建时注入 `import.meta.env.VITE_API_URL`，值在 `.env` 中配置 |
@@ -103,9 +109,8 @@ pnpm deploy:cf             # 构建 + 部署 H5 到 Cloudflare Pages（需先 np
 | `TAROT_APPID` | 微信小程序 AppID | 构建时由 `injectAppidPlugin` 自动写入 `project.config.json`，值在 `.env` 中配置 |
 | `TAROT_URL_CHECK` | 域名白名单校验开关 | 构建时由 `injectAppidPlugin` 写入 `project.config.json`，开发环境 `false`，生产环境 `true` |
 
-> 如需为不同环境设置不同值，可创建 `.env.development` 或 `.env.production` 覆盖。
-> **注意**：`.env.production` 和 `.env.development` 已被 `.gitignore` 排除，不会提交到仓库。
-> GitHub Actions 部署时，`VITE_API_URL` 需在仓库 **Settings → Secrets and variables → Actions → Variables** 中配置同名变量，workflow 中通过 `env:` 注入构建过程。
+如需为不同环境设置不同值，可创建 `.env.development` 或 `.env.production` 覆盖。所有 `.env*` 文件均被 `.gitignore` 忽略，不会提交到仓库。
+GitHub Actions 部署时，`VITE_API_URL` 需在仓库 **Settings → Secrets and variables → Actions → Variables** 中配置同名变量，workflow 中通过 `env:` 注入构建过程。
 
 ## 部署
 
