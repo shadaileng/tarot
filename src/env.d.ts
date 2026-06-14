@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   /** Cloudflare Worker API 地址 */
   readonly VITE_API_URL: string
+  /** 海报微服务地址 */
+  readonly VITE_POSTER_API: string
 }
 
 interface ImportMeta {

@@ -61,6 +61,7 @@ cp .env.example .env
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `VITE_API_URL` | AI 解读后台 API 地址（Vite 注入到 `import.meta.env`） | `https://tarot-reading-api.xxx.workers.dev` |
+| `VITE_POSTER_API` | 海报微服务地址（Vite 注入到 `import.meta.env`） | `http://localhost:3000` |
 | `TAROT_APPID` | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wxxxxxxxxxxxxxxx` |
 | `TAROT_URL_CHECK` | 是否校验域名白名单（构建时写入 `project.config.json`） | `false`（开发） / `true`（生产） |
 
