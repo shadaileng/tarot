@@ -7,10 +7,11 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 
 /** 从 AI 解读文本中提取综合解读部分 */
 function extractComprehensiveFromAI(text: string): string | null {
-  const marker = '✨ 综合解读'
-  const idx = text.lastIndexOf(marker)
-  if (idx === -1) return null
-  return text.substring(idx + marker.length).trim()
+  const markerRegex = /✨\s*\*{0,2}综合解读/
+  const match = text.match(markerRegex)
+  if (!match) return null
+  const idx = match.index! + match[0].length
+  return text.substring(idx).trim()
 }
 
 export interface AIReadingResult {
@@ -53,7 +54,7 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
 
     const data = res.data as { reading?: string; incomplete?: boolean }
     if (data.reading) {
-      if (data.incomplete && !data.reading.includes('✨ 综合解读')) {
+      if (data.incomplete && !/✨\s*\*{0,2}综合解读/.test(data.reading)) {
         // AI 解读不完整且缺少综合解读，用本地补偿
         const summary = generateSummaryOnly(question, cards)
         const compensated = data.reading + summary
