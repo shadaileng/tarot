@@ -18,7 +18,6 @@ type AnimPhase = 'idle' | 'shuffle' | 'deal' | 'done'
 const animPhase = ref<AnimPhase>('idle')
 const shuffleCards = ref<number[]>([])  // 洗牌中的牌索引
 const dealCards = ref<number[]>([])      // 已发牌到位置的索引
-const flyingCardIndex = ref(-1)          // 当前正在飞行的牌索引
 const dealComplete = ref(false)          // 发牌是否全部完成
 
 const cardCount = computed(() => currentSpread.value?.positions.length ?? 1)
@@ -83,6 +82,166 @@ const showDeck = computed(() => {
   return animPhase.value === 'shuffle' || (animPhase.value === 'deal' && deckRemaining.value > 0)
 })
 
+// ========== JS 帧驱动飞行动画 ==========
+
+/** 每张飞行牌的状态 */
+interface FlyingCardState {
+  index: number       // 牌在牌阵中的索引
+  progress: number    // 0 → 1 动画进度（已缓动）
+  fromX: number       // 起点 X（牌堆中心 = 0）
+  fromY: number       // 起点 Y（牌堆中心 = 0）
+  toX: number         // 目标 X（槽位偏移 rpx）
+  toY: number         // 目标 Y（槽位偏移 rpx）
+  toAngle: number     // 目标旋转角度
+  toScale: number     // 目标缩放
+}
+
+/** 当前飞行中的牌列表（支持多牌并行飞行） */
+const flyingCards = ref<FlyingCardState[]>([])
+
+/** 飞行中已到达目标的牌索引集合 */
+const flyCompleted = ref<Set<number>>(new Set())
+
+/**
+ * 三次贝塞尔曲线求解器（简化 Newton-Raphson 法）
+ * @param t - 原始时间进度 0~1
+ * @param p1x, p1y - 控制点1
+ * @param p2x, p2y - 控制点2
+ * @returns 缓动后的 y 值 0~1
+ */
+function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: number): number {
+  // 使用采样查找表避免 Newton-Raphson 迭代
+  // 精度：50 个采样点
+  const samples: Array<{ t: number; x: number; y: number }> = []
+  for (let i = 0; i <= 50; i++) {
+    const st = i / 50
+    const bx = 3 * (1 - st) * (1 - st) * st * p1x + 3 * (1 - st) * st * st * p2x + st * st * st
+    const by = 3 * (1 - st) * (1 - st) * st * p1y + 3 * (1 - st) * st * st * p2y + st * st * st
+    samples.push({ t: st, x: bx, y: by })
+  }
+
+  // 二分查找 x 值对应的 y
+  let lo = 0, hi = 50
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1
+    if (samples[mid].x < t) lo = mid
+    else hi = mid
+  }
+
+  // 线性插值
+  const loS = samples[lo], hiS = samples[hi]
+  const ratio = hiS.x === loS.x ? 0 : (t - loS.x) / (hiS.x - loS.x)
+  return loS.y + (hiS.y - loS.y) * ratio
+}
+
+/** 根据飞行状态计算内联 transform 样式 */
+function getFlyingStyle(card: FlyingCardState) {
+  const t = card.progress
+
+  // 线性插值位置
+  const x = card.fromX + (card.toX - card.fromX) * t
+  const y = card.fromY + (card.toY - card.fromY) * t
+
+  // 弧线偏移：抛物线 y = -4 * arcHeight * t * (1 - t)
+  // 根据牌阵类型调整弧线高度
+  const spreadType = selectedSpread.value
+  let arcHeight = 80 // rpx，默认弧线最高点
+  if (spreadType === 'three' && (card.index === 0 || card.index === 2)) {
+    arcHeight = 100 // 三牌两侧弧线更大
+  } else if (spreadType === 'celtic-cross') {
+    arcHeight = 60 // 凯尔特十字更紧凑
+  }
+  const arcY = -4 * arcHeight * t * (1 - t)
+
+  // 旋转插值：初始 -20deg → 目标角度
+  const startRotate = card.toX < -50 ? -25 : card.toX > 50 ? 25 : -20
+  const rot = card.toAngle * t + startRotate * (1 - t)
+
+  // 缩放：小 → 大 → 回弹到目标
+  let sc: number
+  if (t < 0.6) {
+    // 0.5 → 1.08
+    sc = 0.5 + t * (0.58 / 0.6)
+  } else if (t < 0.85) {
+    // 1.08 → 0.95（回弹）
+    const p = (t - 0.6) / 0.25
+    sc = 1.08 - p * 0.13
+  } else {
+    // 0.95 → 目标 scale
+    const p = (t - 0.85) / 0.15
+    sc = 0.95 + p * (card.toScale - 0.95)
+  }
+
+  // 透明度
+  const opacity = t < 0.12 ? t / 0.12 : 1
+
+  return {
+    left: '50%',
+    top: '42%',
+    marginLeft: '-70rpx',
+    marginTop: '-105rpx',
+    transform: `translate(${x}rpx, ${y + arcY}rpx) rotate(${rot}deg) scale(${sc})`,
+    opacity,
+    transition: 'none',
+  }
+}
+
+/** 启动单张牌的 JS 帧驱动飞行动画 */
+function startFlyAnimation(cardIndex: number) {
+  const layouts = slotLayouts.value
+  if (cardIndex >= layouts.length) return
+
+  const layout = layouts[cardIndex]
+
+  const state: FlyingCardState = {
+    index: cardIndex,
+    progress: 0,
+    fromX: 0,
+    fromY: 0,
+    toX: layout.x,
+    toY: layout.y,
+    toAngle: layout.angle,
+    toScale: layout.scale,
+  }
+
+  flyingCards.value.push(state)
+
+  const duration = 400 // ms
+  const startTime = Date.now()
+
+  const timer = setInterval(() => {
+    const elapsed = Date.now() - startTime
+    const rawT = Math.min(elapsed / duration, 1)
+
+    // cubic-bezier(0.22, 0.61, 0.36, 1) 缓动
+    const easedT = cubicBezier(rawT, 0.22, 0.61, 0.36, 1)
+    state.progress = easedT
+
+    if (rawT >= 1) {
+      clearInterval(timer)
+
+      // 落地：从飞行列表移除，加入已完成集合
+      dealCards.value = [...dealCards.value, cardIndex]
+      flyCompleted.value.add(cardIndex)
+      flyingCards.value = flyingCards.value.filter(c => c.index !== cardIndex)
+
+      if (dealCards.value.length >= cardCount.value) {
+        // 所有牌发完
+        dealComplete.value = true
+        setTimeout(() => {
+          animPhase.value = 'done'
+          navTo('/pages/result/result')
+        }, 800)
+      } else {
+        // 延迟 100ms 发下一张牌
+        setTimeout(() => {
+          startFlyAnimation(cardIndex + 1)
+        }, 100)
+      }
+    }
+  }, 16) // ~60fps
+}
+
 const tabList = [
   { pagePath: 'pages/index/index', text: '首页' },
   { pagePath: 'pages/draw/draw', text: '抽牌' },
@@ -106,37 +265,16 @@ function handleDraw() {
   animPhase.value = 'shuffle'
   dealCards.value = []
   dealComplete.value = false
-  flyingCardIndex.value = -1
+  flyingCards.value = []
+  flyCompleted.value = new Set()
   shuffleCards.value = Array.from({ length: Math.min(cardCount.value + 4, 10) }, (_, i) => i)
 
   // 洗牌 1.2s 后进入发牌阶段
   setTimeout(() => {
     animPhase.value = 'deal'
 
-    const total = cardCount.value
-    let dealt = 0
-
-    // 第一张牌立即开始飞行
-    flyingCardIndex.value = 0
-
-    const dealTimer = setInterval(() => {
-      dealCards.value = [...dealCards.value, dealt]
-      dealt++
-
-      if (dealt >= total) {
-        clearInterval(dealTimer)
-        flyingCardIndex.value = -1
-        dealComplete.value = true
-        // 发完停顿 800ms 后跳转
-        setTimeout(() => {
-          animPhase.value = 'done'
-          navTo('/pages/result/result')
-        }, 800)
-      } else {
-        // 下一张牌开始飞行
-        flyingCardIndex.value = dealt
-      }
-    }, 400)
+    // 第一张牌开始飞行（JS 帧驱动）
+    startFlyAnimation(0)
   }, 1200)
 }
 
@@ -220,7 +358,7 @@ function handleTabChange(path: string) {
             class="deal-slot"
             :class="{
               dealt: dealCards.includes(i),
-              'has-flying': flyingCardIndex === i,
+              'has-flying': flyingCards.some(c => c.index === i),
             }"
             :style="{
               transform: dealCards.includes(i)
@@ -248,17 +386,12 @@ function handleTabChange(path: string) {
           </view>
         </view>
 
-        <!-- 飞行中的牌（独立层，从牌堆飞向目标槽位） -->
+        <!-- 飞行中的牌（独立层，JS 帧驱动，支持多牌并行） -->
         <view
-          v-if="flyingCardIndex >= 0 && flyingCardIndex < cardCount"
+          v-for="card in flyingCards"
+          :key="card.index"
           class="flying-card"
-          :class="[`flying-to-${flyingCardIndex}`, `flying-spread-${currentSpread?.type}`]"
-          :style="{
-            '--target-x': slotLayouts[flyingCardIndex].x + 'rpx',
-            '--target-y': slotLayouts[flyingCardIndex].y + 'rpx',
-            '--fly-rotate': slotLayouts[flyingCardIndex].angle + 'deg',
-            '--fly-scale': slotLayouts[flyingCardIndex].scale,
-          }"
+          :style="getFlyingStyle(card)"
         >
           <view class="flying-card-face">
             <text class="flying-card-star">★</text>
@@ -794,22 +927,19 @@ function handleTabChange(path: string) {
 }
 
 // ==========================================
-// 飞行中的牌（独立层）
+// 飞行中的牌（独立层，JS 帧驱动内联 transform）
 // ==========================================
 .flying-card {
   position: fixed;
   width: 140rpx;
   height: 210rpx;
   z-index: 200;
-  // 起点：牌堆位置（屏幕中央偏上）
   left: 50%;
   top: 42%;
   margin-left: -70rpx;
   margin-top: -105rpx;
   pointer-events: none;
-
-  // 飞行轨迹动画
-  animation: flyArc 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  // 注意：transform/opacity 由 JS getFlyingStyle() 内联设置，不在此处定义
 }
 
 .flying-card-face {
@@ -884,129 +1014,5 @@ function handleTabChange(path: string) {
   }
 }
 
-// ==========================================
-// 飞行轨迹 Keyframe
-// 从牌堆位置（center）飞向目标槽位（--target-x, --target-y）
-// ==========================================
-@keyframes flyArc {
-  0% {
-    // 起点：牌堆位置
-    opacity: 0;
-    transform: translate(0, 0) rotate(-20deg) scale(0.5);
-  }
-  15% {
-    opacity: 1;
-  }
-  35% {
-    // 弧线最高点（向上抛）
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.2),
-      calc(var(--target-y, 0) * 0.3 - 60rpx)
-    ) rotate(calc(var(--fly-rotate, 0deg) * 0.2)) scale(0.85);
-  }
-  65% {
-    // 接近目标
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.85),
-      calc(var(--target-y, 0) * 0.9)
-    ) rotate(calc(var(--fly-rotate, 0deg) * 1.15)) scale(1.08);
-  }
-  85% {
-    // 落地反弹
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.9)) scale(0.95);
-  }
-  100% {
-    // 最终位置
-    opacity: 1;
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
-  }
-}
 
-// ==========================================
-// 牌阵差异化飞行微调
-// ==========================================
-
-// 单张：从中央直落
-.flying-spread-single.flying-to-0 {
-  // 使用默认弧线即可
-}
-
-// 三牌：两侧牌飞行弧度更大
-.flying-spread-three {
-  &.flying-to-0 {
-    // 左侧牌：向左飞出更大弧度
-    animation-name: flyArcLeft;
-  }
-  &.flying-to-2 {
-    // 右侧牌：向右飞出更大弧度
-    animation-name: flyArcRight;
-  }
-}
-
-@keyframes flyArcLeft {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) rotate(-25deg) scale(0.5);
-  }
-  15% { opacity: 1; }
-  35% {
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.15),
-      calc(var(--target-y, 0) * 0.3 - 80rpx)
-    ) rotate(-15deg) scale(0.8);
-  }
-  65% {
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.9),
-      calc(var(--target-y, 0) * 0.95)
-    ) rotate(calc(var(--fly-rotate, 0deg) * 1.2)) scale(1.08);
-  }
-  85% {
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.85)) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
-  }
-}
-
-@keyframes flyArcRight {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) rotate(25deg) scale(0.5);
-  }
-  15% { opacity: 1; }
-  35% {
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.15),
-      calc(var(--target-y, 0) * 0.3 - 80rpx)
-    ) rotate(15deg) scale(0.8);
-  }
-  65% {
-    opacity: 1;
-    transform: translate(
-      calc(var(--target-x, 0) * 0.9),
-      calc(var(--target-y, 0) * 0.95)
-    ) rotate(calc(var(--fly-rotate, 0deg) * 1.2)) scale(1.08);
-  }
-  85% {
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.85)) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
-  }
-}
-
-// 凯尔特十字：10张牌的发牌飞行更紧凑
-.flying-spread-celtic-cross {
-  .flying-card-face {
-    border-width: 1.5rpx;
-  }
-}
 </style>
