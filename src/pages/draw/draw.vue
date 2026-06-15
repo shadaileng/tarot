@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
-import type { SpreadType } from '@/types'
+import { ref, computed } from 'vue'
+import type { SpreadType, DrawnCard } from '@/types'
 import { spreadList, getSpread } from '@/data/spreads'
 import { useTarotStore } from '@/store'
 import { navTo } from '@/utils'
@@ -16,10 +16,72 @@ const currentSpread = computed(() => getSpread(selectedSpread.value))
 // ========== 动画状态机 ==========
 type AnimPhase = 'idle' | 'shuffle' | 'deal' | 'done'
 const animPhase = ref<AnimPhase>('idle')
-const shuffleCards = ref<number[]>([]) // 洗牌中的牌索引
-const dealCards = ref<number[]>([])     // 已发牌到位置的索引
+const shuffleCards = ref<number[]>([])  // 洗牌中的牌索引
+const dealCards = ref<number[]>([])      // 已发牌到位置的索引
+const flyingCardIndex = ref(-1)          // 当前正在飞行的牌索引
+const dealComplete = ref(false)          // 发牌是否全部完成
 
 const cardCount = computed(() => currentSpread.value?.positions.length ?? 1)
+
+/** 抽到的牌数据（动画期间使用） */
+const drawnCards = ref<DrawnCard[]>([])
+
+/** 牌阵位槽布局信息 */
+interface SlotLayout {
+  x: number
+  y: number
+  angle: number
+  scale: number
+}
+
+/** 根据牌阵类型计算各槽位的目标布局（rpx） */
+function getSlotLayouts(spreadType: SpreadType): SlotLayout[] {
+  switch (spreadType) {
+    case 'single':
+      return [
+        { x: 0, y: 0, angle: 0, scale: 1 },
+      ]
+    case 'three':
+      return [
+        { x: -220, y: 0, angle: -4, scale: 0.95 },
+        { x: 0, y: -30, angle: 0, scale: 1.05 },
+        { x: 220, y: 0, angle: 4, scale: 0.95 },
+      ]
+    case 'celtic-cross':
+      // 凯尔特十字：十字(6张) + 柱(4张) 布局
+      return [
+        // 十字核心
+        { x: -180, y: -180, angle: -2, scale: 0.92 },   // 0: 现状
+        { x: 180, y: -180, angle: 2, scale: 0.92 },      // 1: 挑战
+        { x: -180, y: -30, angle: -1, scale: 0.95 },     // 2: 过去
+        { x: 180, y: -30, angle: 1, scale: 0.95 },       // 3: 未来
+        { x: 0, y: -300, angle: 0, scale: 0.92 },        // 4: 上方（目标）
+        { x: 0, y: 0, angle: 0, scale: 1.0 },            // 5: 下方（基础）
+        // 右侧柱
+        { x: -180, y: 130, angle: 1, scale: 0.95 },      // 6: 建议
+        { x: 180, y: 130, angle: -1, scale: 0.95 },      // 7: 外界影响
+        { x: -180, y: 280, angle: 0, scale: 0.92 },      // 8: 希望与恐惧
+        { x: 180, y: 280, angle: 0, scale: 0.92 },       // 9: 最终结果
+      ]
+    default:
+      return Array.from({ length: cardCount.value }, () => ({ x: 0, y: 0, angle: 0, scale: 1 }))
+  }
+}
+
+/** 当前牌阵的槽位布局 */
+const slotLayouts = computed(() => getSlotLayouts(selectedSpread.value))
+
+/** 牌堆中剩余的牌数（视觉递减） */
+const deckRemaining = computed(() => {
+  if (animPhase.value === 'shuffle') return shuffleCards.value.length
+  if (animPhase.value === 'deal') return Math.max(0, cardCount.value - dealCards.value.length)
+  return 0
+})
+
+/** 发牌时牌堆是否可见 */
+const showDeck = computed(() => {
+  return animPhase.value === 'shuffle' || (animPhase.value === 'deal' && deckRemaining.value > 0)
+})
 
 const tabList = [
   { pagePath: 'pages/index/index', text: '首页' },
@@ -38,31 +100,43 @@ function handleDraw() {
 
   // 1. 先抽牌（数据层面）
   store.drawCards(selectedSpread.value, question.value, useAI.value)
+  drawnCards.value = store.currentReading?.cards ?? []
 
   // 2. 启动洗牌动画
   animPhase.value = 'shuffle'
+  dealCards.value = []
+  dealComplete.value = false
+  flyingCardIndex.value = -1
   shuffleCards.value = Array.from({ length: Math.min(cardCount.value + 4, 10) }, (_, i) => i)
 
   // 洗牌 1.2s 后进入发牌阶段
   setTimeout(() => {
     animPhase.value = 'deal'
-    dealCards.value = []
 
-    // 依次发牌：每张间隔 300ms
     const total = cardCount.value
     let dealt = 0
+
+    // 第一张牌立即开始飞行
+    flyingCardIndex.value = 0
+
     const dealTimer = setInterval(() => {
       dealCards.value = [...dealCards.value, dealt]
       dealt++
+
       if (dealt >= total) {
         clearInterval(dealTimer)
-        // 发完停顿 600ms 后跳转
+        flyingCardIndex.value = -1
+        dealComplete.value = true
+        // 发完停顿 800ms 后跳转
         setTimeout(() => {
           animPhase.value = 'done'
           navTo('/pages/result/result')
-        }, 600)
+        }, 800)
+      } else {
+        // 下一张牌开始飞行
+        flyingCardIndex.value = dealt
       }
-    }, 300)
+    }, 400)
   }, 1200)
 }
 
@@ -78,7 +152,7 @@ function handleTabChange(path: string) {
       <!-- 星空粒子背景 -->
       <view class="starfield">
         <view
-          v-for="i in 30"
+          v-for="i in 25"
           :key="i"
           class="star-particle"
           :style="{
@@ -93,7 +167,7 @@ function handleTabChange(path: string) {
         />
       </view>
 
-      <!-- 洗牌阶段 -->
+      <!-- ========== 洗牌阶段 ========== -->
       <view v-if="animPhase === 'shuffle'" class="anim-shuffle">
         <text class="shuffle-title">牌灵正在回应你的问题...</text>
         <view class="shuffle-deck">
@@ -104,6 +178,7 @@ function handleTabChange(path: string) {
             :style="{
               animationDelay: `${i * 0.08}s`,
               transform: `rotate(${(i - shuffleCards.length / 2) * 6}deg) translateY(${Math.abs(i - shuffleCards.length / 2) * 8}rpx)`,
+              zIndex: shuffleCards.length - i,
             }"
           >
             <view class="shuffle-card-inner">
@@ -113,36 +188,87 @@ function handleTabChange(path: string) {
         </view>
       </view>
 
-      <!-- 发牌阶段 -->
+      <!-- ========== 发牌阶段 ========== -->
       <view v-if="animPhase === 'deal' || animPhase === 'done'" class="anim-deal">
-        <text class="deal-title">命运之轮正在转动...</text>
+        <text class="deal-title">
+          {{ dealComplete ? '命运之轮已揭示答案' : '命运之轮正在转动...' }}
+        </text>
+
+        <!-- 中央牌堆（发牌过程中可见） -->
+        <view v-if="showDeck" class="deck-pile" :class="{ shrinking: animPhase === 'deal' }">
+          <view
+            v-for="i in deckRemaining"
+            :key="'deck-' + i"
+            class="deck-card-stack"
+            :style="{
+              transform: `translateY(${(i - 1) * 3}rpx) rotate(${(i - deckRemaining / 2) * 2}deg)`,
+              zIndex: i,
+              opacity: animPhase === 'deal' ? 0.5 : 1,
+            }"
+          >
+            <view class="deck-card-inner">
+              <text class="deck-card-star">★</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 牌阵槽位 -->
         <view class="deal-slots" :class="[`slots-${currentSpread?.type}`]">
           <view
             v-for="(pos, i) in currentSpread?.positions"
             :key="i"
             class="deal-slot"
-            :class="{ dealt: dealCards.includes(i), dealing: i === dealCards.length }"
+            :class="{
+              dealt: dealCards.includes(i),
+              'has-flying': flyingCardIndex === i,
+            }"
+            :style="{
+              transform: dealCards.includes(i)
+                ? `translate(${slotLayouts[i].x}rpx, ${slotLayouts[i].y}rpx)`
+                : '',
+            }"
           >
             <view class="deal-card-placeholder">
-              <view v-if="!dealCards.includes(i) && i !== dealCards.length" class="deal-empty">
+              <!-- 空槽：虚线框 + 发光点 -->
+              <view v-if="!dealCards.includes(i)" class="deal-empty">
                 <text class="deal-empty-glow">✦</text>
               </view>
+
+              <!-- 已发牌：牌背展示 -->
               <view v-else class="deal-card-back">
                 <view class="deal-card-inner">
                   <text class="deal-card-icon">★</text>
                   <text class="deal-card-moon">☽</text>
                 </view>
-                <!-- 飞入动画的牌 -->
-                <view
-                  v-if="i === dealCards.length && animPhase === 'deal'"
-                  class="deal-fly-card"
-                >
-                  <text class="fly-icon">★</text>
-                </view>
+                <!-- 落地光晕 -->
+                <view class="deal-card-land-glow" />
               </view>
             </view>
             <text class="deal-pos-label">{{ pos }}</text>
           </view>
+        </view>
+
+        <!-- 飞行中的牌（独立层，从牌堆飞向目标槽位） -->
+        <view
+          v-if="flyingCardIndex >= 0 && flyingCardIndex < cardCount"
+          class="flying-card"
+          :class="[`flying-to-${flyingCardIndex}`, `flying-spread-${currentSpread?.type}`]"
+          :style="{
+            '--target-x': slotLayouts[flyingCardIndex].x + 'rpx',
+            '--target-y': slotLayouts[flyingCardIndex].y + 'rpx',
+            '--fly-rotate': slotLayouts[flyingCardIndex].angle + 'deg',
+            '--fly-scale': slotLayouts[flyingCardIndex].scale,
+          }"
+        >
+          <view class="flying-card-face">
+            <text class="flying-card-star">★</text>
+            <text class="flying-card-moon">☽</text>
+          </view>
+
+          <!-- 拖尾粒子 x3 -->
+          <view class="fly-trail t1" />
+          <view class="fly-trail t2" />
+          <view class="fly-trail t3" />
         </view>
       </view>
     </view>
@@ -400,7 +526,9 @@ function handleTabChange(path: string) {
   100% { opacity: 1; transform: scale(1.2); }
 }
 
-// ========== 洗牌阶段 ==========
+// ==========================================
+// 洗牌阶段
+// ==========================================
 .anim-shuffle {
   display: flex;
   flex-direction: column;
@@ -458,12 +586,14 @@ function handleTabChange(path: string) {
   100% { transform: translateY(6rpx); }
 }
 
-// ========== 发牌阶段 ==========
+// ==========================================
+// 发牌阶段
+// ==========================================
 .anim-deal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 50rpx;
+  gap: 30rpx;
   z-index: 1;
   width: 100%;
   padding: 0 32rpx;
@@ -474,14 +604,57 @@ function handleTabChange(path: string) {
   font-size: 30rpx;
   color: $accent-gold;
   animation: textPulse 1.5s ease-in-out infinite;
+  text-align: center;
 }
 
+// -------- 中央牌堆（发牌过程中可见） --------
+.deck-pile {
+  position: relative;
+  width: 140rpx;
+  height: 210rpx;
+  transition: opacity 0.3s ease;
+
+  &.shrinking {
+    animation: deckFadeOut 0.5s ease forwards;
+  }
+}
+
+.deck-card-stack {
+  position: absolute;
+  width: 140rpx;
+  height: 210rpx;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.deck-card-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, $card-back-color, #3d2b6b);
+  border-radius: $radius-sm;
+  border: 2rpx solid rgba($accent-gold, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: $shadow-md;
+}
+
+.deck-card-star {
+  font-size: 48rpx;
+  color: rgba($accent-gold, 0.4);
+}
+
+@keyframes deckFadeOut {
+  to { opacity: 0; transform: scale(0.8); }
+}
+
+// -------- 牌阵槽位容器 --------
 .deal-slots {
   display: flex;
   gap: 24rpx;
   justify-content: center;
   flex-wrap: wrap;
   width: 100%;
+  position: relative;
 
   &.slots-single {
     .deal-slot { flex: 1; min-width: 200rpx; max-width: 240rpx; }
@@ -491,23 +664,29 @@ function handleTabChange(path: string) {
   }
   &.slots-celtic-cross {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20rpx 12rpx;
-    max-width: 560rpx;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20rpx 30rpx;
+    max-width: 500rpx;
     margin: 0 auto;
   }
 }
 
+// -------- 单个槽位 --------
 .deal-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14rpx;
-  transition: all 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
 
   &.dealt .deal-card-back {
     border-color: rgba($accent-gold, 0.5);
     box-shadow: 0 0 24rpx rgba($accent-gold, 0.2);
+  }
+
+  &.has-flying {
+    z-index: 5;
   }
 }
 
@@ -538,6 +717,7 @@ function handleTabChange(path: string) {
   50% { opacity: 0.4; transform: scale(1.1); }
 }
 
+// 已落地的牌背
 .deal-card-back {
   width: 100%;
   height: 100%;
@@ -550,6 +730,7 @@ function handleTabChange(path: string) {
   position: relative;
   overflow: hidden;
   box-shadow: $shadow-md;
+  animation: cardLand 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .deal-card-inner {
@@ -569,44 +750,35 @@ function handleTabChange(path: string) {
   color: rgba($accent-gold, 0.3);
 }
 
-// 飞入动画的牌
-.deal-fly-card {
+// 落地光晕
+.deal-card-land-glow {
   position: absolute;
-  top: -120rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100rpx;
-  height: 150rpx;
-  background: linear-gradient(135deg, $card-back-color, #3d2b6b);
+  inset: 0;
   border-radius: $radius-sm;
-  border: 2rpx solid rgba($accent-gold, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: $shadow-lg;
-  animation: flyDown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  z-index: 2;
+  background: radial-gradient(circle at center, rgba($accent-gold, 0.25) 0%, transparent 70%);
+  animation: landGlow 0.6s ease-out both;
 }
 
-.fly-icon {
-  font-size: 36rpx;
-  color: rgba($accent-gold, 0.7);
+@keyframes landGlow {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-@keyframes flyDown {
+@keyframes cardLand {
   0% {
-    top: -120rpx;
+    transform: scale(0.6) rotate(-10deg);
     opacity: 0;
-    transform: translateX(-50%) rotate(-15deg) scale(0.5);
   }
   60% {
+    transform: scale(1.08) rotate(2deg);
     opacity: 1;
-    transform: translateX(-50%) rotate(3deg) scale(1.05);
+  }
+  80% {
+    transform: scale(0.95) rotate(-0.5deg);
   }
   100% {
-    top: 50%;
+    transform: scale(1) rotate(0);
     opacity: 1;
-    transform: translate(-50%, -50%) rotate(0deg) scale(1);
   }
 }
 
@@ -614,10 +786,227 @@ function handleTabChange(path: string) {
   font-size: 22rpx;
   color: $text-muted;
   text-align: center;
+  transition: color 0.4s ease;
 }
 
-// 发牌完成后的强调
 .deal-slot.dealt .deal-pos-label {
   color: $accent-gold;
+}
+
+// ==========================================
+// 飞行中的牌（独立层）
+// ==========================================
+.flying-card {
+  position: fixed;
+  width: 140rpx;
+  height: 210rpx;
+  z-index: 200;
+  // 起点：牌堆位置（屏幕中央偏上）
+  left: 50%;
+  top: 42%;
+  margin-left: -70rpx;
+  margin-top: -105rpx;
+  pointer-events: none;
+
+  // 飞行轨迹动画
+  animation: flyArc 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.flying-card-face {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, $card-back-color, #3d2b6b);
+  border-radius: $radius-sm;
+  border: 2rpx solid rgba($accent-gold, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  box-shadow: 0 8rpx 40rpx rgba($accent-gold, 0.3);
+}
+
+.flying-card-star {
+  font-size: 52rpx;
+  color: rgba($accent-gold, 0.8);
+}
+
+.flying-card-moon {
+  font-size: 30rpx;
+  color: rgba($accent-gold, 0.4);
+}
+
+// 拖尾粒子
+.fly-trail {
+  position: absolute;
+  width: 12rpx;
+  height: 12rpx;
+  background: $accent-gold;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 12rpx $accent-gold;
+
+  &.t1 { animation: trailFade1 0.4s ease-out both; }
+  &.t2 { animation: trailFade2 0.35s ease-out both; animation-delay: 0.05s; }
+  &.t3 { animation: trailFade3 0.3s ease-out both; animation-delay: 0.1s; }
+}
+
+@keyframes trailFade1 {
+  0% {
+    opacity: 0.8;
+    transform: translate(-20rpx, -30rpx) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-60rpx, -80rpx) scale(0.1);
+  }
+}
+
+@keyframes trailFade2 {
+  0% {
+    opacity: 0.6;
+    transform: translate(10rpx, -20rpx) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(50rpx, -60rpx) scale(0.1);
+  }
+}
+
+@keyframes trailFade3 {
+  0% {
+    opacity: 0.5;
+    transform: translate(-5rpx, -10rpx) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30rpx, -40rpx) scale(0.1);
+  }
+}
+
+// ==========================================
+// 飞行轨迹 Keyframe
+// 从牌堆位置（center）飞向目标槽位（--target-x, --target-y）
+// ==========================================
+@keyframes flyArc {
+  0% {
+    // 起点：牌堆位置
+    opacity: 0;
+    transform: translate(0, 0) rotate(-20deg) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+  }
+  35% {
+    // 弧线最高点（向上抛）
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.2),
+      calc(var(--target-y, 0) * 0.3 - 60rpx)
+    ) rotate(calc(var(--fly-rotate, 0deg) * 0.2)) scale(0.85);
+  }
+  65% {
+    // 接近目标
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.85),
+      calc(var(--target-y, 0) * 0.9)
+    ) rotate(calc(var(--fly-rotate, 0deg) * 1.15)) scale(1.08);
+  }
+  85% {
+    // 落地反弹
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.9)) scale(0.95);
+  }
+  100% {
+    // 最终位置
+    opacity: 1;
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
+  }
+}
+
+// ==========================================
+// 牌阵差异化飞行微调
+// ==========================================
+
+// 单张：从中央直落
+.flying-spread-single.flying-to-0 {
+  // 使用默认弧线即可
+}
+
+// 三牌：两侧牌飞行弧度更大
+.flying-spread-three {
+  &.flying-to-0 {
+    // 左侧牌：向左飞出更大弧度
+    animation-name: flyArcLeft;
+  }
+  &.flying-to-2 {
+    // 右侧牌：向右飞出更大弧度
+    animation-name: flyArcRight;
+  }
+}
+
+@keyframes flyArcLeft {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-25deg) scale(0.5);
+  }
+  15% { opacity: 1; }
+  35% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.15),
+      calc(var(--target-y, 0) * 0.3 - 80rpx)
+    ) rotate(-15deg) scale(0.8);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.9),
+      calc(var(--target-y, 0) * 0.95)
+    ) rotate(calc(var(--fly-rotate, 0deg) * 1.2)) scale(1.08);
+  }
+  85% {
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.85)) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
+  }
+}
+
+@keyframes flyArcRight {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(25deg) scale(0.5);
+  }
+  15% { opacity: 1; }
+  35% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.15),
+      calc(var(--target-y, 0) * 0.3 - 80rpx)
+    ) rotate(15deg) scale(0.8);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x, 0) * 0.9),
+      calc(var(--target-y, 0) * 0.95)
+    ) rotate(calc(var(--fly-rotate, 0deg) * 1.2)) scale(1.08);
+  }
+  85% {
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(calc(var(--fly-rotate, 0deg) * 0.85)) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--target-x, 0), var(--target-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(var(--fly-scale, 1));
+  }
+}
+
+// 凯尔特十字：10张牌的发牌飞行更紧凑
+.flying-spread-celtic-cross {
+  .flying-card-face {
+    border-width: 1.5rpx;
+  }
 }
 </style>
