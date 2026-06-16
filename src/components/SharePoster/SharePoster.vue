@@ -23,6 +23,31 @@ const posterUrl = ref('')
 const isSaving = ref(false)
 const posterError = ref('')
 
+/** 检测系统主题 */
+function detectSystemTheme(): 'dark' | 'light' {
+  // #ifdef MP-WEIXIN
+  const sys = uni.getSystemInfoSync()
+  return sys.theme === 'dark' ? 'dark' : 'light'
+  // #endif
+  // #ifdef H5
+  if (window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return 'dark'
+  // #endif
+}
+
+const currentTheme = ref<'dark' | 'light'>(detectSystemTheme())
+
+/** 切换主题并重新生成海报 */
+function toggleTheme() {
+  currentTheme.value = currentTheme.value === 'dark' ? 'light' : 'dark'
+  posterReady.value = false
+  posterUrl.value = ''
+  posterError.value = ''
+  nextTick(() => generatePosterImage())
+}
+
 const contentW = ref(300)
 const bodyAvailableH = ref(400)
 
@@ -59,6 +84,7 @@ async function generatePosterImage() {
       interpretation: props.interpretation,
       comprehensiveInterpretation: props.comprehensiveInterpretation,
       date: new Date().toLocaleDateString('zh-CN'),
+      theme: currentTheme.value,
     }
 
     posterUrl.value = await generatePoster(data)
@@ -153,8 +179,13 @@ watch(
       <!-- 顶部栏 -->
       <view class="poster-header">
         <text class="poster-title">分享海报</text>
-        <view class="poster-close" @click="emit('close')">
-          <text>✕</text>
+        <view class="poster-header-right">
+          <view class="theme-toggle" @click="toggleTheme">
+            <text>{{ currentTheme === 'dark' ? '☀️' : '🌙' }}</text>
+          </view>
+          <view class="poster-close" @click="emit('close')">
+            <text>✕</text>
+          </view>
         </view>
       </view>
 
@@ -274,6 +305,25 @@ watch(
   justify-content: center;
   font-size: 32rpx;
   color: $text-muted;
+}
+
+.poster-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.theme-toggle {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+
+  &:active {
+    opacity: 0.7;
+  }
 }
 
 .loading-spinner {

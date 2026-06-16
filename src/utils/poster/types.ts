@@ -11,6 +11,8 @@ export interface PosterData {
   /** 综合解读文本（优先使用 AI 生成的，没有则使用本地补充的） */
   comprehensiveInterpretation?: string
   date: string
+  /** 海报主题: dark(深色) | light(浅色) */
+  theme?: 'dark' | 'light'
 }
 
 /** 海报卡片展示数据 */
