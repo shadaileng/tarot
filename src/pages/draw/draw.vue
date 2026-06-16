@@ -40,9 +40,9 @@ function getSlotLayouts(spreadType: SpreadType): SlotLayout[] {
       ]
     case 'three':
       return [
-        { x: -220, y: 0, angle: -4, scale: 0.95 },
-        { x: 0, y: -30, angle: 0, scale: 1.05 },
-        { x: 220, y: 0, angle: 4, scale: 0.95 },
+        { x: -90, y: 0, angle: -4, scale: 0.95 },
+        { x: 0, y: -20, angle: 0, scale: 1.05 },
+        { x: 90, y: 0, angle: 4, scale: 0.95 },
       ]
     case 'celtic-cross':
       // 归一化坐标：5×3 矩阵中的 (row, col)，与结果页 CSS Grid 参数一致
@@ -509,7 +509,19 @@ function handleTabChange(path: string) {
     .deal-slot { flex: 1; min-width: 200rpx; max-width: 240rpx; }
   }
   &.slots-three {
-    .deal-slot { flex: 1; min-width: 180rpx; max-width: 220rpx; }
+    position: relative;
+    width: 100%;
+    height: 360rpx;
+    flex-wrap: nowrap;
+    justify-content: center;
+
+    .deal-slot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-left: -70rpx;
+      margin-top: -105rpx;
+    }
   }
   &.slots-celtic-cross {
     // 5×3 矩阵布局，与结果页一致
