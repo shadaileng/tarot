@@ -23,21 +23,7 @@ const posterUrl = ref('')
 const isSaving = ref(false)
 const posterError = ref('')
 
-/** 检测系统主题 */
-function detectSystemTheme(): 'dark' | 'light' {
-  // #ifdef MP-WEIXIN
-  const sys = uni.getSystemInfoSync()
-  return sys.theme === 'dark' ? 'dark' : 'light'
-  // #endif
-  // #ifdef H5
-  if (window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
-  return 'dark'
-  // #endif
-}
-
-const currentTheme = ref<'dark' | 'light'>(detectSystemTheme())
+const currentTheme = ref<'dark' | 'light'>('dark')
 
 /** 切换主题并重新生成海报 */
 function toggleTheme() {
