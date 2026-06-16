@@ -13,6 +13,8 @@ export interface PosterData {
   date: string
   /** 海报主题: dark(深色) | light(浅色) */
   theme?: 'dark' | 'light'
+  /** 海报模板: default(H5默认) | wechat(小程序) */
+  template?: string
 }
 
 /** 海报卡片展示数据 */

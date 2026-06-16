@@ -32,6 +32,7 @@ function toPosterPayload(data: PosterData) {
     comprehensiveInterpretation: data.comprehensiveInterpretation,
     date: data.date,
     theme: data.theme,
+    template: data.template,
   }
 }
 

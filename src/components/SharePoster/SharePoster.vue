@@ -63,6 +63,13 @@ async function generatePosterImage() {
 
   posterError.value = ''
   try {
+    // #ifdef H5
+    const template = 'default'
+    // #endif
+    // #ifdef MP-WEIXIN
+    const template = 'wechat'
+    // #endif
+
     const data: PosterData = {
       cards: props.cards,
       question: props.question,
@@ -71,6 +78,7 @@ async function generatePosterImage() {
       comprehensiveInterpretation: props.comprehensiveInterpretation,
       date: new Date().toLocaleDateString('zh-CN'),
       theme: currentTheme.value,
+      template,
     }
 
     posterUrl.value = await generatePoster(data)
