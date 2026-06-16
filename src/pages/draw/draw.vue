@@ -442,10 +442,8 @@ function handleTabChange(path: string) {
   bottom: 0;
   background: $bg-primary;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 // 星空粒子
@@ -474,16 +472,16 @@ function handleTabChange(path: string) {
 // 发牌阶段
 // ==========================================
 .anim-deal {
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 30rpx;
   z-index: 1;
   width: 100%;
-  padding: 0 32rpx;
+  padding: 60rpx 32rpx;
   box-sizing: border-box;
-  margin-top: auto;
-  margin-bottom: auto;
 }
 
 .deal-title {
