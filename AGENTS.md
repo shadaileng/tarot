@@ -139,44 +139,4 @@ npx wrangler pages dev dist/build/h5   # 支持 _redirects SPA 路由回退
 
 > AppID 通过 `TAROT_APPID` 环境变量配置（详见「环境变量」），构建时由 `injectAppidPlugin` 自动注入 `project.config.json`，无需手动修改 `src/manifest.json`。
 
-## Git 提交规范
 
-本项目严格遵循 Conventional Commits 规范，AI 助手生成提交时须遵守以下约定。
-
-### 提交格式
-
-```
-<type>(miniprogram): <中文简短描述>
-
-<body>（可选，多行中文）
-```
-
-### type 与语义化版本
-
-| type | 用途 | 版本影响 |
-|------|------|---------|
-| `feat` | 新功能 | MINOR（次版本号 +1） |
-| `fix` | Bug 修复 | PATCH（修订号 +1） |
-| `feat!` / `fix!` / `BREAKING CHANGE` | 破坏性变更 | MAJOR（主版本号 +1） |
-| `docs` / `style` / `refactor` / `perf` / `test` / `chore` / `ci` | 其他 | 不变 |
-
-### 行为约束
-
-- **自动提交**：每次代码修改完成后自动 `git add <具体文件>` + `git commit`，不推送远程
-- **原子提交**：一个提交只做一件事，不混入无关改动
-- **版本号联动**：`feat`/`fix` 提交后自动 `npm version --no-git-tag-version` 修改 `package.json` 版本号，通过 `--amend` 合并到同一提交
-- **禁止行为**：禁止 `wip`/`tmp save` 等无意义消息；禁止提交 `console.log`、`debugger` 等调试代码；禁止 `git add .` 全量暂存
-- **amend 规范**：仅允许将版本号 bump / 漏提交的关联文件合并到同一提交；禁止跨任务合并；禁止 amend 已推送的提交
-
-### 示例
-
-```bash
-# 好 ✅
-git commit -m "feat(miniprogram): 新增塔罗牌分享海报生成功能"
-git commit -m "fix(miniprogram): 修复抽牌页面正逆位显示错误"
-
-# 不好 ❌
-git commit -m "update code"
-git commit -m "fix"
-git commit -m "wip"
-```
