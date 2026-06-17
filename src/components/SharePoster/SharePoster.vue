@@ -140,6 +140,19 @@ async function savePoster() {
   }
 }
 
+/** 遮罩层点击处理：仅当点击遮罩自身（非弹窗内容）时关闭 */
+function handleOverlayClick(e: any) {
+  // #ifdef MP-WEIXIN
+  // 小程序下 .self 修饰符不可靠，手动判断 target
+  if (e.target === e.currentTarget) {
+    emit('close')
+  }
+  // #endif
+  // #ifdef H5
+  emit('close')
+  // #endif
+}
+
 /** 分享海报 */
 function sharePoster() {
   if (!posterUrl.value) return
@@ -168,8 +181,8 @@ watch(
 </script>
 
 <template>
-  <view v-if="visible" class="poster-overlay" @click.self="emit('close')">
-    <view class="poster-modal">
+  <view v-if="visible" class="poster-overlay" @click="handleOverlayClick">
+    <view class="poster-modal" @click.stop>
       <!-- 顶部栏 -->
       <view class="poster-header">
         <text class="poster-title">分享海报</text>

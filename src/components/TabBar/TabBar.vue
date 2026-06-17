@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (e: 'change', path: string): void
 }>()
 
-// SVG 图标路径映射
+// SVG path 数据
 const iconPaths: Record<string, { normal: string; active: string }> = {
   'pages/index/index': {
     normal: 'M12 3L4 9v12h6v-7h4v7h6V9l-8-6zm0 1.5l6.5 4.87V19h-3.5v-7H9v7H5.5V9.37L12 4.5z',
@@ -37,6 +37,29 @@ const iconPaths: Record<string, { normal: string; active: string }> = {
 
 const activeColor = '#c9a96e'
 const inactiveColor = '#6b5e53'
+
+/**
+ * 将 SVG path d 和颜色拼成完整的 data URI，兼容微信小程序（不支持内联 svg/path 标签）
+ */
+function buildIconDataUri(pathD: string, color: string): string {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='${color}' d='${pathD}'/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+const iconStyles = computed(() => {
+  const styles: Record<string, { backgroundImage: string }> = {}
+  for (const tab of props.tabs) {
+    const isActive = props.currentPath === tab.pagePath
+    const color = isActive ? activeColor : inactiveColor
+    const pathD = isActive
+      ? iconPaths[tab.pagePath]?.active || ''
+      : iconPaths[tab.pagePath]?.normal || ''
+    styles[tab.pagePath] = {
+      backgroundImage: `url('${buildIconDataUri(pathD, color)}')`,
+    }
+  }
+  return styles
+})
 </script>
 
 <template>
@@ -48,17 +71,10 @@ const inactiveColor = '#6b5e53'
       :class="{ active: currentPath === tab.pagePath }"
       @click="emit('change', tab.pagePath)"
     >
-      <svg
+      <view
         class="tab-bar-icon"
-        viewBox="0 0 24 24"
-        :fill="currentPath === tab.pagePath ? activeColor : inactiveColor"
-      >
-        <path
-          :d="currentPath === tab.pagePath
-            ? iconPaths[tab.pagePath]?.active || ''
-            : iconPaths[tab.pagePath]?.normal || ''"
-        />
-      </svg>
+        :style="iconStyles[tab.pagePath] || {}"
+      />
       <text
         class="tab-bar-text"
         :style="{ color: currentPath === tab.pagePath ? activeColor : inactiveColor }"
@@ -111,6 +127,9 @@ const inactiveColor = '#6b5e53'
 .tab-bar-icon {
   width: 44rpx;
   height: 44rpx;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   transition: all 0.25s ease;
 }
 
