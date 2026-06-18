@@ -5,6 +5,14 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-06-18
+
+### Changed
+
+- 统一后端 API 地址：`VITE_API_URL` + `VITE_POSTER_API` 合并为 `VITE_BACKEND_API`
+- TabBar 图标组件优化：改用 `<image>` 标签替代 CSS `background-image`，修复微信小程序兼容性
+- 更新环境变量文档和 TypeScript 类型定义
+
 ## [1.1.3] - 2026-06-18
 
 ### Fixed
