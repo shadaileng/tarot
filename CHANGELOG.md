@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-06-18
+
+### Fixed
+
+- 修复分享海报弹窗按钮在部分机型被裁切不可见的问题（移除 JS 固定高度计算，改用 CSS flex 自适应 + overflow-y: auto）
+- 修复分享海报弹窗触摸穿透导致背景滚动的问题（overlay 添加 catchtouchmove）
+
 ## [1.1.2] - 2026-06-18
 
 ### Fixed
@@ -70,5 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 添加项目后继开发规划书 `ROADMAP.md`
 - 在 `AGENTS.md` 中新增 Git 提交规范章节
 
+[1.1.3]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.3
 [1.1.2]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.2
 [1.1.0]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.0

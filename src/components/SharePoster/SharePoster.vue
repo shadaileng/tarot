@@ -35,26 +35,15 @@ function toggleTheme() {
 }
 
 const contentW = ref(300)
-const bodyAvailableH = ref(400)
 
 onMounted(() => {
   const sys = uni.getSystemInfoSync()
   const winW = sys.windowWidth || 375
-  const winH = sys.windowHeight || 667
   const pr = winW / 750
 
   const maxModalW = 600 * pr
   const maxContentW = winW - 80 * pr
   contentW.value = Math.floor(Math.min(maxModalW, maxContentW))
-
-  // 计算 body 区域可用高度：弹窗 90vh - header - actions
-  const maxModalH = winH * 0.9
-  const headerH = 100 * pr
-  const actionsH = 136 * pr
-  bodyAvailableH.value = Math.max(
-    Math.floor(maxModalH - headerH - actionsH),
-    300
-  )
 })
 
 /** 调用后端海报微服务生成海报 */
@@ -181,7 +170,7 @@ watch(
 </script>
 
 <template>
-  <view v-if="visible" class="poster-overlay" @click="handleOverlayClick">
+  <view v-if="visible" class="poster-overlay" @click="handleOverlayClick" catchtouchmove>
     <view class="poster-modal" @click.stop>
       <!-- 顶部栏 -->
       <view class="poster-header">
@@ -197,7 +186,7 @@ watch(
       </view>
 
       <!-- 海报内容 -->
-      <view class="poster-body" :style="{ minHeight: bodyAvailableH + 'px' }">
+      <view class="poster-body">
         <view v-if="!posterReady" class="poster-loading">
           <view v-if="!posterError" class="loading-spinner" />
           <text class="loading-text">{{ posterError || '正在生成海报...' }}</text>
@@ -209,15 +198,12 @@ watch(
         <view
           v-else
           class="poster-body-content"
-          :style="{
-            width: contentW + 'px',
-            height: bodyAvailableH + 'px',
-          }"
+          :style="{ width: contentW + 'px' }"
         >
           <image
             :src="posterUrl"
-            mode="aspectFit"
-            style="width: 100%; height: 100%;"
+            mode="widthFix"
+            style="width: 100%;"
           />
         </view>
       </view>
@@ -258,7 +244,7 @@ watch(
   border-radius: $radius-lg;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  align-self: stretch;
 }
 
 .poster-body {
@@ -268,7 +254,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 // 加载中（absolute 撑满 body，居中）
@@ -281,12 +268,11 @@ watch(
   justify-content: center;
 }
 
-// 图片容器：显式宽高由 JS 绑定，配合 aspectFit 自适应缩放
+// 图片容器：宽度由 JS 绑定，图片 widthFix 自适应高度
 .poster-body-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  overflow: hidden;
 }
 
 .poster-header {
