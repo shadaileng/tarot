@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 interface TabItem {
   pagePath: string
   text: string
@@ -37,19 +35,11 @@ const iconFiles: Record<string, { normal: string; active: string }> = {
   },
 }
 
-const iconStyles = computed(() => {
-  const styles: Record<string, { backgroundImage: string }> = {}
-  for (const tab of props.tabs) {
-    const isActive = props.currentPath === tab.pagePath
-    const icons = iconFiles[tab.pagePath]
-    if (icons) {
-      styles[tab.pagePath] = {
-        backgroundImage: `url('${isActive ? icons.active : icons.normal}')`,
-      }
-    }
-  }
-  return styles
-})
+function getIconSrc(pagePath: string): string {
+  const isActive = props.currentPath === pagePath
+  const icons = iconFiles[pagePath]
+  return icons ? (isActive ? icons.active : icons.normal) : ''
+}
 </script>
 
 <template>
@@ -61,9 +51,10 @@ const iconStyles = computed(() => {
       :class="{ active: currentPath === tab.pagePath }"
       @click="emit('change', tab.pagePath)"
     >
-      <view
+      <image
         class="tab-bar-icon"
-        :style="iconStyles[tab.pagePath] || {}"
+        :src="getIconSrc(tab.pagePath)"
+        mode="aspectFit"
       />
       <text
         class="tab-bar-text"
@@ -117,9 +108,6 @@ const iconStyles = computed(() => {
 .tab-bar-icon {
   width: 44rpx;
   height: 44rpx;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
   transition: all 0.25s ease;
 }
 
