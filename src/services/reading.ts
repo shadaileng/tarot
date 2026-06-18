@@ -1,9 +1,9 @@
-// AI 解读服务 - 调用 Cloudflare Worker API，失败时降级到本地规则
+// AI 解读服务 - 调用统一后端 tarot-backend，失败时降级到本地规则
 
 import type { DrawnCard } from '@/types'
 
-// 从环境变量读取 Worker API 地址（Vite 构建时注入）
-const API_URL = import.meta.env.VITE_API_URL || ''
+// 从环境变量读取统一后端地址（Vite 构建时注入）
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
 /** 从 AI 解读文本中提取综合解读部分 */
 function extractComprehensiveFromAI(text: string): string | null {
@@ -31,7 +31,7 @@ export interface AIReadingResult {
 export async function fetchAIReading(question: string, cards: DrawnCard[]): Promise<AIReadingResult> {
   try {
     const res = await uni.request({
-      url: API_URL,
+      url: `${BACKEND_API}/reading`,
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
       data: {
@@ -45,7 +45,7 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
           keywords: c.card.keywords,
         })),
       },
-      timeout: 10000,
+      timeout: 20000,
     })
 
     if (res.statusCode !== 200) {
@@ -248,13 +248,13 @@ export interface BackendStatus {
  * 请求 GET /health 端点，返回 worker 和 gemini 各自的可用性
  */
 export async function checkBackendHealth(): Promise<BackendStatus> {
-  if (!API_URL) {
+  if (!BACKEND_API) {
     return { status: 'error', worker: 'down', gemini: 'unknown' }
   }
 
   try {
     const res = await uni.request({
-      url: `${API_URL}/health`,
+      url: `${BACKEND_API}/health`,
       method: 'GET',
       timeout: 5000,
     })

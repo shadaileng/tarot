@@ -1,11 +1,11 @@
 // ========== 海报生成服务 ==========
-// 统一调用后端海报微服务 API
+// 调用统一后端 tarot-backend 生成海报 PNG
 // 替代原有的 Canvas 2D / html2canvas 前端绘制方案
 
 import type { PosterData } from '@/utils/poster/types'
 import type { DrawnCard } from '@/types'
 
-const POSTER_API = import.meta.env.VITE_POSTER_API || 'http://localhost:3000'
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || 'http://localhost:3000').replace(/\/+$/, '')
 
 /** 将前端 DrawnCard 转为后端期望的扁平 PosterCard 格式 */
 function toPosterCardInput(card: DrawnCard) {
@@ -49,7 +49,7 @@ export async function generatePoster(data: PosterData): Promise<string> {
   // uni.request 跨平台兼容 H5 / 小程序
   const [err, res] = await new Promise<any[]>((resolve) => {
     uni.request({
-      url: `${POSTER_API}/poster`,
+      url: `${BACKEND_API}/poster`,
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
       data: payload,
