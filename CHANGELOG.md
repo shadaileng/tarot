@@ -5,11 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-06-18
+
+### Fixed
+
+- 修复微信小程序底部 Tab 图标仍不显示的问题（PNG 图片替换 SVG data URI，微信不支持 data:image/svg+xml 作为 CSS background-image）
+
 ## [1.1.1] - 2026-06-17
 
 ### Fixed
 
-- 修复底部 Tab 栏图标在微信小程序中不显示的问题（内联 SVG 标签替换为 data URI background-image）
+- 修复底部 Tab 栏图标在微信小程序中不显示的问题（内联 SVG 标签替换为 data URI background-image，部分环境仍不生效）
 - 修复分享海报弹窗点击内容区时误关闭的问题（.self 修饰符替换为手动 e.target 判断 + @click.stop）
 
 ## [1.1.0] - 2026-06-17
@@ -64,4 +70,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 添加项目后继开发规划书 `ROADMAP.md`
 - 在 `AGENTS.md` 中新增 Git 提交规范章节
 
+[1.1.2]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.2
 [1.1.0]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.0
