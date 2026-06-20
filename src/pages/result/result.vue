@@ -29,10 +29,10 @@ function onImgError(index: number) {
 const detailVisible = ref(false)
 const detailCard = ref<TarotCard | null>(null)
 const detailOrientation = ref<CardOrientation>('upright')
-const detailAiMeaning = ref('')
+const detailDeepMeaning = ref('')
 
-/** 从 interpretation 中提取指定牌的 AI 解读段落 */
-function extractCardAiMeaning(cardName: string, position: string): string {
+/** 从 interpretation 中提取指定牌的解读段落 */
+function extractCardDeepMeaning(cardName: string, position: string): string {
   const interpretation = reading.value?.interpretation
   if (!interpretation) return ''
 
@@ -62,7 +62,7 @@ function openDetail(card: TarotCard, orientation: CardOrientation) {
   detailOrientation.value = orientation
   // 从 reading 中查找该牌的 position
   const drawnItem = reading.value?.cards.find((c) => c.card.id === card.id)
-  detailAiMeaning.value = drawnItem ? extractCardAiMeaning(card.name, drawnItem.position) : ''
+  detailDeepMeaning.value = drawnItem ? extractCardDeepMeaning(card.name, drawnItem.position) : ''
   detailVisible.value = true
 }
 
@@ -132,7 +132,7 @@ watch(
   { immediate: true },
 )
 
-// 全部翻完后自动获取 AI 解读
+// 全部翻完后自动获取解读
 watch(allFlipped, (flipped) => {
   if (flipped && reading.value && !reading.value.interpretation) {
     store.fetchInterpretation()
@@ -396,18 +396,18 @@ watch(allFlipped, (flipped) => {
       <view v-if="allFlipped" class="reading-summary">
         <text class="summary-title">✨ 牌阵解读</text>
 
-        <!-- AI 个性化解读 -->
-        <view v-if="reading.interpretation" class="ai-reading">
-          <view class="ai-badge" :class="{ 'ai-badge-local': !reading.isAIInterpretation, 'ai-badge-partial': reading.isPartialAIInterpretation }">
-            <text>{{ reading.isAIInterpretation ? (reading.isPartialAIInterpretation ? '🤖 AI 解读（综合部分本地补充）' : '🤖 AI 个性化解读') : '📖 智能解读' }}</text>
+        <!-- 个性化解读 -->
+        <view v-if="reading.interpretation" class="reading-section">
+          <view class="reading-badge" :class="{ 'reading-badge-local': !reading.isOnlineInterpretation, 'reading-badge-partial': reading.isPartialOnlineInterpretation }">
+            <text>{{ reading.isOnlineInterpretation ? (reading.isPartialOnlineInterpretation ? '📖 深度解读（综合部分本地补充）' : '✨ 个性化解读') : '📖 本地解读' }}</text>
           </view>
-          <view class="ai-reading-content">
-            <text class="ai-reading-text">{{ reading.interpretation }}</text>
+          <view class="reading-content">
+            <text class="reading-text">{{ reading.interpretation }}</text>
           </view>
         </view>
 
-        <!-- AI 解读加载中 -->
-        <view v-else-if="store.isLoadingInterpretation" class="ai-loading">
+        <!-- 解读加载中 -->
+        <view v-else-if="store.isLoadingInterpretation" class="reading-loading">
           <view class="loading-dots">
             <view class="dot"></view>
             <view class="dot"></view>
@@ -468,7 +468,7 @@ watch(allFlipped, (flipped) => {
       :visible="detailVisible"
       :card="detailCard"
       :orientation="detailOrientation"
-      :ai-meaning="detailAiMeaning"
+      :deep-meaning="detailDeepMeaning"
       @close="closeDetail"
     />
 
@@ -939,12 +939,12 @@ watch(allFlipped, (flipped) => {
   text-align: center;
 }
 
-// AI 个性化解读
-.ai-reading {
+// 个性化解读
+.reading-section {
   margin-bottom: 28rpx;
 }
 
-.ai-badge {
+.reading-badge {
   display: inline-flex;
   align-items: center;
   padding: 6rpx 20rpx;
@@ -954,31 +954,31 @@ watch(allFlipped, (flipped) => {
   background: linear-gradient(135deg, #8b5cf6, #6366f1);
   margin-bottom: 20rpx;
 
-  &.ai-badge-local {
+  &.reading-badge-local {
     background: linear-gradient(135deg, $accent-gold, #d97706);
   }
 
-  &.ai-badge-partial {
+  &.reading-badge-partial {
     background: linear-gradient(135deg, #6366f1, #d97706);
   }
 }
 
-.ai-reading-content {
+.reading-content {
   background: rgba(139, 92, 246, 0.08);
   border-radius: $radius-sm;
   padding: 28rpx;
   border: 1rpx solid rgba(139, 92, 246, 0.15);
 }
 
-.ai-reading-text {
+.reading-text {
   font-size: 26rpx;
   color: $text-secondary;
   line-height: 1.8;
   white-space: pre-wrap;
 }
 
-// AI 加载中
-.ai-loading {
+// 解读加载中
+.reading-loading {
   display: flex;
   flex-direction: column;
   align-items: center;

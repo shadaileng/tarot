@@ -10,7 +10,7 @@ import TabBar from '@/components/TabBar/TabBar.vue'
 const store = useTarotStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
-const useAI = ref(true)
+const useOnlineReading = ref(true)
 
 const currentSpread = computed(() => getSpread(selectedSpread.value))
 
@@ -110,7 +110,7 @@ function handleDraw() {
   // #endif
 
   // 抽牌（数据层面）
-  store.drawCards(selectedSpread.value, question.value, useAI.value)
+  store.drawCards(selectedSpread.value, question.value, useOnlineReading.value)
   drawnCards.value = store.currentReading?.cards ?? []
 
   // 进入发牌阶段：所有槽位初始在底部
@@ -242,13 +242,13 @@ function handleTabChange(path: string) {
       <view class="question-wrap">
         <view class="section-title-row">
           <text class="section-title">默想你的问题</text>
-          <view class="ai-toggle">
-            <text class="ai-toggle-label">AI 解读</text>
+          <view class="online-toggle">
+            <text class="online-toggle-label">深度解读</text>
             <switch
-              :checked="useAI"
+              :checked="useOnlineReading"
               color="#c9a96e"
               style="transform: scale(0.7);"
-              @change="useAI = $event.detail.value"
+              @change="useOnlineReading = $event.detail.value"
             />
           </view>
         </view>
@@ -316,13 +316,13 @@ function handleTabChange(path: string) {
   margin-bottom: 0;
 }
 
-.ai-toggle {
+.online-toggle {
   display: flex;
   align-items: center;
   gap: 8rpx;
 }
 
-.ai-toggle-label {
+.online-toggle-label {
   font-size: 22rpx;
   color: $accent-gold;
 }

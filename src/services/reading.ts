@@ -1,12 +1,12 @@
-// AI 解读服务 - 调用统一后端 tarot-backend，失败时降级到本地规则
+// 深度解读服务 - 调用统一后端 tarot-backend，失败时降级到本地规则
 
 import type { DrawnCard } from '@/types'
 
 // 从环境变量读取统一后端地址（Vite 构建时注入）
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
-/** 从 AI 解读文本中提取综合解读部分 */
-function extractComprehensiveFromAI(text: string): string | null {
+/** 从解读文本中提取综合解读部分 */
+function extractComprehensive(text: string): string | null {
   const markerRegex = /✨\s*\*{0,2}综合解读\*{0,2}/
   const match = text.match(markerRegex)
   if (!match) return null
@@ -14,21 +14,21 @@ function extractComprehensiveFromAI(text: string): string | null {
   return text.substring(idx).trim()
 }
 
-export interface AIReadingResult {
-  /** AI 生成的完整解读文本 */
+export interface ReadingResult {
+  /** 生成的完整解读文本 */
   reading: string
-  /** 是否为 AI 生成（false 表示本地降级） */
-  isAI: boolean
-  /** AI 解读格式不完整，综合解读部分由本地补偿 */
-  isPartialAI: boolean
-  /** 综合解读文本（优先 AI 生成的，没有则本地生成） */
+  /** 是否在线生成（false 表示本地降级） */
+  isOnline: boolean
+  /** 解读格式不完整，综合解读部分由本地补偿 */
+  isPartialOnline: boolean
+  /** 综合解读文本（优先在线生成的，没有则本地生成） */
   comprehensiveInterpretation?: string
 }
 
 /**
- * 调用 AI 接口获取个性化解读
+ * 调用接口获取个性化解读
  */
-export async function fetchAIReading(question: string, cards: DrawnCard[]): Promise<AIReadingResult> {
+export async function fetchReading(question: string, cards: DrawnCard[]): Promise<ReadingResult> {
   try {
     const res = await uni.request({
       url: `${BACKEND_API}/reading`,
@@ -55,21 +55,21 @@ export async function fetchAIReading(question: string, cards: DrawnCard[]): Prom
     const data = res.data as { reading?: string; incomplete?: boolean }
     if (data.reading) {
       if (data.incomplete && !/✨\s*\*{0,2}综合解读/.test(data.reading)) {
-        // AI 解读不完整且缺少综合解读，用本地补偿
+        // 解读不完整且缺少综合解读，用本地补偿
         const summary = generateSummaryOnly(question, cards)
         const compensated = data.reading + summary
         const localSummary = generateSummaryOnlyText(question, cards)
-        return { reading: compensated, isAI: true, isPartialAI: true, comprehensiveInterpretation: localSummary }
+        return { reading: compensated, isOnline: true, isPartialOnline: true, comprehensiveInterpretation: localSummary }
       }
-      // AI 解读完整或包含综合解读，提取 AI 的综合解读
-      const aiSummary = extractComprehensiveFromAI(data.reading)
-      return { reading: data.reading, isAI: true, isPartialAI: false, comprehensiveInterpretation: aiSummary || undefined }
+      // 解读完整或包含综合解读，提取综合解读
+      const summary = extractComprehensive(data.reading)
+      return { reading: data.reading, isOnline: true, isPartialOnline: false, comprehensiveInterpretation: summary || undefined }
     }
     throw new Error('Empty reading')
   } catch {
     const localReading = generateLocalReading(question, cards)
     const localSummary = generateSummaryOnlyText(question, cards)
-    return { reading: localReading, isAI: false, isPartialAI: false, comprehensiveInterpretation: localSummary }
+    return { reading: localReading, isOnline: false, isPartialOnline: false, comprehensiveInterpretation: localSummary }
   }
 }
 
@@ -113,7 +113,7 @@ export function generateLocalReading(question: string, cards: DrawnCard[]): stri
 }
 
 /**
- * 仅生成本地综合解读（用于补偿 AI 缺失的综合解读部分），并标注「（本地补充）」
+ * 仅生成本地综合解读（用于补偿在线解读缺失的综合解读部分），并标注「（本地补充）」
  */
 function generateSummaryOnly(question: string, cards: DrawnCard[]): string {
   const category = detectCategory(question)
@@ -239,13 +239,13 @@ export interface BackendStatus {
   status: 'checking' | 'ok' | 'degraded' | 'error'
   /** Worker 是否可用 */
   worker: 'up' | 'down'
-  /** Gemini 是否可用 */
+  /** 后端解读引擎是否可用 */
   gemini: 'up' | 'down' | 'unconfigured' | 'unknown'
 }
 
 /**
  * 检测后台服务分层健康状态
- * 请求 GET /health 端点，返回 worker 和 gemini 各自的可用性
+ * 请求 GET /health 端点，返回服务各组件的可用性
  */
 export async function checkBackendHealth(): Promise<BackendStatus> {
   if (!BACKEND_API) {

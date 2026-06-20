@@ -8,7 +8,7 @@ export interface PosterData {
   question: string
   spreadName: string
   interpretation?: string
-  /** 综合解读文本（优先使用 AI 生成的，没有则使用本地补充的） */
+  /** 综合解读文本（优先使用在线生成的，没有则使用本地补充的） */
   comprehensiveInterpretation?: string
   date: string
   /** 海报主题: dark(深色) | light(浅色) */

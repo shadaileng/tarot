@@ -10,7 +10,7 @@ import TabBar from '@/components/TabBar/TabBar.vue'
 const store = useTarotStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
-const useAI = ref(true)
+const useOnlineReading = ref(true)
 
 // 后台分层健康状态
 const backendStatus = ref<BackendStatus>({ status: 'checking', worker: 'down', gemini: 'unknown' })
@@ -22,8 +22,8 @@ const backendClass = computed(() => backendStatus.value.status)
 const backendText = computed(() => {
   const s = backendStatus.value
   if (s.status === 'checking') return '正在检测服务...'
-  if (s.worker === 'up' && s.gemini === 'up') return 'AI 服务已连接'
-  if (s.worker === 'up' && s.gemini !== 'up') return 'AI 服务不可用，将使用本地解读'
+  if (s.worker === 'up' && s.gemini === 'up') return '深度解读服务已连接'
+  if (s.worker === 'up' && s.gemini !== 'up') return '深度解读服务不可用，将使用本地解读'
   return '服务不可用，将使用本地解读'
 })
 
@@ -61,7 +61,7 @@ function handleDraw() {
   // #ifdef MP-WEIXIN
   wx.vibrateShort({ type: 'medium' })
   // #endif
-  store.drawCards(selectedSpread.value, question.value, useAI.value)
+  store.drawCards(selectedSpread.value, question.value, useOnlineReading.value)
   navTo('/pages/result/result')
 }
 
@@ -128,15 +128,15 @@ function handleTabChange(path: string) {
 
     <!-- 问题输入 -->
     <view class="question-section">
-      <view class="section-title-row">
+        <view class="section-title-row">
         <text class="section-title">你想问什么？（选填）</text>
-        <view class="ai-toggle">
-          <text class="ai-toggle-label">AI 解读</text>
+        <view class="online-toggle">
+          <text class="online-toggle-label">深度解读</text>
           <switch
-            :checked="useAI"
+            :checked="useOnlineReading"
             color="#c9a96e"
             style="transform: scale(0.7);"
-            @change="useAI = $event.detail.value"
+            @change="useOnlineReading = $event.detail.value"
           />
         </view>
       </view>
@@ -312,13 +312,13 @@ function handleTabChange(path: string) {
   margin-bottom: 0;
 }
 
-.ai-toggle {
+.online-toggle {
   display: flex;
   align-items: center;
   gap: 8rpx;
 }
 
-.ai-toggle-label {
+.online-toggle-label {
   font-size: 22rpx;
   color: $accent-gold;
 }

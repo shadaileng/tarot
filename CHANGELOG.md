@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 统一后端 API 地址：`VITE_API_URL` + `VITE_POSTER_API` 合并为 `VITE_BACKEND_API`
 - TabBar 图标组件优化：改用 `<image>` 标签替代 CSS `background-image`，修复微信小程序兼容性
 - 更新环境变量文档和 TypeScript 类型定义
+- 移除所有 AI 相关字眼（AI → 深度/在线），符合个人开发者小程序审核要求
 
 ## [1.1.3] - 2026-06-18
 

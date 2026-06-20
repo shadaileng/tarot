@@ -6,15 +6,15 @@ const props = defineProps<{
   visible: boolean
   card: TarotCard | null
   orientation?: CardOrientation
-  /** AI 个性化解读文本 */
-  aiMeaning?: string
+  /** 个性化解读文本 */
+  deepMeaning?: string
 }>()
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const activeTab = ref<'upright' | 'reversed' | 'ai'>('upright')
+const activeTab = ref<'upright' | 'reversed' | 'deep'>('upright')
 const imgLoaded = ref(false)
 
 watch(
@@ -115,8 +115,8 @@ function handleMaskClick() {
         >{{ kw }}</text>
       </view>
 
-      <!-- 正位/逆位/AI解读 Tab -->
-      <view class="detail-tabs" :class="{ 'has-ai': !!aiMeaning }">
+      <!-- 正位/逆位/深度解读 Tab -->
+      <view class="detail-tabs" :class="{ 'has-deep': !!deepMeaning }">
         <view
           class="detail-tab"
           :class="{ active: activeTab === 'upright' }"
@@ -132,10 +132,10 @@ function handleMaskClick() {
           <text>逆位 ☽</text>
         </view>
         <view
-          v-if="aiMeaning"
-          class="detail-tab tab-ai"
-          :class="{ active: activeTab === 'ai' }"
-          @click="activeTab = 'ai'"
+          v-if="deepMeaning"
+          class="detail-tab tab-deep"
+          :class="{ active: activeTab === 'deep' }"
+          @click="activeTab = 'deep'"
         >
           <text>个性化解读 ✨</text>
         </view>
@@ -143,10 +143,10 @@ function handleMaskClick() {
 
       <!-- 含义内容 -->
       <view class="detail-content">
-        <!-- AI 个性化解读 -->
-        <view v-if="activeTab === 'ai' && aiMeaning" class="detail-meaning detail-ai-meaning">
+        <!-- 个性化解读 -->
+        <view v-if="activeTab === 'deep' && deepMeaning" class="detail-meaning detail-deep-meaning">
           <text class="detail-meaning-label">✨ 个性化解读</text>
-          <text class="detail-meaning-text">{{ aiMeaning }}</text>
+          <text class="detail-meaning-text">{{ deepMeaning }}</text>
         </view>
 
         <template v-else>
@@ -373,7 +373,7 @@ function handleMaskClick() {
   background: rgba(0,0,0,0.2);
   margin-bottom: 24rpx;
 
-  &.has-ai .detail-tab {
+  &.has-deep .detail-tab {
     font-size: 24rpx;
     padding: 18rpx 0;
   }
@@ -394,14 +394,14 @@ function handleMaskClick() {
     box-shadow: inset 0 -4rpx 0 $accent-gold;
   }
 
-  &.tab-ai.active {
+  &.tab-deep.active {
     background: rgba(139, 92, 246, 0.1);
     box-shadow: inset 0 -4rpx 0 #8b5cf6;
   }
 }
 
-// AI 解读样式
-.detail-ai-meaning {
+// 深度解读样式
+.detail-deep-meaning {
   border-left-color: #8b5cf6;
 }
 

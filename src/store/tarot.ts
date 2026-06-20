@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import type { TarotCard, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
 import { drawRandomCards } from '@/data/tarot-cards'
 import { getSpread } from '@/data/spreads'
-import { fetchAIReading, generateLocalReading } from '@/services/reading'
+import { fetchReading, generateLocalReading } from '@/services/reading'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -27,21 +27,21 @@ export const useTarotStore = defineStore('tarot', () => {
     cards: DrawnCard[]
     spreadType: SpreadType
     question: string
-    /** 是否使用 AI 解读 */
-    useAI: boolean
-    /** AI 综合解读文本 */
+    /** 是否使用在线解读 */
+    useOnlineReading: boolean
+    /** 综合解读文本 */
     interpretation: string
-    /** 是否为 AI 生成（false 表示本地降级） */
-    isAIInterpretation: boolean
-    /** AI 解读格式不完整，综合解读由本地补偿 */
-    isPartialAIInterpretation: boolean
-    /** 综合解读文本（优先 AI 生成的，没有则本地生成） */
+    /** 是否在线生成（false 表示本地降级） */
+    isOnlineInterpretation: boolean
+    /** 解读格式不完整，综合解读由本地补偿 */
+    isPartialOnlineInterpretation: boolean
+    /** 综合解读文本（优先在线生成的，没有则本地生成） */
     comprehensiveInterpretation?: string
   } | null>(null)
 
   const records = ref<ReadingRecord[]>([])
 
-  /** AI 解读加载状态 */
+  /** 解读加载状态 */
   const isLoadingInterpretation = ref(false)
 
   // ========== Getters ==========
@@ -50,7 +50,7 @@ export const useTarotStore = defineStore('tarot', () => {
   // ========== Actions ==========
 
   /** 执行抽牌 */
-  function drawCards(spreadType: SpreadType, question = '', useAI = true) {
+  function drawCards(spreadType: SpreadType, question = '', useOnlineReading = true) {
     const spread = getSpread(spreadType)
     const drawn = drawRandomCards(spread.positions.length)
 
@@ -61,7 +61,7 @@ export const useTarotStore = defineStore('tarot', () => {
     }))
 
     const timestamp = Date.now()
-    currentReading.value = { cards, spreadType, question, useAI, interpretation: '', isAIInterpretation: false, isPartialAIInterpretation: false, comprehensiveInterpretation: '' }
+    currentReading.value = { cards, spreadType, question, useOnlineReading, interpretation: '', isOnlineInterpretation: false, isPartialOnlineInterpretation: false, comprehensiveInterpretation: '' }
 
     // 保存到记录
     records.value.unshift({
@@ -83,33 +83,33 @@ export const useTarotStore = defineStore('tarot', () => {
     saveRecords()
   }
 
-  /** 获取 AI 个性化解读 */
+  /** 获取个性化解读 */
   async function fetchInterpretation() {
     if (!currentReading.value || currentReading.value.interpretation) return
 
     isLoadingInterpretation.value = true
     try {
-      // 用户关闭 AI 开关，直接使用本地规则解读
-      if (!currentReading.value.useAI) {
+      // 用户关闭在线解读开关，直接使用本地规则解读
+      if (!currentReading.value.useOnlineReading) {
         const localReading = generateLocalReading(currentReading.value.question, currentReading.value.cards)
         if (currentReading.value) {
           currentReading.value.interpretation = localReading
-          currentReading.value.isAIInterpretation = false
-          currentReading.value.isPartialAIInterpretation = false
+          currentReading.value.isOnlineInterpretation = false
+          currentReading.value.isPartialOnlineInterpretation = false
           currentReading.value.comprehensiveInterpretation = ''
         }
         return
       }
 
-      const result = await fetchAIReading(currentReading.value.question, currentReading.value.cards)
+      const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
       if (currentReading.value) {
         currentReading.value.interpretation = result.reading
-        currentReading.value.isAIInterpretation = result.isAI
-        currentReading.value.isPartialAIInterpretation = result.isPartialAI
+        currentReading.value.isOnlineInterpretation = result.isOnline
+        currentReading.value.isPartialOnlineInterpretation = result.isPartialOnline
         currentReading.value.comprehensiveInterpretation = result.comprehensiveInterpretation
       }
     } catch (e) {
-      console.error('获取 AI 解读失败:', e)
+      console.error('获取解读失败:', e)
     } finally {
       isLoadingInterpretation.value = false
     }
