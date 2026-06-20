@@ -294,7 +294,7 @@ function handleTabChange(path: string) {
 
 <style lang="scss" scoped>
 .draw-page {
-  padding: 32rpx;
+  padding: 32rpx 32rpx 140rpx 32rpx;
   position: relative;
   min-height: 100vh;
 }
@@ -444,6 +444,7 @@ function handleTabChange(path: string) {
   z-index: 100;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 140rpx;
 }
 
 // 星空粒子
