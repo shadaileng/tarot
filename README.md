@@ -75,20 +75,16 @@ cp .env.example .env
 
 ### H5 本地预览
 
-构建后在本地启动静态服务器预览：
+构建后在本地启动预览：
 
 ```bash
 pnpm build:h5
-npx wrangler pages dev dist/build/h5        # 使用 wrangler（推荐，支持 _redirects）
-# 或
-npx serve dist/build/h5                     # 使用 serve
+npx wrangler dev                          # 使用 wrangler（推荐，支持 SPA 路由）
 ```
 
-> SPA 路由回退规则在 `public/_redirects` 中配置，使用 `wrangler pages dev` 可本地生效。
+### 部署 H5 到 Cloudflare Workers
 
-### 部署 H5 到 Cloudflare Pages
-
-H5 构建产物 (`dist/build/h5/`) 可部署到 Cloudflare Pages，支持三种方式：
+H5 构建产物 (`dist/build/h5/`) 部署到 Cloudflare Workers，支持两种方式：
 
 **方式一：Wrangler CLI（推荐，已配置脚本）**
 
@@ -98,29 +94,12 @@ pnpm deploy:cf
 
 # 或分步执行
 pnpm build:h5
-npx wrangler pages deploy dist/build/h5 --project-name=tarot
+npx wrangler deploy
 ```
 
 首次运行需登录：`npx wrangler login`。
 
-**方式二：Cloudflare Dashboard 直接上传**
-
-1. 运行 `pnpm build:h5`
-2. 打开 [Cloudflare Pages Dashboard](https://dash.cloudflare.com/pages)
-3. Create a project → Direct upload → 拖拽上传 `dist/build/h5/` 目录
-
-**方式三：Git 集成自动部署（Cloudflare Pages Dashboard）**
-
-1. 将代码推送到 GitHub/GitLab
-2. 在 Cloudflare Pages Dashboard 连接仓库
-3. 构建配置：
-   - **Framework preset**: None
-   - **Build command**: `pnpm build:h5`
-   - **Build output directory**: `dist/build/h5`
-   - **Node.js version**: 18 或更高
-4. 每次 push 自动触发构建部署
-
-**方式四：GitHub Actions 自动部署（推荐 CI/CD）**
+**方式二：GitHub Actions 自动部署（推荐 CI/CD）**
 
 项目已配置 `.github/workflows/deploy.yml`，push 到 `master` 分支自动触发构建部署。
 
@@ -130,14 +109,12 @@ npx wrangler pages deploy dist/build/h5 --project-name=tarot
 |------|------|------|
 | Secrets | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token |
 | Secrets | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID |
-| Variables | `CLOUDFLARE_PAGES_NAME` | Cloudflare Pages 项目名（如 `tarot`） |
-| Variables | `VITE_API_URL` | 后台 API 地址（与 `.env.production` 中的值一致） |
+| Variables | `CLOUDFLARE_WORKER_NAME` | Worker 名称（如 `tarot`） |
+| Variables | `VITE_BACKEND_API` | 后台 API 地址 |
 
 配置完成后，push 代码到 `master` 分支即可自动部署。
 
-> **注意**：`.env.production` 已被 `.gitignore` 排除，不会提交到仓库。GitHub Actions 构建时通过 `env:` 注入 `VITE_API_URL` 环境变量，等价于有 `.env.production` 文件的效果。
-
-> `public/_redirects` 已配置 SPA 路由回退规则，Cloudflare Pages 会自动读取。
+> SPA 路由回退通过 `wrangler.toml` 中 `not_found_handling = "single-page-application"` 配置。
 
 ### 微信小程序上传
 

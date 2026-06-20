@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
 on:
   push:
@@ -32,9 +32,9 @@ jobs:
           VITE_BACKEND_API: ${{ vars.VITE_BACKEND_API }}
         run: pnpm build:h5
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/build/h5 --project-name=${{ vars.CLOUDFLARE_PAGES_NAME }}
+          command: deploy --name=${{ vars.CLOUDFLARE_WORKER_NAME }}

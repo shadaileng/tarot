@@ -7,7 +7,7 @@
     "build:mp-weixin": "uni build -p mp-weixin",
     "dev:h5": "uni --host 0.0.0.0",
     "build:h5": "uni build",
-    "deploy:cf": "pnpm build:h5 && wrangler pages deploy dist/build/h5"
+    "deploy:cf": "pnpm build:h5 && wrangler deploy"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-5010220260604001",

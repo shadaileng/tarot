@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- H5 部署从 Cloudflare Pages 迁移到 Cloudflare Workers（Assets 模式）
+- SPA 路由回退改用 `not_found_handling = "single-page-application"`，移除 `_redirects`
+- GitHub Actions 部署命令改为 `wrangler deploy`，Worker 名通过 `CLOUDFLARE_WORKER_NAME` 环境变量配置
 - 统一后端 API 地址：`VITE_API_URL` + `VITE_POSTER_API` 合并为 `VITE_BACKEND_API`
 - TabBar 图标组件优化：改用 `<image>` 标签替代 CSS `background-image`，修复微信小程序兼容性
 - 更新环境变量文档和 TypeScript 类型定义
