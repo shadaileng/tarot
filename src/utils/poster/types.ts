@@ -5,7 +5,7 @@ import type { DrawnCard } from '@/types'
 /** 海报生成输入数据 */
 export interface PosterData {
   cards: DrawnCard[]
-  question: string
+  question?: string
   spreadName: string
   interpretation?: string
   /** 综合解读文本（优先使用在线生成的，没有则使用本地补充的） */
