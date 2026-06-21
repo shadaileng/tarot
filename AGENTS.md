@@ -125,6 +125,8 @@ npx wrangler dev            # 本地预览（支持 SPA 路由回退）
 | 手动分步 | `pnpm build:h5` → `npx wrangler deploy` |
 | GitHub Actions | `.github/workflows/deploy.yml`，push `master` 自动部署，Worker 名通过 `vars.CLOUDFLARE_WORKER_NAME` 配置 |
 
+> **注意**：部署前必须配置 `VITE_BACKEND_API` 环境变量，指向 tarot-backend 服务地址（如 `https://api.example.com`），否则 H5 和小程序无法调用后端 API。
+
 > SPA 路由回退通过 `wrangler.toml` 中 `not_found_handling = "single-page-application"` 配置。
 
 ### 微信小程序上传
