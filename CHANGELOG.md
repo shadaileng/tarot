@@ -5,6 +5,22 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-06-22
+
+### Added
+
+- H5 端新增邮箱登录/注册表单，支持登录和注册模式切换
+
+### Changed
+
+- 登录组件 `LoginGuide.vue` 重构为薄包装，仅做平台分发
+- 新增 `LoginGuideWechat.vue`，提取小程序端微信登录全量代码（零条件编译）
+- 新增 `LoginGuideEmail.vue`，实现 H5 端邮箱登录/注册表单
+
+### Fixed
+
+- 修复 H5 端"我的"页面未登录时空白的问题（之前无邮箱登录 UI）
+
 ## [1.6.0] - 2026-06-22
 
 ### Added
