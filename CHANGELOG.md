@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-06-22
+
+### Added
+
+- 第四个 Tab「记录」改名为「我的」，新增 profile 人物图标（44×44 PNG，线描风格）
+- 新增 `scripts/generate-tab-icons.js`：Tab 图标生成脚本，使用 sharp 将 SVG 转 PNG
+
 ## [1.1.4] - 2026-06-18
 
 ### Changed

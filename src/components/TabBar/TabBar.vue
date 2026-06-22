@@ -30,8 +30,8 @@ const iconFiles: Record<string, { normal: string; active: string }> = {
     active: '/static/icons/cards-active.png',
   },
   'pages/history/history': {
-    normal: '/static/icons/history.png',
-    active: '/static/icons/history-active.png',
+    normal: '/static/icons/profile.png',
+    active: '/static/icons/profile-active.png',
   },
 }
 
