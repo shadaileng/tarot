@@ -481,6 +481,9 @@ app.put('/api/config/:key', authMiddleware, ...)
 tarot-miniprogram/src/
 ├── services/
 │   └── auth.ts            # 登录/认证服务
+├── pages/
+│   └── profile/
+│       └── profile.vue    # "我的"个人中心页面（独立于 history.vue）
 ├── utils/
 │   └── request.ts         # 封装 uni.request，自动注入 JWT token
 └── store/
@@ -637,37 +640,46 @@ VITE_BACKEND_API=https://xxx.com         # 生产环境
 
 > 小程序端不直接写死后端 URL，通过环境变量注入。该变量已存在，无需新增。
 
-### 3.8 "我的" Tab 改造
+### 3.8 "我的" Tab 改造（新建独立 profile 页面）
 
-> TabBar 第 4 个 tab 从"记录"改为"**我的**"，成为用户身份 + 历史记录的聚合入口。
+> TabBar 第 4 个 tab 从"记录"改为"**我的**"，新建独立页面 `pages/profile/profile` 承载个人中心。原 `pages/history/history` 退化为纯占卜记录列表，与 profile 完全解耦。两个页面分别对应独立的 tabBar 入口（其中"我的"作为 tabBar 入口，"记录"可通过"我的"页面导航进入或其它入口访问）。
 
 #### 3.8.1 `pages.json` 变更
 
+两处改动：
+1. 新增 `pages/profile/profile` 页面入口
+2. tabBar 第 4 项 `pagePath` 改为 `pages/profile/profile`，`text` 改为"我的"
+
 ```json
-// 仅改文本，路由保持不变
+// pages 数组新增：
 {
-  "tabBar": {
-    "list": [
-      // ... 前三个 tab 不变 ...
-      {
-        "pagePath": "pages/history/history",
-        "text": "我的"        // 原为 "记录"
-      }
-    ]
+  "path": "pages/profile/profile",
+  "style": {
+    "navigationBarTitleText": "我的",
+    "navigationBarBackgroundColor": "#1a1a2e",
+    "navigationBarTextStyle": "white"
   }
+}
+
+// tabBar list 第 4 项变更：
+{
+  "pagePath": "pages/profile/profile",  // 原为 pages/history/history
+  "text": "我的"                         // 原为 "记录"
 }
 ```
 
-#### 3.8.2 "我的"页面布局
+> `pages/history/history` 保留在 pages 数组中（不会被移除），但不再作为 tabBar 入口。用户可通过"我的"页面导航或其它入口访问。
 
-页面 `pages/history/history.vue` 改造为上下两区域：
+#### 3.8.2 两个独立页面布局
+
+**`pages/profile/profile.vue`** — 个人中心（仅含用户资料与登录引导）：
 
 ```
 ┌──────────────────────────┐
 │  📱 用户信息区域           │
 │  ┌──────────────────────┐ │
 │  │ 未登录：              │ │
-│  │  [微信一键登录] 按钮   │ │  ← 点击触发 wx.login() 流程
+│  │  [LoginGuide 登录引导] │ │  ← 引导用户微信一键登录
 │  │  登录后可同步云端记录   │ │
 │  │                      │ │
 │  │ 已登录：              │ │
@@ -680,8 +692,14 @@ VITE_BACKEND_API=https://xxx.com         # 生产环境
 │  │  ID: xxx***xxx       │ │
 │  │  [退出登录]           │ │
 │  └──────────────────────┘ │
-├──────────────────────────┤
-│  📋 历史记录              │
+└──────────────────────────┘
+```
+
+**`pages/history/history.vue`** — 占卜记录（纯记录列表，已退化为独立页面）：
+
+```
+┌──────────────────────────┐
+│  📋 占卜记录              │
 │  ┌──────────────────────┐ │
 │  │  2024-06-20 三牌阵    │ │
 │  │  2024-06-19 单牌     │ │
@@ -718,10 +736,10 @@ VITE_BACKEND_API=https://xxx.com         # 生产环境
 - 小程序微信登录 → 绑定邮箱 → 同一邮箱可在 H5 端登录 → 数据互通
 - 后端通过 `openid` → `unionid` → `email` 优先级匹配实现账号关联
 
-#### 3.8.4 与现有历史记录组件的复用
+#### 3.8.4 历史记录处理
 
 - 现有 `store/tarot.ts` 中的 `loadRecords()` / `saveRecord()` 逻辑保持不变
-- 在"我的"页面中直接复用现有历史记录列表组件
+- 历史记录由 `pages/history/history.vue` 独立承载，与 profile 页面完全解耦
 - 云端同步为可选增强（阶段 3），初期以本地存储为主
 
 ### 3.9 `services/auth.ts` — 认证服务扩展
@@ -803,10 +821,10 @@ JWT_SECRET=your-random-64-char-hex-string
 
 | # | 任务 | 文件 |
 |---|------|------|
-| 1 | 小程序"我的"页面：头像点击更换（`wx.chooseMedia` + 上传 + `PUT /user/profile`）| `pages/history/history.vue` |
-| 2 | 小程序"我的"页面：昵称点击编辑（输入框 + `PUT /user/profile`）| `pages/history/history.vue` |
-| 3 | 小程序"我的"页面：手机号展示 + 授权按钮（`<button open-type="getPhoneNumber">`）| `pages/history/history.vue` |
-| 4 | 小程序"我的"页面：邮箱绑定入口（弹窗输入 + `POST /auth/bind-email`）| `pages/history/history.vue` |
+| 1 | 小程序"我的"页面：头像点击更换（`wx.chooseMedia` + 上传 + `PUT /user/profile`）| `pages/profile/profile.vue` |
+| 2 | 小程序"我的"页面：昵称点击编辑（输入框 + `PUT /user/profile`）| `pages/profile/profile.vue` |
+| 3 | 小程序"我的"页面：手机号展示 + 授权按钮（`<button open-type="getPhoneNumber">`）| `pages/profile/profile.vue` |
+| 4 | 小程序"我的"页面：邮箱绑定入口（弹窗输入 + `POST /auth/bind-email`）| `pages/profile/profile.vue` |
 | 5 | 小程序登录流程：首次登录后引导授权手机号（可跳过）| `services/auth.ts` |
 | 6 | H5 端：邮箱注册页面 | H5 项目 |
 | 7 | H5 端：邮箱登录页面 | H5 项目 |
