@@ -198,6 +198,30 @@ export async function refreshUserInfo(): Promise<UserInfo | null> {
   }
 }
 
+// ========== 首次登录引导 ==========
+
+const PHONE_PROMPTED_KEY = 'phone_bind_prompted'
+
+/**
+ * 是否应该弹出手机号绑定引导（新用户首次登录后、尚未绑定手机号、未提示过）
+ */
+export function shouldPromptPhoneBind(userInfo: UserInfo): boolean {
+  if (userInfo.phone) return false
+  try {
+    const prompted = uni.getStorageSync(PHONE_PROMPTED_KEY)
+    return !prompted
+  } catch {
+    return true
+  }
+}
+
+/**
+ * 标记手机号绑定引导已展示
+ */
+export function markPhonePromptShown(): void {
+  uni.setStorageSync(PHONE_PROMPTED_KEY, '1')
+}
+
 // ========== 初始化 ==========
 
 /**
