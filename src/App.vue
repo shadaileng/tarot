@@ -3,9 +3,9 @@ import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { useTarotStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
 
-onLaunch(() => {
+onLaunch(async () => {
   const store = useTarotStore()
-  store.loadRecords()
+  await store.loadRecords()
   console.log('🃏 塔罗牌小程序启动')
 
   // 静默检查登录态

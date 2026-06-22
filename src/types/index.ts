@@ -81,4 +81,8 @@ export interface ReadingRecord {
   question: string
   timestamp: number
   date: string
+  /** 后端记录 ID（云端同步后获得） */
+  backendId?: string
+  /** 是否已同步到云端 */
+  synced?: boolean
 }

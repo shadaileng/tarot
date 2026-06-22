@@ -4,6 +4,8 @@ import type { TarotCard, DrawnCard, SpreadType, ReadingRecord, CardOrientation }
 import { drawRandomCards } from '@/data/tarot-cards'
 import { getSpread } from '@/data/spreads'
 import { fetchReading, generateLocalReading } from '@/services/reading'
+import { isLoggedIn } from '@/services/auth'
+import { syncRecordToCloud, pullAndMerge, deleteCloudRecord } from '@/services/record-sync'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -44,6 +46,9 @@ export const useTarotStore = defineStore('tarot', () => {
   /** 解读加载状态 */
   const isLoadingInterpretation = ref(false)
 
+  /** 云端同步状态 */
+  const isSyncing = ref(false)
+
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
 
@@ -81,6 +86,9 @@ export const useTarotStore = defineStore('tarot', () => {
 
     // 持久化到本地存储
     saveRecords()
+
+    // 同步到云端（静默，不阻塞 UI）
+    syncToCloudIfLoggedIn(records.value[0])
   }
 
   /** 获取个性化解读 */
@@ -130,20 +138,42 @@ export const useTarotStore = defineStore('tarot', () => {
     }
   }
 
-  /** 从本地存储加载记录 */
-  function loadRecords() {
+  /** 从本地存储加载记录，并从云端拉取合并 */
+  async function loadRecords() {
+    // 1. 从本地加载
     try {
       const data = uni.getStorageSync('tarot-records')
       if (data) {
         records.value = JSON.parse(data)
       }
     } catch (e) {
-      console.error('加载记录失败:', e)
+      console.error('加载本地记录失败:', e)
+    }
+
+    // 2. 从云端拉取合并（静默）
+    if (isLoggedIn()) {
+      isSyncing.value = true
+      try {
+        const result = await pullAndMerge(records.value)
+        if (result.addedCount > 0) {
+          records.value = result.records
+          saveRecords()
+          console.log(`📥 从云端同步了 ${result.addedCount} 条记录`)
+        }
+      } catch (e) {
+        console.warn('云端同步失败，使用本地记录:', e)
+      } finally {
+        isSyncing.value = false
+      }
     }
   }
 
   /** 删除记录 */
   function deleteRecord(id: string) {
+    const target = records.value.find(r => r.id === id)
+    if (target?.backendId) {
+      deleteCloudRecord(target.backendId)
+    }
     records.value = records.value.filter((r) => r.id !== id)
     saveRecords()
   }
@@ -154,11 +184,27 @@ export const useTarotStore = defineStore('tarot', () => {
     saveRecords()
   }
 
+  /** 静默同步单条记录到云端（内部使用） */
+  async function syncToCloudIfLoggedIn(record: ReadingRecord) {
+    if (!isLoggedIn()) return
+    try {
+      const backendId = await syncRecordToCloud(record)
+      if (backendId) {
+        record.backendId = backendId
+        record.synced = true
+        saveRecords()
+      }
+    } catch (_) {
+      // 静默失败，下次启动时重试
+    }
+  }
+
   return {
     currentReading,
     records,
     recordCount,
     isLoadingInterpretation,
+    isSyncing,
     drawCards,
     fetchInterpretation,
     clearReading,
