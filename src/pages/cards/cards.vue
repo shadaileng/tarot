@@ -45,7 +45,7 @@ const tabList = [
   { pagePath: 'pages/index/index', text: '首页' },
   { pagePath: 'pages/draw/draw', text: '抽牌' },
   { pagePath: 'pages/cards/cards', text: '牌库' },
-  { pagePath: 'pages/history/history', text: '我的' },
+  { pagePath: 'pages/profile/profile', text: '我的' },
 ]
 
 const filteredCards = computed<TarotCard[]>(() => {

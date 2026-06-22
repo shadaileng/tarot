@@ -5,6 +5,23 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-22
+
+### Added
+
+- 新增 `pages/profile/profile.vue` 个人中心页面，承载账户管理功能（登录/头像/昵称/手机号绑定/邮箱绑定/退出登录）
+
+### Changed
+
+- TabBar 第四个 Tab 由 history（记录）替换为 profile（我的）
+- `pages.json` 新增 profile 页面入口，TabBar 列表同步更新
+- `TabBar` 组件新增 `pages/profile/profile` 图标映射
+- `index`/`draw`/`cards` 页面的 `tabList` 同步更新
+
+### Fixed
+
+- `history.vue` 去除所有账户管理功能，恢复为纯粹的占卜记录列表页
+
 ## [1.5.1] - 2026-06-22
 
 ### Fixed

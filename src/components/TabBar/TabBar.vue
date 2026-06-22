@@ -33,6 +33,10 @@ const iconFiles: Record<string, { normal: string; active: string }> = {
     normal: '/static/icons/profile.png',
     active: '/static/icons/profile-active.png',
   },
+  'pages/profile/profile': {
+    normal: '/static/icons/profile.png',
+    active: '/static/icons/profile-active.png',
+  },
 }
 
 function getIconSrc(pagePath: string): string {
