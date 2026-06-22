@@ -389,14 +389,14 @@ onLaunch → login 成功 → 调用 GET /user/records
 
 ### 3.7 环境变量配置
 
-**`.env.development` / `.env.production`** 新增：
+**`.env.development` / `.env.production`** 复用已有环境变量：
 
 ```
-VITE_API_BASE_URL=http://localhost:3000   # 开发环境
-VITE_API_BASE_URL=https://xxx.com         # 生产环境
+VITE_BACKEND_API=http://localhost:3000   # 开发环境
+VITE_BACKEND_API=https://xxx.com         # 生产环境
 ```
 
-> 小程序端不直接写死后端 URL，通过环境变量注入。
+> 小程序端不直接写死后端 URL，通过环境变量注入。该变量已存在，无需新增。
 
 ---
 
@@ -439,7 +439,7 @@ JWT_SECRET=your-random-64-char-hex-string
 | 3 | 改造 `App.vue` `onLaunch`：增加登录流程 | `src/App.vue` |
 | 4 | 改造 `services/reading.ts`：使用 `apiPost` 替代裸 `uni.request` | `src/services/reading.ts` |
 | 5 | 改造 `services/poster.ts`：使用 `apiPost` 替代裸 `uni.request` | `src/services/poster.ts` |
-| 6 | 新增环境变量 `VITE_API_BASE_URL` | `.env.development` / `.env.production` |
+| 6 | 复用已有环境变量 `VITE_BACKEND_API`（无需新增） | `.env.development` / `.env.production` |
 
 ### 阶段 3：用户记录云端同步（约 2-3 小时，可选）
 
