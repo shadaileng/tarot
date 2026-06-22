@@ -1,9 +1,7 @@
 // 深度解读服务 - 调用统一后端 tarot-backend，失败时降级到本地规则
 
 import type { DrawnCard } from '@/types'
-
-// 从环境变量读取统一后端地址（Vite 构建时注入）
-const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
+import { apiPost, apiGet } from '@/utils/request'
 
 /** 从解读文本中提取综合解读部分 */
 function extractComprehensive(text: string): string | null {
@@ -30,11 +28,9 @@ export interface ReadingResult {
  */
 export async function fetchReading(question: string, cards: DrawnCard[]): Promise<ReadingResult> {
   try {
-    const res = await uni.request({
-      url: `${BACKEND_API}/reading`,
-      method: 'POST',
-      header: { 'Content-Type': 'application/json' },
-      data: {
+    const data = await apiPost<{ reading?: string; incomplete?: boolean }>(
+      '/reading',
+      {
         question,
         cards: cards.map((c) => ({
           position: c.position,
@@ -45,14 +41,9 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
           keywords: c.card.keywords,
         })),
       },
-      timeout: 20000,
-    })
+      { timeout: 20000, skipAuthRefresh: true }
+    )
 
-    if (res.statusCode !== 200) {
-      throw new Error(`API error: ${res.statusCode}`)
-    }
-
-    const data = res.data as { reading?: string; incomplete?: boolean }
     if (data.reading) {
       if (data.incomplete && !/✨\s*\*{0,2}综合解读/.test(data.reading)) {
         // 解读不完整且缺少综合解读，用本地补偿
@@ -248,22 +239,12 @@ export interface BackendStatus {
  * 请求 GET /health 端点，返回服务各组件的可用性
  */
 export async function checkBackendHealth(): Promise<BackendStatus> {
-  if (!BACKEND_API) {
-    return { status: 'error', worker: 'down', gemini: 'unknown' }
-  }
-
   try {
-    const res = await uni.request({
-      url: `${BACKEND_API}/health`,
-      method: 'GET',
-      timeout: 5000,
-    })
-
-    if (res.statusCode !== 200) {
-      return { status: 'error', worker: 'up', gemini: 'unconfigured' }
-    }
-
-    const data = res.data as { status?: string; worker?: string; gemini?: string }
+    const data = await apiGet<{ status?: string; worker?: string; gemini?: string }>(
+      '/health',
+      undefined,
+      { auth: false, timeout: 5000 }
+    )
     return {
       status: data.status || 'error',
       worker: data.worker || 'down',

@@ -4,8 +4,7 @@
 
 import type { PosterData } from '@/utils/poster/types'
 import type { DrawnCard } from '@/types'
-
-const BACKEND_API = (import.meta.env.VITE_BACKEND_API || 'http://localhost:3000').replace(/\/+$/, '')
+import { apiPost } from '@/utils/request'
 
 /** 将前端 DrawnCard 转为后端期望的扁平 PosterCard 格式 */
 function toPosterCardInput(card: DrawnCard) {
@@ -46,27 +45,13 @@ function toPosterPayload(data: PosterData) {
 export async function generatePoster(data: PosterData): Promise<string> {
   const payload = toPosterPayload(data)
 
-  // uni.request 跨平台兼容 H5 / 小程序
-  const [err, res] = await new Promise<any[]>((resolve) => {
-    uni.request({
-      url: `${BACKEND_API}/poster`,
-      method: 'POST',
-      header: { 'Content-Type': 'application/json' },
-      data: payload,
-      responseType: 'arraybuffer',
-      success: (res) => resolve([null, res]),
-      fail: (err) => resolve([err, null]),
-    })
-  })
-
-  if (err) {
-    throw new Error(`海报生成失败: ${err.errMsg}`)
+  // 使用统一请求封装，自动注入 JWT token，跨平台兼容
+  let arrayBuffer: ArrayBuffer
+  try {
+    arrayBuffer = await apiPost<ArrayBuffer>('/poster', payload, { responseType: 'arraybuffer' })
+  } catch (err: any) {
+    throw new Error(`海报生成失败: ${err.message || err}`)
   }
-  if (res.statusCode !== 200) {
-    throw new Error(`海报生成失败 (${res.statusCode})`)
-  }
-
-  const arrayBuffer = res.data as ArrayBuffer
 
   // #ifdef H5
   const blob = new Blob([arrayBuffer], { type: 'image/png' })
