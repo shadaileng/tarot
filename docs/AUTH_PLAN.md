@@ -151,7 +151,7 @@ CREATE INDEX IF NOT EXISTS idx_records_user_id ON reading_records(user_id)
 CREATE INDEX IF NOT EXISTS idx_records_created_at ON reading_records(created_at DESC)
 ```
 
-**改造 `reading_logs` 表**：新增 `openid` 字段（可为 NULL），用于关联到具体用户。
+**改造 `reading_logs` 表**：新增 `openid` 字段（可为 NULL）和 `user_id` 字段（可为 NULL），分别记录微信 openid 和系统内部用户 UUID，实现双维度关联。详细信息见 §十「用户标识全链路补齐方案」。
 
 ### 2.4 新增文件清单
 
@@ -683,13 +683,17 @@ VITE_BACKEND_API=https://xxx.com         # 生产环境
 │  │  登录后可同步云端记录   │ │
 │  │                      │ │
 │  │ 已登录：              │ │
-│  │  🧑 [头像] (可点击更换) │ │  ← 点击触发 wx.chooseMedia → 上传 → PUT /user/profile
-│  │  昵称: [______] ✏️    │ │  ← 点击可编辑（弹出输入框）
-│  │  📱 手机号: 138****1234│ │  ← 自动获取，不可编辑
-│  │     (未授权) [授权手机号]│ │  ← 未绑定手机号时显示
-│  │  📧 邮箱: user@xx.com │ │  ← 手动绑定，绑定后不可修改
-│  │     (未绑定) [绑定邮箱] │ │  ← 未绑定邮箱时显示
-│  │  ID: xxx***xxx       │ │
+│  │  📱 用户信息  ☁️ 同步中 │ │  ← 标题靠左 + 同步状态靠右
+│  │                      │ │
+│  │  ┌──────┐            │ │
+│  │  │ 🧑   │ 昵称 ✎     │ │  ← 圆形头像(88rpx) 右一行昵称
+│  │  │ 头像 │ ID: xx***xx│ │  ← 头像占两行高度，右二行 ID
+│  │  └──────┘            │ │
+│  │                      │ │
+│  │  ✉️ email@xx.com     │ │  ← 邮箱（与上方文本左对齐）
+│  │  📱 138****1234      │ │  ← 手机号
+│  │     (未绑) [绑定按钮]  │ │  ← 未绑定时显示操作按钮
+│  │                      │ │
 │  │  [退出登录]           │ │
 │  └──────────────────────┘ │
 └──────────────────────────┘
@@ -795,7 +799,7 @@ JWT_SECRET=your-random-64-char-hex-string
 | 11 | 创建 `src/middleware/jwt-auth.ts`：JWT 验证中间件 | 新文件 |
 | 12 | 创建 `src/middleware/rate-limit.ts`：内存频率限制 | 新文件 |
 | 13 | 在 `index.ts` 注册新路由，`/reading` 和 `/poster` 改用 JWT 鉴权 | `src/index.ts` |
-| 14 | 更新 `reading_logs` 表结构，增加 `openid` 字段 | `src/db/index.ts` |
+| 14 | 更新 `reading_logs` 表结构，增加 `openid` 和 `user_id` 字段 | `src/db/index.ts` |
 
 ### 阶段 2：小程序前端登录流程（约 2-3 小时）
 
@@ -913,3 +917,261 @@ JWT_SECRET=your-random-64-char-hex-string
 | ~~用户昵称/头像编辑功能~~ | ✅ 已决策 | **允许编辑**："我的"页面支持点击头像更换（`wx.chooseMedia` + 上传）、点击昵称编辑（输入框），均通过 `PUT /user/profile` 接口 |
 | ~~是否需要手动注册页面~~ | ✅ 已决策 | **需要**：小程序端微信一键登录 + 引导授权手机号（可跳过）+ 手动绑定邮箱；H5 端邮箱注册/登录。邮箱绑定后不可修改 |
 | 邮箱绑定后能否修改 | ✅ 已决策 | **不可修改**：一个邮箱绑定一个账号，绑定后永久关联，如需更换须联系管理员 |
+| 用户标识全链路补齐 | 📋 计划中 | 见 §十「用户标识全链路补齐方案」 |
+
+
+---
+
+## 十、用户标识全链路补齐方案
+
+> **背景**：JWT 鉴权已实施（阶段 1），但 `readingHandler`、poster handler 和 `loggingMiddleware` 并未将 `userId` 关联到日志和数据中。
+> 这导致无法按用户维度审计解读/海报请求，无法追溯哪个用户触发了什么操作。
+
+### 10.1 现状分析
+
+| 功能 | JWT 鉴权 | handler 用 userId | DB 有 user_id | 日志有 user_id | 结论 |
+|------|:---:|:---:|:---:|:---:|------|
+| **抽牌记录** (`POST /user/records`) | ✅ | ✅ `req.userId` | ✅ `reading_records.user_id` | — | 🟢 完整 |
+| **AI 解读** (`POST /reading`) | ✅ | ❌ 未使用 | — | ❌ `reading_logs` 有 `openid` 无 `user_id` | 🟡 半截 |
+| **海报生成** (`POST /poster`) | ✅ | ❌ 未使用 | — | ❌ 同上 | 🟡 半截 |
+
+**已具备的条件**：
+- `reading_logs` 表已有 `openid TEXT` 列（在 §2.3 阶段 1 任务 14 中已添加）
+- `jwtAuthMiddleware` 已注入 `req.userId` 和 `req.openid`
+- `POST /reading` 和 `POST /poster` 已使用 `jwtAuthMiddleware`
+
+**缺什么**：
+1. `reading_logs` 表缺少 `user_id TEXT` 列
+2. `loggingMiddleware` 的 `insertLog` 调用没有传递 `user_id`
+3. `readingHandler` 没有使用 `req.userId` 做任何用户级逻辑
+4. poster handler 没有使用 `req.userId` 做任何用户级逻辑
+
+### 10.2 SQLite 表迁移
+
+```sql
+-- reading_logs 新增 user_id 列
+ALTER TABLE reading_logs ADD COLUMN user_id TEXT;
+```
+
+> sql.js 支持 `ALTER TABLE ADD COLUMN`，直接在 `initSchema` 中追加即可，已存在的行该列为 NULL。
+
+### 10.3 改动清单
+
+#### 10.3.1 `tarot-backend/src/db/index.ts` — 表结构
+
+在 `initSchema()` 的 `reading_logs` 建表语句中追加 `user_id TEXT`：
+
+```sql
+-- 建表语句追加（在 openid TEXT 后）
+user_id        TEXT
+```
+
+同时在 `initSchema()` 末尾追加 `ALTER TABLE` 兼容已有数据库：
+
+```ts
+// 兼容已有数据库，新增 user_id 列
+database.run('ALTER TABLE reading_logs ADD COLUMN user_id TEXT')
+```
+
+> 注意：`ALTER TABLE ADD COLUMN IF NOT EXISTS` 在 SQLite 3.35+ 才支持，
+> 为了兼容旧版 sql.js，可以捕获异常静默忽略（列已存在时报错，不影响功能）。
+
+#### 10.3.2 `tarot-backend/src/db/reading-log.ts` — 类型 + SQL
+
+**`LogEntry` 接口新增字段**：
+
+```ts
+export interface LogEntry {
+  // ... 现有字段
+  user_id: string | null  // 新增：关联 users.id
+}
+```
+
+**`InsertLogParams` 接口新增字段**：
+
+```ts
+export interface InsertLogParams {
+  // ... 现有字段
+  user_id?: string | null  // 新增：用户 UUID
+}
+```
+
+**`insertLog` SQL 语句更新**：
+
+```ts
+// 改造前
+db.run(
+  `INSERT INTO reading_logs (id, created_at, method, path, target, status_code, duration_ms, ip_address, question, cards_json, reading, model, incomplete, is_error, error_msg)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  [...]
+)
+
+// 改造后
+db.run(
+  `INSERT INTO reading_logs (id, created_at, method, path, target, status_code, duration_ms, ip_address, question, cards_json, reading, model, incomplete, is_error, error_msg, user_id)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  [
+    params.id, params.created_at, params.method, params.path, params.target,
+    params.status_code, params.duration_ms, params.ip_address,
+    params.question ?? null, params.cards_json ?? null,
+    params.reading ?? null, params.model ?? null,
+    params.incomplete ? 1 : 0, params.is_error ? 1 : 0,
+    params.error_msg ?? null,
+    params.user_id ?? null,  // 新增
+  ]
+)
+```
+
+#### 10.3.3 `tarot-backend/src/gateway/logging.ts` — 日志中间件
+
+在 `writeLog` 函数中从 `req` 提取 `userId` 并传入 `insertLog`：
+
+```ts
+function writeLog(body: any): void {
+  if (logWritten || target === 'other') return
+  logWritten = true
+  const duration = Date.now() - start
+
+  // 提取用户标识（JWT 中间件已经注入 req.userId / req.openid）
+  const userId = (req as any).userId || null
+  const openid = (req as any).openid || null
+
+  // ... 现有日志输出（不变）...
+
+  insertLog({
+    id: logId,
+    method: req.method,
+    path: req.path,
+    target,
+    status_code: res.statusCode,
+    duration_ms: duration,
+    ip_address: ip,
+    question: requestBody.question || null,
+    cards_json: requestBody.cards ? JSON.stringify(requestBody.cards) : null,
+    reading: target === 'reading' && respObj ? (respObj.reading || null) : null,
+    model: target === 'reading' && respObj ? (respObj.model || null) : null,
+    incomplete: target === 'reading' && respObj ? !!(respObj.incomplete) : false,
+    is_error: isError,
+    error_msg: errorMsg,
+    user_id: userId,  // 新增
+  }).catch((err) => {
+    log.error({ err, logId }, 'Failed to insert log')
+  })
+}
+```
+
+**关键点**：
+- `jwtAuthMiddleware` 已在 `req` 上注入 `userId` 和 `openid`
+- 对未鉴权的接口（`/auth/*` / `/health` 等），`req.userId` 为 `undefined` → 写入 NULL
+- 对已鉴权的接口（`/reading` / `/poster` / `/user/*`），正常写入 UUID
+
+#### 10.3.4 `tarot-backend/src/reading/handler.ts` — 解读 handler
+
+在 handler 中提取 `userId`，传递给请求日志（日志中间件会自动处理），同时为后续用户级功能预留：
+
+```ts
+export async function readingHandler(req: Request, res: Response): Promise<void> {
+  const requestLogger = log.child({
+    logId: (req as any).logId || 'unknown',
+    userId: (req as any).userId || null,  // 新增：关联用户
+  })
+
+  // ... 其余逻辑不变 ...
+}
+```
+
+> **说明**：`readingHandler` 不需要直接调用 `insertLog`（由 `loggingMiddleware` 统一处理），
+> 仅在子日志中附加 `userId` 以便调试时追溯。当请求经过 `jwtAuthMiddleware` 后，
+> `loggingMiddleware` 会自动将 `req.userId` 写入 `reading_logs.user_id`。
+
+#### 10.3.5 `tarot-backend/src/index.ts` — poster handler
+
+在 poster handler 的路由中提取 `userId` 用于日志：
+
+```ts
+app.post('/poster', jwtAuthMiddleware, async (req, res) => {
+  const requestStart = Date.now()
+  const posterData = req.body as PosterData
+  const template = getTemplate(posterData.template)
+  const requestLogger = log.child({
+    logId: (req as any).logId || 'unknown',
+    userId: (req as any).userId || null,  // 新增：关联用户
+  })
+
+  // ... 其余逻辑不变 ...
+})
+```
+
+### 10.4 改动总结表
+
+| # | 文件 | 改动类型 | 说明 |
+|---|------|----------|------|
+| 1 | `src/db/index.ts` | 新增列 | `reading_logs` 加 `user_id TEXT` + 兼容迁移 |
+| 2 | `src/db/reading-log.ts` | 加字段 | 类型 + insert SQL 增加 `user_id` |
+| 3 | `src/gateway/logging.ts` | 提取注入 | `writeLog` 从 `req.userId` 取值传入 `insertLog` |
+| 4 | `src/reading/handler.ts` | 日志增强 | `log.child` 附加 `userId` |
+| 5 | `src/index.ts` | 日志增强 | poster handler 的 `log.child` 附加 `userId` |
+
+### 10.5 数据流示意
+
+```
+┌─────────────────┐     JWT     ┌──────────────────────┐
+│  小程序前端       │ ──────────> │  jwtAuthMiddleware     │
+│  Bearer <token>  │            │  → req.userId = "UUID"  │
+│                  │            │  → req.openid = "oxxx"  │
+└─────────────────┘            └──────────┬─────────────┘
+                                          │
+              ┌───────────────────────────┼───────────────────────────┐
+              │                           │                           │
+              ▼                           ▼                           ▼
+     ┌─────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
+     │  readingHandler  │     │   poster handler     │     │  loggingMiddleware   │
+     │  logger 附加      │     │   logger 附加         │     │  writeLog 提取        │
+     │  userId           │     │   userId              │     │  req.userId           │
+     └─────────────────┘     └─────────────────────┘     └──────────┬──────────┘
+                                                                    │
+                                                          insertLog({ user_id })
+                                                                    │
+                                                                    ▼
+                                                          ┌─────────────────────┐
+                                                          │  reading_logs 表     │
+                                                          │  user_id = "UUID"    │
+                                                          │  openid  = "oxxx"    │
+                                                          │  target  = reading   │
+                                                          │  target  = poster    │
+                                                          └─────────────────────┘
+```
+
+### 10.6 实施依赖
+
+| 依赖项 | 状态 |
+|--------|:--:|
+| `users` 表已创建 | ✅ 已完成 |
+| `jwtAuthMiddleware` 已实现 | ✅ 已完成 |
+| `req.userId` 类型声明 | ✅ 已完成（`src/types/express.d.ts`） |
+| `/reading` 已挂载 JWT | ✅ 已完成 |
+| `/poster` 已挂载 JWT | ✅ 已完成 |
+
+> **本方案为零依赖改动**：所有前置条件已满足，仅需修改 5 个文件，无新增依赖。
+
+### 10.7 可扩展方向（后续阶段）
+
+本方案完成后，`reading_logs` 中将包含完整的 `user_id`，为以下功能提供数据基础：
+
+| 功能 | 说明 |
+|------|------|
+| **用户级日志查询** | `GET /logs?user_id=xxx` — 管理员按用户筛选日志 |
+| **"我的解读历史"** | 前端展示当前用户的所有 `/reading` 请求及返回 |
+| **"我的海报生成记录"** | 前端展示当前用户的所有 `/poster` 请求 |
+| **用户行为分析** | 统计每用户的 API 调用次数、模型偏好、错误率 |
+| **成本核算** | 按用户统计 Gemini API 调用量，用于成本分摊 |
+
+### 10.8 测试清单
+
+- [ ] `POST /reading`（带 JWT）→ `reading_logs.user_id` 写入正确 UUID
+- [ ] `POST /poster`（带 JWT）→ `reading_logs.user_id` 写入正确 UUID
+- [ ] `POST /user/records`（带 JWT）→ `reading_logs` 中对应日志有 `user_id`
+- [ ] `POST /auth/wechat-login`（无 JWT）→ `reading_logs.user_id` 为 NULL
+- [ ] `GET /health`（无 JWT）→ 不触发日志写入（跳过）
+- [ ] 旧数据库（无 `user_id` 列）启动 → `ALTER TABLE` 静默成功，旧行 `user_id` 为 NULL
+- [ ] 新生成的日志同时包含 `user_id` 和 `openid`，可关联查询
