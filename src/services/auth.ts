@@ -110,7 +110,7 @@ async function wechatLogin(): Promise<LoginResult> {
           return
         }
         try {
-          const result = await apiPost<LoginResult>('/auth/wechat-login', { code: res.code }, { auth: false })
+          const result = await apiPost<LoginResult>('/api/auth/wechat-login', { code: res.code }, { auth: false })
           setStoredToken(result.token)
           setUserInfo(result.user)
           resolve(result)
@@ -133,7 +133,7 @@ async function wechatLogin(): Promise<LoginResult> {
  * H5 邮箱登录
  */
 export async function emailLogin(email: string, password: string): Promise<LoginResult> {
-  const result = await apiPost<LoginResult>('/auth/email-login', { email, password }, { auth: false })
+  const result = await apiPost<LoginResult>('/api/auth/email-login', { email, password }, { auth: false })
   setStoredToken(result.token)
   setUserInfo(result.user)
   return result
@@ -143,7 +143,7 @@ export async function emailLogin(email: string, password: string): Promise<Login
  * H5 邮箱注册
  */
 export async function emailRegister(email: string, password: string): Promise<LoginResult> {
-  const result = await apiPost<LoginResult>('/auth/email-register', { email, password }, { auth: false })
+  const result = await apiPost<LoginResult>('/api/auth/email-register', { email, password }, { auth: false })
   setStoredToken(result.token)
   setUserInfo(result.user)
   return result
@@ -155,14 +155,14 @@ export async function emailRegister(email: string, password: string): Promise<Lo
  * 绑定邮箱（小程序端）
  */
 export async function bindEmail(email: string, password: string): Promise<{ message: string; email: string }> {
-  return apiPost('/auth/bind-email', { email, password })
+  return apiPost('/api/auth/bind-email', { email, password })
 }
 
 /**
  * 绑定手机号（小程序端）
  */
 export async function bindPhone(phoneCode: string): Promise<{ message: string; phone: string }> {
-  return apiPost('/auth/bind-phone', { code: phoneCode })
+  return apiPost('/api/auth/bind-phone', { code: phoneCode })
 }
 
 // ========== 用户资料（需已登录）==========
@@ -174,7 +174,7 @@ export async function updateProfile(data: {
   nickname?: string
   avatarUrl?: string
 }): Promise<{ user: UserInfo }> {
-  const result = await apiPut<{ user: UserInfo }>('/user/profile', data)
+  const result = await apiPut<{ user: UserInfo }>('/api/user/profile', data)
   // 同步更新本地缓存
   if (result.user) {
     setUserInfo(result.user)
@@ -187,7 +187,7 @@ export async function updateProfile(data: {
  */
 export async function refreshUserInfo(): Promise<UserInfo | null> {
   try {
-    const result = await apiGet<{ user: UserInfo }>('/user/profile')
+    const result = await apiGet<{ user: UserInfo }>('/api/user/profile')
     if (result.user) {
       setUserInfo(result.user)
       return result.user

@@ -37,7 +37,7 @@ export async function syncRecordToCloud(record: ReadingRecord): Promise<string |
   if (!isLoggedIn()) return null
 
   try {
-    const result = await apiPost<BackendRecord>('/user/records', {
+    const result = await apiPost<BackendRecord>('/api/user/records', {
       spreadType: record.spreadType,
       question: record.question,
       cardsJson: JSON.stringify(record.cards),
@@ -62,7 +62,7 @@ async function fetchAllCloudRecords(): Promise<BackendRecord[]> {
   let page = 1
 
   while (true) {
-    const result = await apiGet<BackendRecordList>('/user/records', { page, limit: 100 }, { timeout: 10000 })
+    const result = await apiGet<BackendRecordList>('/api/user/records', { page, limit: 100 }, { timeout: 10000 })
 
     allRecords.push(...result.records)
 
@@ -167,7 +167,7 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
   if (!isLoggedIn()) return false
 
   try {
-    await apiDelete(`/user/records/${backendId}`, { timeout: 10000 })
+    await apiDelete(`/api/user/records/${backendId}`, { timeout: 10000 })
     return true
   } catch (err) {
     console.warn('删除云端记录失败:', err)

@@ -29,7 +29,7 @@ export interface ReadingResult {
 export async function fetchReading(question: string, cards: DrawnCard[]): Promise<ReadingResult> {
   try {
     const data = await apiPost<{ reading?: string; incomplete?: boolean }>(
-      '/reading',
+      '/api/reading',
       {
         question,
         cards: cards.map((c) => ({
@@ -236,12 +236,12 @@ export interface BackendStatus {
 
 /**
  * 检测后台服务分层健康状态
- * 请求 GET /health 端点，返回服务各组件的可用性
+ * 请求 GET /api/health 端点，返回服务各组件的可用性
  */
 export async function checkBackendHealth(): Promise<BackendStatus> {
   try {
     const data = await apiGet<{ status?: string; worker?: string; gemini?: string }>(
-      '/health',
+      '/api/health',
       undefined,
       { auth: false, timeout: 5000 }
     )

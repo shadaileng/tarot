@@ -5,6 +5,16 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-24
+
+### Changed
+
+- **BREAKING**: 所有 API 调用同步更新为 `/api` 前缀：
+  - `auth.ts`: `/auth/*` → `/api/auth/*`, `/user/profile` → `/api/user/profile`
+  - `reading.ts`: `/reading` → `/api/reading`, `/health` → `/api/health`
+  - `poster.ts`: `/poster` → `/api/poster`
+  - `record-sync.ts`: `/user/records` → `/api/user/records`
+
 ## [1.7.1] - 2026-06-22
 
 ### Fixed
