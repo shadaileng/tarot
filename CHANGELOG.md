@@ -5,6 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-06-24
+
+### Added
+
+- 未登录用户开启深度解读时，增加 Toast 提示"未登录，已为你生成本地解读"
+- 结果页本地解读标签下方增加登录引导文案"登录后可获得更专业的深度解读"
+
+### Changed
+
+- 深度解读开关默认值由登录状态决定：已登录默认开启，未登录默认关闭
+
 ## [2.0.0] - 2026-06-24
 
 ### Changed

@@ -2,6 +2,7 @@
 import { computed, ref, reactive, watch, nextTick } from 'vue'
 import { useTarotStore } from '@/store'
 import { navTo, navBack } from '@/utils'
+import { isLoggedIn } from '@/services/auth'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
 import type { TarotCard, CardOrientation } from '@/types'
@@ -400,6 +401,9 @@ watch(allFlipped, (flipped) => {
         <view v-if="reading.interpretation" class="reading-section">
           <view class="reading-badge" :class="{ 'reading-badge-local': !reading.isOnlineInterpretation, 'reading-badge-partial': reading.isPartialOnlineInterpretation }">
             <text>{{ reading.isOnlineInterpretation ? (reading.isPartialOnlineInterpretation ? '📖 深度解读（综合部分本地补充）' : '✨ 个性化解读') : '📖 本地解读' }}</text>
+          </view>
+          <view v-if="!reading.isOnlineInterpretation && !isLoggedIn()" class="login-guide">
+            <text class="login-guide-text">登录后可获得更专业的深度解读</text>
           </view>
           <view class="reading-content">
             <text class="reading-text">{{ reading.interpretation }}</text>
@@ -961,6 +965,19 @@ watch(allFlipped, (flipped) => {
   &.reading-badge-partial {
     background: linear-gradient(135deg, #6366f1, #d97706);
   }
+}
+
+.login-guide {
+  margin-bottom: 20rpx;
+  padding: 14rpx 24rpx;
+  background: rgba($accent-gold, 0.1);
+  border-radius: $radius-sm;
+  border-left: 4rpx solid $accent-gold;
+}
+
+.login-guide-text {
+  font-size: 24rpx;
+  color: $accent-gold;
 }
 
 .reading-content {

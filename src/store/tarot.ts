@@ -109,6 +109,19 @@ export const useTarotStore = defineStore('tarot', () => {
         return
       }
 
+      // 未登录用户开启了深度解读开关：跳过 API 等待，直接生成本地解读
+      if (!isLoggedIn()) {
+        const localReading = generateLocalReading(currentReading.value.question, currentReading.value.cards)
+        if (currentReading.value) {
+          currentReading.value.interpretation = localReading
+          currentReading.value.isOnlineInterpretation = false
+          currentReading.value.isPartialOnlineInterpretation = false
+          currentReading.value.comprehensiveInterpretation = ''
+        }
+        uni.showToast({ title: '未登录，已为你生成本地解读', icon: 'none', duration: 2000 })
+        return
+      }
+
       const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
       if (currentReading.value) {
         currentReading.value.interpretation = result.reading
