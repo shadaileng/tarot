@@ -98,6 +98,17 @@ async function handleChangeAvatar() {
   // #endif
 }
 
+// ========== 脱敏工具 ==========
+function maskMiddle(val: string, keep = 3): string {
+  if (!val || val.length <= keep * 2) return val || ''
+  return val.slice(0, keep) + '***' + val.slice(-keep)
+}
+
+function maskPhone(phone: string): string {
+  if (!phone || phone.length < 11) return phone || ''
+  return phone.slice(0, 3) + '****' + phone.slice(-4)
+}
+
 // ========== 邮箱绑定 ==========
 const bindEmailOpen = ref(false)
 const bindEmailAddr = ref('')
@@ -163,78 +174,87 @@ function handleTabChange(path: string) {
     <!-- ========== 用户资料区 ========== -->
     <!-- 已登录：展示资料卡片 -->
     <view v-if="loggedIn && userInfo" class="profile-card">
-      <!-- 头像 + 基本信息 -->
-      <view class="profile-top">
-        <view class="profile-avatar-wrap" @click="handleChangeAvatar">
+      <!-- 标题栏：左标题 + 右同步状态 -->
+      <view class="title-bar">
+        <text class="title-bar-text">📱 用户信息</text>
+        <text v-if="store.isSyncing" class="title-bar-sync">☁️ 同步中...</text>
+      </view>
+
+      <!-- 头像 + 昵称/ID（头像占两行高度） -->
+      <view class="summary">
+        <!-- 圆形头像 -->
+        <view class="summary-avatar" @click="handleChangeAvatar">
           <image
             v-if="userInfo.avatarUrl"
-            class="profile-avatar"
+            class="summary-avatar-img"
             :src="userInfo.avatarUrl"
             mode="aspectFill"
           />
-          <text v-else class="profile-avatar-placeholder">🃏</text>
-          <view class="profile-avatar-overlay">
+          <text v-else class="summary-avatar-placeholder">🃏</text>
+          <view class="summary-avatar-overlay">
             <text>换</text>
           </view>
         </view>
 
-        <view class="profile-info">
-          <!-- 昵称 -->
-          <view v-if="!editingNickname" class="profile-nickname-row" @click="startEditNickname">
-            <text class="profile-nickname">{{ userInfo.nickname }}</text>
-            <text class="profile-edit-icon">✎</text>
+        <!-- 昵称 + ID（两行，靠左） -->
+        <view class="summary-text">
+          <!-- 昵称行 -->
+          <view v-if="!editingNickname" class="st-row st-nickname-row" @click="startEditNickname">
+            <text class="st-nickname">{{ userInfo.nickname }}</text>
+            <text class="st-edit-icon">✎</text>
           </view>
-          <view v-else class="profile-nickname-edit">
+          <view v-else class="st-row st-nickname-edit">
             <input
               v-model="nicknameInput"
-              class="nickname-input"
+              class="st-nickname-input"
               maxlength="30"
               :focus="true"
               @blur="saveNickname"
               @confirm="saveNickname"
             />
-            <text class="nickname-save" @click="saveNickname">
+            <text class="st-nickname-save" @click="saveNickname">
               {{ nicknameSaving ? '保存中...' : '保存' }}
             </text>
           </view>
 
-          <!-- 绑定信息 -->
-          <view class="profile-bindings">
-            <!-- 手机号 -->
-            <!-- #ifdef MP-WEIXIN -->
-            <view class="pb-item" v-if="!userInfo.phone">
-              <button
-                class="pb-btn pb-btn-phone"
-                open-type="getPhoneNumber"
-                :loading="phoneBinding"
-                @getphonenumber="handleGetPhoneNumber"
-              >
-                📱 绑定手机号
-              </button>
-            </view>
-            <view v-else class="pb-item pb-item-bound">
-              <text class="pb-label">📱</text>
-              <text class="pb-value">{{ userInfo.phone }}</text>
-            </view>
-            <!-- #endif -->
-
-            <!-- 邮箱 -->
-            <view v-if="!userInfo.email" class="pb-item">
-              <button class="pb-btn" @click="bindEmailOpen = true">
-                ✉️ 绑定邮箱
-              </button>
-            </view>
-            <view v-else class="pb-item pb-item-bound">
-              <text class="pb-label">✉️</text>
-              <text class="pb-value">{{ userInfo.email }}</text>
-            </view>
+          <!-- ID 行 -->
+          <view class="st-row">
+            <text class="st-id-label">ID</text>
+            <text class="st-id-value">{{ maskMiddle(userInfo.id, 4) }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 同步状态 -->
-      <view v-if="store.isSyncing" class="profile-sync">
-        <text>☁️ 同步中...</text>
+      <!-- 绑定信息（邮箱 + 手机号） -->
+      <view class="bindings">
+        <!-- 邮箱 -->
+        <view class="b-row" v-if="!userInfo.email">
+          <button class="b-btn" @click="bindEmailOpen = true">
+            ✉️ 绑定邮箱
+          </button>
+        </view>
+        <view v-else class="b-row b-row-bound">
+          <text class="b-label">✉️</text>
+          <text class="b-value">{{ userInfo.email }}</text>
+        </view>
+
+        <!-- 手机号 -->
+        <!-- #ifdef MP-WEIXIN -->
+        <view class="b-row" v-if="!userInfo.phone">
+          <button
+            class="b-btn b-btn-phone"
+            open-type="getPhoneNumber"
+            :loading="phoneBinding"
+            @getphonenumber="handleGetPhoneNumber"
+          >
+            📱 绑定手机号
+          </button>
+        </view>
+        <view v-else class="b-row b-row-bound">
+          <text class="b-label">📱</text>
+          <text class="b-value">{{ maskPhone(userInfo.phone) }}</text>
+        </view>
+        <!-- #endif -->
       </view>
 
       <!-- 退出按钮 -->
@@ -291,42 +311,65 @@ function handleTabChange(path: string) {
 .profile-card {
   background: $bg-card;
   border-radius: $radius-md;
-  padding: 32rpx;
+  padding: 28rpx 32rpx;
   margin-bottom: 32rpx;
 }
 
-.profile-top {
+// 标题栏：左右分布
+.title-bar {
   display: flex;
-  gap: 24rpx;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
 }
 
-.profile-avatar-wrap {
+.title-bar-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: $text-white;
+}
+
+.title-bar-sync {
+  font-size: 22rpx;
+  color: $text-muted;
+}
+
+// ---------- 头像 + 信息摘要 ----------
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+// 圆形头像（两行高度）
+.summary-avatar {
   position: relative;
-  width: 120rpx;
-  height: 120rpx;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: $radius-round;
   overflow: hidden;
   flex-shrink: 0;
 }
 
-.profile-avatar {
+.summary-avatar-img {
   width: 100%;
   height: 100%;
   border-radius: $radius-round;
 }
 
-.profile-avatar-placeholder {
+.summary-avatar-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(201, 169, 110, 0.2);
-  font-size: 48rpx;
+  font-size: 36rpx;
   border-radius: $radius-round;
 }
 
-.profile-avatar-overlay {
+.summary-avatar-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -338,75 +381,118 @@ function handleTabChange(path: string) {
   border-radius: $radius-round;
 
   text {
-    font-size: 22rpx;
+    font-size: 20rpx;
     color: #fff;
   }
 }
 
-.profile-avatar-wrap:active .profile-avatar-overlay {
+.summary-avatar:active .summary-avatar-overlay {
   opacity: 1;
 }
 
-.profile-info {
+// 昵称 + ID（两行文本）
+.summary-text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 6rpx;
 }
 
-// 昵称
-.profile-nickname-row {
+.st-row {
   display: flex;
   align-items: center;
   gap: 8rpx;
 }
 
-.profile-nickname {
-  font-size: 34rpx;
+// 昵称
+.st-nickname-row {
+  height: 40rpx;
+}
+
+.st-nickname {
+  font-size: 30rpx;
   font-weight: 600;
   color: $text-white;
 }
 
-.profile-edit-icon {
-  font-size: 28rpx;
+.st-edit-icon {
+  font-size: 26rpx;
   color: $text-muted;
 }
 
-.profile-nickname-edit {
+// 昵称编辑态
+.st-nickname-edit {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 8rpx;
 }
 
-.nickname-input {
+.st-nickname-input {
   flex: 1;
-  height: 56rpx;
-  background: rgba(255,255,255,0.1);
+  height: 48rpx;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: $radius-sm;
-  padding: 0 16rpx;
-  font-size: 28rpx;
+  padding: 0 12rpx;
+  font-size: 26rpx;
   color: $text-white;
 }
 
-.nickname-save {
-  font-size: 26rpx;
+.st-nickname-save {
+  font-size: 24rpx;
   color: $accent-gold;
   flex-shrink: 0;
 }
 
-// 绑定信息
-.profile-bindings {
+// ID
+.st-id-label {
+  font-size: 22rpx;
+  color: $text-muted;
+}
+
+.st-id-value {
+  font-size: 22rpx;
+  color: $text-muted;
+  font-family: monospace;
+}
+
+// ---------- 绑定信息 ----------
+.bindings {
   display: flex;
   flex-direction: column;
+  gap: 12rpx;
+  padding-left: 108rpx;
+  margin-bottom: 8rpx;
+}
+
+.b-row {
+  display: flex;
+  align-items: center;
   gap: 8rpx;
 }
 
-.pb-item {
-  display: flex;
+.b-row-bound {
+  .b-label {
+    font-size: 24rpx;
+  }
+
+  .b-value {
+    font-size: 24rpx;
+    color: $text-secondary;
+  }
 }
 
-.pb-btn {
+.b-label {
+  font-size: 24rpx;
+}
+
+.b-value {
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+
+// 绑定按钮
+.b-btn {
   font-size: 24rpx;
   color: $accent-gold;
   background: rgba(201, 169, 110, 0.1);
@@ -420,35 +506,9 @@ function handleTabChange(path: string) {
   }
 }
 
-.pb-btn-phone {
+.b-btn-phone {
   background: rgba(7, 193, 96, 0.12);
   color: #07c160;
-}
-
-.pb-item-bound {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.pb-label {
-  font-size: 24rpx;
-}
-
-.pb-value {
-  font-size: 24rpx;
-  color: $text-secondary;
-}
-
-// 同步状态
-.profile-sync {
-  text-align: center;
-  padding: 12rpx 0 0;
-
-  text {
-    font-size: 22rpx;
-    color: $text-muted;
-  }
 }
 
 // 退出
