@@ -167,6 +167,51 @@ tarot-miniprogram/
 | 包管理 | pnpm |
 | 目标平台 | 微信小程序 / H5 |
 
+## 实现顺序
+
+> 本节汇总 docs/ 目录下开发计划的落地时序。状态：✅ 已完成  🟡 进行中  ⬜ 待实施
+
+### 阶段 0：MVP 收尾
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 0.1 | `docs/PLAN.md` §阶段 1-2 | 5 页面骨架 + 78 张牌数据 | ✅ |
+| 0.2 | `docs/PLAN.md` §阶段 3 | 抽牌核心逻辑（洗牌/翻牌/正逆位） | ✅ |
+| 0.3 | `docs/PLAN.md` §阶段 4 | 历史记录 + 分享海报（前端版） | ✅ |
+
+### 阶段 1：海报后端化（前后端拆分）
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 1.1 | `docs/POSTER_BACKEND_PLAN.md` | 后端 Puppeteer 截图 + 前端 fetch 化 | ✅ |
+| 1.2 | `docs/POSTER_SPLIT_PLAN.md` | SharePosterMP.vue / SharePosterH5.vue 拆分 | ⬜ |
+
+### 阶段 2：用户系统（多端联合）
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 2.1 | `docs/AUTH_PLAN.md` §小程序 | wx.login + /auth/wx-login + token 存储 | 🟡 |
+| 2.2 | `docs/AUTH_PLAN.md` §H5 | 邮箱注册/登录 + unionid 跨端绑定 | ⬜ |
+
+### 阶段 3：MVP 提审上线
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 3.1 | `docs/ROADMAP.md` §L1 A1 | 发牌飞入动画 | ⬜ |
+| 3.2 | `docs/ROADMAP.md` §L1 A2 | 微信分享 API | ⬜ |
+| 3.3 | `docs/ROADMAP.md` §L1 A5 | 真机测试 & 提审 | ⬜ |
+
+### 阶段 4：远期规划
+
+- L2 每日运势 / 收藏 / 社交分享 → `docs/ROADMAP.md` §L2
+- L3 ComfyUI AI 牌面 / 自定义牌阵 → `docs/ROADMAP.md` §L3
+
+### 跨项目依赖
+
+- 📦 前置依赖：需 tarot-backend 启动 /reading /poster 接口
+- 📦 协作依赖：需 tarot-backend 阶段 3.1（users 表就绪）才能联调阶段 2.x
+- 📦 被依赖：tarot-admin 阶段 3.1 需有真实 users 数据才能展示
+
 ## 相关文档
 
 - [需求文档](./docs/REQUIREMENTS.md)
