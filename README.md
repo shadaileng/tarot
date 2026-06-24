@@ -58,11 +58,13 @@ pnpm build:h5
 cp .env.example .env
 ```
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `VITE_BACKEND_API` | 统一后端 tarot-backend 地址（Vite 注入到 `import.meta.env`） | `http://localhost:3000` |
-| `TAROT_APPID` | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wxxxxxxxxxxxxxxx` |
-| `TAROT_URL_CHECK` | 是否校验域名白名单（构建时写入 `project.config.json`） | `false`（开发） / `true`（生产） |
+| 变量 | 来源 | 说明 | 示例 | 必填 |
+|------|------|------|------|:--:|
+| `VITE_BACKEND_API` | 后端通信 | 统一后端 tarot-backend 地址（Vite 注入到 `import.meta.env`） | `http://localhost:3000` | ✅ |
+| `TAROT_APPID` | 微信平台 | 微信小程序 AppID（构建时自动写入 `project.config.json`） | `wxxxxxxxxxxxxxxx` | ⚠️ ¹ |
+| `TAROT_URL_CHECK` | 微信平台 | 是否校验域名白名单（构建时写入 `project.config.json`） | `false`（开发） / `true`（生产） | |
+
+> ¹ 部署微信小程序时必填，仅 H5 部署可跳过。
 
 如需为不同环境设置不同值，可创建 `.env.development` 或 `.env.production` 覆盖。所有 `.env*` 文件均被 `.gitignore` 忽略，不会提交到仓库。
 
