@@ -5,12 +5,13 @@ import { spreadList, getSpread } from '@/data/spreads'
 import { useTarotStore } from '@/store'
 import { navTo } from '@/utils'
 import { onShow } from '@dcloudio/uni-app'
+import { isLoggedIn } from '@/services/auth'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 const store = useTarotStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
-const useOnlineReading = ref(true)
+const useOnlineReading = ref(isLoggedIn())
 
 const currentSpread = computed(() => getSpread(selectedSpread.value))
 
