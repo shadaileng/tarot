@@ -79,10 +79,12 @@ async function generatePosterImage() {
 
     posterUrl.value = await generatePoster(data)
     posterReady.value = true
-  } catch (e) {
+  } catch (e: any) {
     console.error('[SharePoster] 海报生成失败:', e)
     if (isAuthError(e)) {
       posterError.value = '登录已过期，请关闭后重新登录再试'
+    } else if (/(timeout|abort|超时|取消)/i.test(e?.message || '')) {
+      posterError.value = '生成超时，请重试'
     } else {
       posterError.value = '生成失败，请重试'
     }

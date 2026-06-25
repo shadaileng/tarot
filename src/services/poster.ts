@@ -48,7 +48,7 @@ export async function generatePoster(data: PosterData): Promise<string> {
   // 使用统一请求封装，自动注入 JWT token，跨平台兼容
   let arrayBuffer: ArrayBuffer
   try {
-    arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer' })
+    arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: 60000 })
   } catch (err: any) {
     throw new Error(`海报生成失败: ${err.message || err}`)
   }

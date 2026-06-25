@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-06-25
+
+### Fixed
+
+- 海报生成请求超时时间从 15s 提升至 60s，避免长耗时渲染被客户端 abort
+- 海报生成失败时区分超时/取消错误与普通错误，给出"生成超时，请重试"精准提示
+
 ## [2.1.3] - 2026-06-25
 
 ### Fixed

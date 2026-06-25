@@ -76,7 +76,7 @@ function request<T>(
       method,
       header,
       data,
-      timeout: timeout || 15000,
+      timeout: timeout ?? 15000,
       responseType: responseType || 'text',
       success: (res) => {
         if (res.statusCode === 401) {
