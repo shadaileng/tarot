@@ -59,7 +59,7 @@ function request<T>(
 
   const header: Record<string, string> = {}
 
-  if (!(data instanceof FormData)) {
+  if (typeof FormData === 'undefined' || !(data instanceof FormData)) {
     header['Content-Type'] = 'application/json'
   }
 
