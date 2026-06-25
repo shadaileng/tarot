@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onMounted } from 'vue'
 import type { DrawnCard } from '@/types'
 import { generatePoster } from '@/services/poster'
+import { isLoggedIn, login } from '@/services/auth'
 import type { PosterData } from '@/utils/poster/types'
 
 const props = defineProps<{
@@ -46,6 +47,12 @@ onMounted(() => {
   contentW.value = Math.floor(Math.min(maxModalW, maxContentW))
 })
 
+/** 判断是否为认证相关错误 */
+function isAuthError(err: any): boolean {
+  const msg = String(err?.message || err || '')
+  return msg === 'UNAUTHORIZED' || msg.includes('Unauthorized') || msg.includes('缺少认证')
+}
+
 /** 调用后端海报微服务生成海报 */
 async function generatePosterImage() {
   if (posterReady.value) return
@@ -74,7 +81,11 @@ async function generatePosterImage() {
     posterReady.value = true
   } catch (e) {
     console.error('[SharePoster] 海报生成失败:', e)
-    posterError.value = '生成失败，请重试'
+    if (isAuthError(e)) {
+      posterError.value = '登录已过期，请关闭后重新登录再试'
+    } else {
+      posterError.value = '生成失败，请重试'
+    }
   }
 }
 
@@ -158,11 +169,33 @@ function sharePoster() {
 // 监听 visible 变化，自动生成
 watch(
   () => props.visible,
-  (val) => {
+  async (val) => {
     if (val) {
       posterReady.value = false
       posterUrl.value = ''
       posterError.value = ''
+      // 未登录先引导登录
+      if (!isLoggedIn()) {
+        const confirmed = await new Promise<boolean>((resolve) => {
+          uni.showModal({
+            title: '需要登录',
+            content: '生成海报需要登录后才能使用，是否立即登录？',
+            confirmText: '微信一键登录',
+            cancelText: '取消',
+            success: (r) => resolve(r.confirm),
+          })
+        })
+        if (!confirmed) {
+          posterError.value = '需要登录后才能生成海报'
+          return
+        }
+        try {
+          await login()
+        } catch {
+          posterError.value = '登录失败，请关闭后重试'
+          return
+        }
+      }
       nextTick(() => setTimeout(() => generatePosterImage(), 300))
     }
   },

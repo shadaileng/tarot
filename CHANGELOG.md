@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-06-25
+
+### Fixed
+
+- 未登录用户生成海报返回 401 时无提示，现已增加登录引导：点击「生成分享海报」先检查登录态，未登录弹窗引导微信一键登录
+- 海报弹窗内增加登录态双重防护，区分 401/未授权错误与普通错误，给出精准提示
+
 ## [2.1.0] - 2026-06-24
 
 ### Added
