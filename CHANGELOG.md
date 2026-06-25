@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-06-25
+
+### Fixed
+
+- 简化未登录用户生成海报的引导：不再弹窗引导登录，仅给 Toast/错误提示"请先登录后再生成海报"
+
 ## [2.1.2] - 2026-06-25
 
 ### Fixed

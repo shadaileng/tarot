@@ -2,7 +2,7 @@
 import { computed, ref, reactive, watch, nextTick } from 'vue'
 import { useTarotStore } from '@/store'
 import { navTo, navBack } from '@/utils'
-import { isLoggedIn, login } from '@/services/auth'
+import { isLoggedIn } from '@/services/auth'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
 import type { TarotCard, CardOrientation } from '@/types'
@@ -121,28 +121,11 @@ function handleNewReading() {
   navTo('/pages/draw/draw')
 }
 
-/** 生成分享海报 — 未登录时先引导登录 */
-async function handleSharePoster() {
+/** 生成分享海报 — 未登录时给 Toast 提示 */
+function handleSharePoster() {
   if (!isLoggedIn()) {
-    const res = await new Promise<boolean>((resolve) => {
-      uni.showModal({
-        title: '需要登录',
-        content: '生成海报需要先登录，是否立即登录？',
-        confirmText: '微信一键登录',
-        cancelText: '取消',
-        success: (r) => resolve(r.confirm),
-      })
-    })
-    if (!res) return
-    try {
-      uni.showLoading({ title: '登录中...' })
-      await login()
-      uni.hideLoading()
-    } catch (err) {
-      uni.hideLoading()
-      uni.showToast({ title: '登录失败，请重试', icon: 'none' })
-      return
-    }
+    uni.showToast({ title: '请先登录后再生成海报', icon: 'none' })
+    return
   }
   posterVisible.value = true
 }
