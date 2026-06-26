@@ -5,6 +5,9 @@
 import type { PosterData } from '@/utils/poster/types'
 import type { DrawnCard } from '@/types'
 import { apiPost } from '@/utils/request'
+import { getStoredToken } from '@/utils/request'
+
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
 /** 将前端 DrawnCard 转为后端期望的扁平 PosterCard 格式 */
 function toPosterCardInput(card: DrawnCard) {
@@ -45,40 +48,52 @@ function toPosterPayload(data: PosterData) {
 export async function generatePoster(data: PosterData): Promise<string> {
   const payload = toPosterPayload(data)
 
-  // 使用统一请求封装，自动注入 JWT token，跨平台兼容
+  // #ifdef H5
   let arrayBuffer: ArrayBuffer
   try {
     arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: 60000 })
   } catch (err: any) {
     throw new Error(`海报生成失败: ${err.message || err}`)
   }
-
-  // #ifdef H5
   const blob = new Blob([arrayBuffer], { type: 'image/png' })
   return URL.createObjectURL(blob)
   // #endif
 
   // #ifdef MP-WEIXIN
-  // 小程序：保存为临时文件
-  const fs = uni.getFileSystemManager()
-  const tempPath = `${wx.env.USER_DATA_PATH}/poster-${Date.now()}.png`
-  const dataSize = arrayBuffer.byteLength
+  const token = getStoredToken()
 
-  // 诊断：尝试不同写入方式
-  const methods = [
-    { label: 'base64', run: () => { fs.writeFileSync(tempPath, wx.arrayBufferToBase64(arrayBuffer), 'base64') } },
-  ]
+  // Step 1: POST 生成海报，获取缓存 key
+  const postRes = await new Promise<any>((resolve, reject) => {
+    uni.request({
+      url: `${BACKEND_API}/api/poster`,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      data: payload,
+      responseType: 'arraybuffer',
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (postRes.statusCode === 401) throw new Error('UNAUTHORIZED')
+  if (postRes.statusCode !== 200) throw new Error(`海报生成失败 (${postRes.statusCode})`)
 
-  for (const m of methods) {
-    try {
-      m.run()
-      const stat = fs.statSync(tempPath)
-      console.log(`[poster] method=${m.label} dataSize=${dataSize} fileSize=${stat.size} match=${dataSize === stat.size}`)
-      break
-    } catch (e: any) {
-      console.error(`[poster] method=${m.label} failed:`, e?.message || e)
-    }
-  }
-  return tempPath
+  const cacheKey = postRes.header?.['X-Cache-Key']
+  if (!cacheKey) throw new Error('海报缓存不可用')
+
+  // Step 2: 通过 GET 下载缓存海报 → 得到真实文件系统路径
+  const dlRes = await new Promise<any>((resolve, reject) => {
+    uni.downloadFile({
+      url: `${BACKEND_API}/api/poster/${cacheKey}`,
+      header: token ? { 'Authorization': `Bearer ${token}` } : {},
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (dlRes.statusCode !== 200) throw new Error(`海报下载失败 (${dlRes.statusCode})`)
+
+  return dlRes.tempFilePath
   // #endif
 }

@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.8] - 2026-06-26
+
+### Fixed
+
+- 小程序海报改用 POST + `uni.downloadFile` 双步策略：POST 生成海报获取缓存 key → `uni.downloadFile` 下载得到真实文件系统路径，绕过微信开发者工具 `__usr__` HTTP 虚拟文件服务器 500 问题
+
 ## [2.1.7] - 2026-06-26
 
 ### Fixed
