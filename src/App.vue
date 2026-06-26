@@ -18,7 +18,25 @@ onLaunch(async () => {
   }
 
   // 全局健康检查：尽早检测后端服务状态
+  console.log('[HEALTH] 开始检测后端服务...')
   store.setBackendStatus(await checkBackendHealth())
+  console.log('[HEALTH] 后端服务检测完成')
+
+  // 临时测试：验证 wx.request 是否正常工作
+  console.log('[TEST] 开始测试 wx.request...')
+  try {
+    uni.request({
+      url: 'https://httpbin.org/get',
+      method: 'GET',
+      timeout: 3000,
+      success: (res) => { console.log('[TEST] 请求成功:', res.statusCode) },
+      fail: (err) => { console.error('[TEST] 请求失败:', err.errMsg) },
+    })
+    console.log('[TEST] uni.request 调用完成（等待回调）')
+  } catch (e) {
+    console.error('[TEST] uni.request 抛出异常:', e)
+  }
+  console.log('[TEST] 测试完成')
 
   // ========== 注册 401 回调 ==========
   // 当业务接口返回 401 时自动触发（token 过期或无效）
