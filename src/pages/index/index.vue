@@ -4,7 +4,7 @@ import type { SpreadType } from '@/types'
 import { spreadList } from '@/data/spreads'
 import { useTarotStore } from '@/store'
 import { navTo } from '@/utils'
-import { checkBackendHealth, type BackendStatus } from '@/services/reading'
+
 import { isLoggedIn } from '@/services/auth'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
@@ -13,8 +13,8 @@ const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
 const useOnlineReading = ref(isLoggedIn())
 
-// 后台分层健康状态
-const backendStatus = ref<BackendStatus>({ status: 'checking', worker: 'down', gemini: 'unknown' })
+// 后台分层健康状态（从 store 读取，在 App.vue onLaunch 中检测）
+const backendStatus = computed(() => store.backendStatus)
 
 // 用于 CSS class 的状态字符串：checking | ok | degraded | error
 const backendClass = computed(() => backendStatus.value.status)
@@ -30,7 +30,7 @@ const backendText = computed(() => {
 
 // 星空粒子
 const stars = ref<{ x: number; y: number; size: number; delay: number; duration: number; opacity: number }[]>([])
-onMounted(async () => {
+onMounted(() => {
   stars.value = Array.from({ length: 40 }, () => ({
     x: Math.random() * 100,
     y: Math.random() * 100,
@@ -39,9 +39,6 @@ onMounted(async () => {
     duration: 2 + Math.random() * 3,
     opacity: 0.2 + Math.random() * 0.6,
   }))
-
-  // 检测后台服务
-  backendStatus.value = await checkBackendHealth()
 })
 
 const spreadIcons: Record<SpreadType, string> = {
