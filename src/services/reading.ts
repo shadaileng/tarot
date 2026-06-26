@@ -250,8 +250,7 @@ export async function checkBackendHealth(): Promise<BackendStatus> {
       worker: data.worker || 'down',
       gemini: data.gemini || 'unknown',
     }
-  } catch (e) {
-    console.error('[HEALTH] checkBackendHealth 请求失败:', e)
+  } catch {
     return { status: 'error', worker: 'down', gemini: 'unknown' }
   }
 }

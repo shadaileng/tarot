@@ -1,6 +1,6 @@
 {
   "name": "tarot-miniprogram",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "塔罗牌小程序 - UniApp (Vue3)",
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin --host 0.0.0.0",
