@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import type { TarotCard, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
 import { drawRandomCards } from '@/data/tarot-cards'
 import { getSpread } from '@/data/spreads'
-import { fetchReading, generateLocalReading } from '@/services/reading'
+import { fetchReading, generateLocalReading, type BackendStatus } from '@/services/reading'
 import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord } from '@/services/record-sync'
 
@@ -48,6 +48,9 @@ export const useTarotStore = defineStore('tarot', () => {
 
   /** 云端同步状态 */
   const isSyncing = ref(false)
+
+  /** 后端服务分层健康状态 */
+  const backendStatus = ref<BackendStatus>({ status: 'checking', worker: 'down', gemini: 'unknown' })
 
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
@@ -197,6 +200,11 @@ export const useTarotStore = defineStore('tarot', () => {
     saveRecords()
   }
 
+  /** 设置后端服务健康状态 */
+  function setBackendStatus(status: BackendStatus) {
+    backendStatus.value = status
+  }
+
   /** 静默同步单条记录到云端（内部使用） */
   async function syncToCloudIfLoggedIn(record: ReadingRecord) {
     if (!isLoggedIn()) return
@@ -218,6 +226,8 @@ export const useTarotStore = defineStore('tarot', () => {
     recordCount,
     isLoadingInterpretation,
     isSyncing,
+    backendStatus,
+    setBackendStatus,
     drawCards,
     fetchInterpretation,
     clearReading,

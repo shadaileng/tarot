@@ -2,6 +2,7 @@
 import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { useTarotStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
+import { checkBackendHealth } from '@/services/reading'
 
 onLaunch(async () => {
   const store = useTarotStore()
@@ -15,6 +16,9 @@ onLaunch(async () => {
   } else {
     console.log('👤 游客模式：未登录')
   }
+
+  // 全局健康检查：尽早检测后端服务状态
+  store.setBackendStatus(await checkBackendHealth())
 
   // ========== 注册 401 回调 ==========
   // 当业务接口返回 401 时自动触发（token 过期或无效）
