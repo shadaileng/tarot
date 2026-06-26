@@ -71,7 +71,7 @@ function handleMaskClick() {
     <view class="card-detail-popup" @click.stop>
       <!-- 关闭按钮 -->
       <view class="close-btn" @click="handleClose">
-        <text>✕</text>
+        <text class="close-btn-text">✕</text>
       </view>
 
       <!-- 牌面大图 -->
@@ -226,7 +226,7 @@ function handleMaskClick() {
   justify-content: center;
   z-index: 10;
 
-  text {
+  .close-btn-text {
     font-size: 28rpx;
     color: $text-muted;
   }

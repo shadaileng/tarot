@@ -38,8 +38,7 @@ function toggleTheme() {
 const contentW = ref(300)
 
 onMounted(() => {
-  const sys = uni.getSystemInfoSync()
-  const winW = sys.windowWidth || 375
+  const winW = (uni.getWindowInfo()?.windowWidth || 375)
   const pr = winW / 750
 
   const maxModalW = 600 * pr

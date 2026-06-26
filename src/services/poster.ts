@@ -62,7 +62,8 @@ export async function generatePoster(data: PosterData): Promise<string> {
   // 小程序：保存为临时文件
   const fs = uni.getFileSystemManager()
   const tempPath = `${wx.env.USER_DATA_PATH}/poster-${Date.now()}.png`
-  fs.writeFileSync(tempPath, arrayBuffer as unknown as string, 'binary')
+  const base64 = wx.arrayBufferToBase64(arrayBuffer)
+  fs.writeFileSync(tempPath, base64, 'base64')
   return tempPath
   // #endif
 }

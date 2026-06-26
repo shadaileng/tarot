@@ -5,6 +5,14 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.7] - 2026-06-26
+
+### Fixed
+
+- 修复海报生成中 `writeFileSync` 用错误编码写入 ArrayBuffer 导致 PNG 文件损坏返回 500 的问题
+- 修复 CardDetail 组件 wxss 中违规使用 tag 选择器 `text {}` 的问题
+- 替换废弃的 `uni.getSystemInfoSync()` 为 `uni.getWindowInfo()`
+
 ## [2.1.6] - 2026-06-26
 
 ### Fixed
