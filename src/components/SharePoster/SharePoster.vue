@@ -221,6 +221,7 @@ watch(
             :src="posterUrl"
             mode="widthFix"
             style="width: 100%;"
+            @error="(e: any) => console.error('[SharePoster] image load error:', posterUrl, e)"
           />
         </view>
       </view>

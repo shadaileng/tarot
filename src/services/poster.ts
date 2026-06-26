@@ -62,8 +62,23 @@ export async function generatePoster(data: PosterData): Promise<string> {
   // 小程序：保存为临时文件
   const fs = uni.getFileSystemManager()
   const tempPath = `${wx.env.USER_DATA_PATH}/poster-${Date.now()}.png`
-  const base64 = wx.arrayBufferToBase64(arrayBuffer)
-  fs.writeFileSync(tempPath, base64, 'base64')
+  const dataSize = arrayBuffer.byteLength
+
+  // 诊断：尝试不同写入方式
+  const methods = [
+    { label: 'base64', run: () => { fs.writeFileSync(tempPath, wx.arrayBufferToBase64(arrayBuffer), 'base64') } },
+  ]
+
+  for (const m of methods) {
+    try {
+      m.run()
+      const stat = fs.statSync(tempPath)
+      console.log(`[poster] method=${m.label} dataSize=${dataSize} fileSize=${stat.size} match=${dataSize === stat.size}`)
+      break
+    } catch (e: any) {
+      console.error(`[poster] method=${m.label} failed:`, e?.message || e)
+    }
+  }
   return tempPath
   // #endif
 }
