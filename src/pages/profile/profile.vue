@@ -22,7 +22,7 @@ function maskMiddle(val: string, keep = 3): string {
 }
 
 function goToDetail() {
-  navTo('pages/profile-detail/profile-detail')
+  navTo('/pages/profile-detail/profile-detail')
 }
 
 const tabList = [
