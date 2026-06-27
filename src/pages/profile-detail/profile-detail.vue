@@ -62,15 +62,9 @@ async function handleAvatarChange() {
     })
     const tempPath = res.tempFilePaths[0]
     saving.value = true
+    const saveResult = await uni.saveFile({ tempFilePath: tempPath })
     const fs = uni.getFileSystemManager()
-    const base64: string = await new Promise((resolve, reject) => {
-      fs.readFile({
-        filePath: tempPath,
-        encoding: 'base64',
-        success(res) { resolve(res.data as string) },
-        fail(err) { reject(new Error(err.errMsg || '读取文件失败')) },
-      })
-    })
+    const base64 = fs.readFileSync(saveResult.savedFilePath, 'base64') as string
     const ext = (tempPath.match(/\.(\w+)(\?|$)/) || ['', 'jpg'])[1]
     const avatarUrl = `data:image/${ext};base64,${base64}`
     const result = await updateProfile({ avatarUrl })
