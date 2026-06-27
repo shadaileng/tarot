@@ -9,15 +9,15 @@ import {
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
 
-const userInfo = ref<UserInfo | null>(getUserInfo())
+const userInfo = ref<UserInfo | null>(null)
 
-onShow(() => {
+onShow(async () => {
   if (!isLoggedIn()) {
     uni.showToast({ title: '请先登录', icon: 'none' })
     uni.switchTab({ url: '/pages/profile/profile' })
     return
   }
-  userInfo.value = getUserInfo()
+  userInfo.value = await refreshUserInfo()
 })
 
 const genderLabels = ['保密', '男', '女']
