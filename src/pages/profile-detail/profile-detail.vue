@@ -95,8 +95,8 @@ async function handleAvatarChange() {
 }
 
 async function handleGenderChange(e: any) {
-  const idx = e.detail?.value
-  if (idx == null) return
+  const idx = Number(e.detail?.value)
+  if (isNaN(idx)) return
   genderIndex.value = idx
   saving.value = true
   try {
