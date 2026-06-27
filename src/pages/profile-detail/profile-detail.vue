@@ -62,11 +62,22 @@ async function handleAvatarChange() {
     })
     const tempPath = res.tempFilePaths[0]
     saving.value = true
-    const saveResult = await uni.saveFile({ tempFilePath: tempPath })
-    const fs = uni.getFileSystemManager()
-    const base64 = fs.readFileSync(saveResult.savedFilePath, 'base64') as string
-    const ext = (tempPath.match(/\.(\w+)(\?|$)/) || ['', 'jpg'])[1]
-    const avatarUrl = `data:image/${ext};base64,${base64}`
+
+    // 使用 Canvas2D 读取图片，绕过 http://tmp/ 文件系统限制
+    const imgInfo = await uni.getImageInfo({ src: tempPath })
+    const canvas = wx.createOffscreenCanvas({ type: '2d', width: imgInfo.width, height: imgInfo.height })
+    const ctx = canvas.getContext('2d')!
+    const img = canvas.createImage()
+    const avatarUrl = await new Promise<string>((resolve, reject) => {
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, imgInfo.width, imgInfo.height)
+        const dataUrl = canvas.toDataURL('image/png')
+        resolve(dataUrl)
+      }
+      img.onerror = reject
+      img.src = tempPath
+    })
+
     const result = await updateProfile({ avatarUrl })
     userInfo.value = result.user
     uni.showToast({ title: '头像已更新', icon: 'success' })
