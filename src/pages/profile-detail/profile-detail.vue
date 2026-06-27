@@ -18,6 +18,7 @@ onShow(async () => {
     return
   }
   userInfo.value = await refreshUserInfo()
+  syncGender()
 })
 
 const genderLabels = ['保密', '男', '女']
@@ -98,11 +99,11 @@ async function handleAvatarChange() {
 async function handleGenderChange(e: any) {
   const idx = Number(e.detail?.value)
   if (isNaN(idx)) return
-  genderIndex.value = idx
   saving.value = true
   try {
     const result = await updateProfile({ gender: idx })
     userInfo.value = result.user
+    genderIndex.value = result.user.gender ?? 0
   } catch (err: any) {
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
