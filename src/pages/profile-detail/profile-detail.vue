@@ -8,7 +8,7 @@ import {
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
 
-const userInfo = ref<UserInfo | null>(null)
+const userInfo = ref<UserInfo | null>(getUserInfo())
 
 onShow(() => {
   if (!isLoggedIn()) {
