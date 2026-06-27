@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { navTo } from '@/utils'
 import TabBar from '@/components/TabBar/TabBar.vue'
 import LoginGuide from '@/components/LoginGuide/LoginGuide.vue'
@@ -10,6 +11,11 @@ import type { UserInfo } from '@/services/auth'
 
 const loggedIn = ref(isLoggedIn())
 const userInfo = ref<UserInfo | null>(getUserInfo())
+
+onShow(() => {
+  loggedIn.value = isLoggedIn()
+  userInfo.value = getUserInfo()
+})
 
 function handleLoginSuccess() {
   loggedIn.value = true
