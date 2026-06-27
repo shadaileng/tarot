@@ -5,6 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-06-27
+
+### Added
+
+- 新增个人资料编辑页 `profile-detail.vue`，支持编辑昵称、性别、生日、邮箱绑定
+
+### Changed
+
+- 重构 `profile.vue` 个人中心页头部：头像 | 昵称+ID | › 箭头，点击进入详情页
+- 移除个人中心页的邮箱绑定、行内昵称编辑、退出登录，统一迁移至详情页
+
 ## [2.1.8] - 2026-06-26
 
 ### Fixed

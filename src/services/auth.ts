@@ -10,6 +10,8 @@ export interface UserInfo {
   nickname: string
   avatarUrl: string | null
   email?: string | null
+  gender?: number | null
+  birthday?: string | null
   createdAt: string
 }
 
@@ -160,11 +162,13 @@ export async function bindEmail(email: string, password: string): Promise<{ mess
 // ========== 用户资料（需已登录）==========
 
 /**
- * 更新用户资料（昵称/头像）
+ * 更新用户资料（昵称/头像/性别/生日）
  */
 export async function updateProfile(data: {
   nickname?: string
   avatarUrl?: string
+  gender?: number
+  birthday?: string
 }): Promise<{ user: UserInfo }> {
   const result = await apiPut<{ user: UserInfo }>('/api/user/profile', data)
   // 同步更新本地缓存
