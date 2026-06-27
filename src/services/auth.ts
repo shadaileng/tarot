@@ -1,5 +1,5 @@
 // ========== 认证服务 ==========
-// 微信登录 / token 管理 / 用户信息存储 / 邮箱绑定 / 手机号绑定 / 资料更新
+// 微信登录 / token 管理 / 用户信息存储 / 邮箱绑定 / 资料更新
 
 import { apiPost, apiGet, apiPut, getStoredToken, setStoredToken, removeStoredToken, setUnauthorizedHandler } from '@/utils/request'
 
@@ -10,7 +10,6 @@ export interface UserInfo {
   nickname: string
   avatarUrl: string | null
   email?: string | null
-  phone?: string | null
   createdAt: string
 }
 
@@ -158,13 +157,6 @@ export async function bindEmail(email: string, password: string): Promise<{ mess
   return apiPost('/api/auth/bind-email', { email, password })
 }
 
-/**
- * 绑定手机号（小程序端）
- */
-export async function bindPhone(phoneCode: string): Promise<{ message: string; phone: string }> {
-  return apiPost('/api/auth/bind-phone', { code: phoneCode })
-}
-
 // ========== 用户资料（需已登录）==========
 
 /**
@@ -196,30 +188,6 @@ export async function refreshUserInfo(): Promise<UserInfo | null> {
   } catch {
     return null
   }
-}
-
-// ========== 首次登录引导 ==========
-
-const PHONE_PROMPTED_KEY = 'phone_bind_prompted'
-
-/**
- * 是否应该弹出手机号绑定引导（新用户首次登录后、尚未绑定手机号、未提示过）
- */
-export function shouldPromptPhoneBind(userInfo: UserInfo): boolean {
-  if (userInfo.phone) return false
-  try {
-    const prompted = uni.getStorageSync(PHONE_PROMPTED_KEY)
-    return !prompted
-  } catch {
-    return true
-  }
-}
-
-/**
- * 标记手机号绑定引导已展示
- */
-export function markPhonePromptShown(): void {
-  uni.setStorageSync(PHONE_PROMPTED_KEY, '1')
 }
 
 // ========== 初始化 ==========

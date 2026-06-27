@@ -5,7 +5,7 @@ import TabBar from '@/components/TabBar/TabBar.vue'
 import LoginGuide from '@/components/LoginGuide/LoginGuide.vue'
 import {
   isLoggedIn, getUserInfo, logout, login,
-  updateProfile, bindEmail as bindEmailApi, bindPhone as bindPhoneApi,
+  updateProfile, bindEmail as bindEmailApi,
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
 import { useTarotStore } from '@/store'
@@ -104,11 +104,6 @@ function maskMiddle(val: string, keep = 3): string {
   return val.slice(0, keep) + '***' + val.slice(-keep)
 }
 
-function maskPhone(phone: string): string {
-  if (!phone || phone.length < 11) return phone || ''
-  return phone.slice(0, 3) + '****' + phone.slice(-4)
-}
-
 // ========== 邮箱绑定 ==========
 const bindEmailOpen = ref(false)
 const bindEmailAddr = ref('')
@@ -132,27 +127,6 @@ async function handleBindEmail() {
     uni.showToast({ title: err.message || '绑定失败', icon: 'none' })
   } finally {
     bindEmailLoading.value = false
-  }
-}
-
-// ========== 手机号绑定 ==========
-const phoneBinding = ref(false)
-
-async function handleGetPhoneNumber(e: any) {
-  const code = e.detail?.code
-  if (!code) {
-    uni.showToast({ title: '授权已取消', icon: 'none' })
-    return
-  }
-  phoneBinding.value = true
-  try {
-    const result = await bindPhoneApi(code)
-    userInfo.value = getUserInfo()
-    uni.showToast({ title: '手机号绑定成功', icon: 'success' })
-  } catch (err: any) {
-    uni.showToast({ title: err.message || '绑定失败', icon: 'none' })
-  } finally {
-    phoneBinding.value = false
   }
 }
 
@@ -225,7 +199,7 @@ function handleTabChange(path: string) {
         </view>
       </view>
 
-      <!-- 绑定信息（邮箱 + 手机号） -->
+      <!-- 绑定信息 -->
       <view class="bindings">
         <!-- 邮箱 -->
         <view class="b-row" v-if="!userInfo.email">
@@ -238,23 +212,7 @@ function handleTabChange(path: string) {
           <text class="b-value">{{ userInfo.email }}</text>
         </view>
 
-        <!-- 手机号 -->
-        <!-- #ifdef MP-WEIXIN -->
-        <view class="b-row" v-if="!userInfo.phone">
-          <button
-            class="b-btn b-btn-phone"
-            open-type="getPhoneNumber"
-            :loading="phoneBinding"
-            @getphonenumber="handleGetPhoneNumber"
-          >
-            📱 绑定手机号
-          </button>
-        </view>
-        <view v-else class="b-row b-row-bound">
-          <text class="b-label">📱</text>
-          <text class="b-value">{{ maskPhone(userInfo.phone) }}</text>
-        </view>
-        <!-- #endif -->
+
       </view>
 
       <!-- 退出按钮 -->
@@ -504,11 +462,6 @@ function handleTabChange(path: string) {
   &::after {
     border: none;
   }
-}
-
-.b-btn-phone {
-  background: rgba(7, 193, 96, 0.12);
-  color: #07c160;
 }
 
 // 退出
