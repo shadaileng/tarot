@@ -79,8 +79,60 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 | `pages/result/result` | 占卜结果页（展示牌面、正逆位解读） | - |
 | `pages/cards/cards` | 牌库浏览（78 张牌列表） | ✅ |
 | `pages/history/history` | 占卜记录（历史列表、删除） | ✅ |
+| `pages/profile/profile` | 我的（用户卡片 + 登录引导） | ✅ |
+| `pages/profile-detail/profile-detail` | 个人资料详情（编辑/邮箱绑定/退出） | - |
 
 > TabBar 为自定义组件（`src/components/TabBar/TabBar.vue`），`pages.json` 中 `"custom": true`。
+
+## 用户个人资料
+
+### 页面说明
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 我的 | `pages/profile/profile.vue` | TabBar「我的」，展示用户卡片（头像、昵称、脱敏 ID）或登录引导 |
+| 个人资料 | `pages/profile-detail/profile-detail.vue` | 资料编辑 + 邮箱绑定 + 退出登录 |
+
+### 资料详情功能（`profile-detail.vue`）
+
+| 字段 | 交互方式 | 说明 |
+|------|----------|------|
+| 头像 | 点击 → 选择/拍摄 → Canvas2D → dataURL → 上传 | 微信端用 OffscreenCanvas 读取本地图片；H5 暂不支持 |
+| 昵称 | 内联编辑 → 失焦/确认保存 | 最长 30 字符 |
+| 性别 | Picker 选择器（保密/男/女） | 保存成功后同步显示 |
+| 生日 | Picker 日期选择器 | 范围 1900-01-01 至今天 |
+| 邮箱 | 未绑定时显示「绑定邮箱」按钮 → 弹窗输入邮箱+密码 | 绑定成功自动 `refreshUserInfo()` |
+| 退出 | 确认弹窗 → 清除 token 和用户信息 | 返回上一页 |
+
+### 认证服务（`src/services/auth.ts`）
+
+| 函数 | 端点 | 说明 |
+|------|------|------|
+| `login()` | 自动选择 | 微信小程序 → `wechatLogin()`；H5 → 抛出异常要求使用 `emailLogin` |
+| `wechatLogin()` | `POST /api/auth/wechat-login` | 微信 code → JWT |
+| `emailLogin(email, password)` | `POST /api/auth/email-login` | H5 邮箱登录 |
+| `emailRegister(email, password)` | `POST /api/auth/email-register` | H5 邮箱注册 |
+| `bindEmail(email, password)` | `POST /api/auth/bind-email` | 绑定邮箱（触发账号合并） |
+| `updateProfile(data)` | `PUT /api/user/profile` | 更新昵称/头像/性别/生日，自动同步本地缓存 |
+| `refreshUserInfo()` | `GET /api/user/profile` | 从服务端拉取最新资料并更新缓存 |
+| `logout()` | — | 清除 token 和用户信息 |
+| `isLoggedIn()` | — | 检查本地 token 是否存在且未过期 |
+| `getUserInfo()` | — | 读取本地缓存的用户信息 |
+| `initAuth(handler)` | — | 注册 401 全局回调 |
+
+### 网络请求（`src/utils/request.ts`）
+
+- 基于 `uni.request()`（**禁止**使用 `fetch` 或 `wx.request`）
+- 自动注入 `Authorization: Bearer <token>` 请求头
+- 401 响应 → 清除 token → 触发 `onUnauthorized` 回调（自动尝试重新登录）
+- 400+ 错误 → 抛出 `Error(message)`，`message` 来自 `/api/user/profile` 的 `message` 字段
+
+### LoginGuide 组件
+
+| 组件 | 平台 | UI |
+|------|------|------|
+| `LoginGuideWechat.vue` | 微信小程序 | 「微信一键登录」按钮，绿色渐变 |
+| `LoginGuideEmail.vue` | H5 | 登录/注册切换表单，邮箱+密码输入，蓝色渐变 |
 
 ## 命令
 
