@@ -5,6 +5,7 @@ import { navBack } from '@/utils'
 import {
   isLoggedIn, getUserInfo, logout,
   updateProfile, bindEmail as bindEmailApi,
+  refreshUserInfo,
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
 
@@ -139,7 +140,8 @@ async function handleBindEmail() {
   bindEmailLoading.value = true
   try {
     await bindEmailApi(email, pwd)
-    userInfo.value = getUserInfo()
+    const updated = await refreshUserInfo()
+    if (updated) userInfo.value = updated
     bindEmailOpen.value = false
     uni.showToast({ title: '邮箱绑定成功', icon: 'success' })
   } catch (err: any) {
