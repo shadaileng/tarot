@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onShow } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { showToast } from '@/utils'
 import { fetchInviteCode, fetchInviteRecords } from '@/services/user-stats'
 import type { InviteRecord } from '@/types'

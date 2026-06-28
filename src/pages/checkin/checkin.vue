@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onShow } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { navBack } from '@/utils'
 import { submitCheckin, fetchCheckinStatus } from '@/services/user-stats'
 import type { CheckinResult, CheckinStatus } from '@/types'

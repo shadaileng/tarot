@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onShow } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { navTo, showToast } from '@/utils'
 import { fetchTasks, claimTask } from '@/services/user-stats'
 import type { UserTaskItem } from '@/types'
@@ -109,11 +110,6 @@ onShow(() => {
     </template>
   </view>
 </template>
-
-<script lang="ts">
-import { computed } from 'vue'
-export {}
-</script>
 
 <style lang="scss" scoped>
 .tasks-page {
