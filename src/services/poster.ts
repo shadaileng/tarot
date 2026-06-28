@@ -40,12 +40,12 @@ function toPosterPayload(data: PosterData) {
 
 /**
  * 生成海报图片
- * 调用后端 tarot-poster-service，返回可直接展示的图片 URL
+ * 调用后端 tarot-poster-service 生成海报 PNG
  *
  * @param data 海报数据（牌面信息、问题、解读等）
- * @returns 图片 URL（H5 为 blob URL，小程序为临时文件路径）
+ * @returns url（展示用）和 savePath（可选，保存到相册用）
  */
-export async function generatePoster(data: PosterData): Promise<string> {
+export async function generatePoster(data: PosterData): Promise<{ url: string; savePath?: string }> {
   const payload = toPosterPayload(data)
 
   // #ifdef H5
@@ -56,7 +56,7 @@ export async function generatePoster(data: PosterData): Promise<string> {
     throw new Error(`海报生成失败: ${err.message || err}`)
   }
   const blob = new Blob([arrayBuffer], { type: 'image/png' })
-  return URL.createObjectURL(blob)
+  return { url: URL.createObjectURL(blob) }
   // #endif
 
   // #ifdef MP-WEIXIN
@@ -83,7 +83,7 @@ export async function generatePoster(data: PosterData): Promise<string> {
   const cacheKey = postRes.header?.['X-Cache-Key']
   if (!cacheKey) throw new Error('海报缓存不可用')
 
-  // Step 2: 通过 GET 下载缓存海报 → 得到真实文件系统路径
+  // Step 2: 通过 GET 下载缓存海报 → http://tmp/ 路径（DevTools 可渲染，用于展示）
   const dlRes = await new Promise<any>((resolve, reject) => {
     uni.downloadFile({
       url: `${BACKEND_API}/api/poster/${cacheKey}`,
@@ -94,6 +94,17 @@ export async function generatePoster(data: PosterData): Promise<string> {
   })
   if (dlRes.statusCode !== 200) throw new Error(`海报下载失败 (${dlRes.statusCode})`)
 
-  return dlRes.tempFilePath
+  // Step 3: 用 ArrayBuffer 写入 USER_DATA_PATH（真实文件路径，供保存到相册用）
+  let savePath: string | undefined
+  try {
+    const fs = uni.getFileSystemManager()
+    const base64 = wx.arrayBufferToBase64(postRes.data)
+    savePath = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
+    fs.writeFileSync(savePath, base64, 'base64')
+  } catch (e) {
+    console.error('[poster] 写入持久文件失败:', e)
+  }
+
+  return { url: dlRes.tempFilePath, savePath }
   // #endif
 }

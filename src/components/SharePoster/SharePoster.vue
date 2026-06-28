@@ -21,6 +21,7 @@ const emit = defineEmits<{
 
 const posterReady = ref(false)
 const posterUrl = ref('')
+const posterSavePath = ref('')
 const isSaving = ref(false)
 const posterError = ref('')
 
@@ -31,6 +32,7 @@ function toggleTheme() {
   currentTheme.value = currentTheme.value === 'dark' ? 'light' : 'dark'
   posterReady.value = false
   posterUrl.value = ''
+  posterSavePath.value = ''
   posterError.value = ''
   nextTick(() => generatePosterImage())
 }
@@ -76,7 +78,9 @@ async function generatePosterImage() {
       template,
     }
 
-    posterUrl.value = await generatePoster(data)
+    const result = await generatePoster(data)
+    posterUrl.value = result.url
+    posterSavePath.value = result.savePath || ''
     posterReady.value = true
   } catch (e: any) {
     console.error('[SharePoster] 海报生成失败:', e)
@@ -96,31 +100,29 @@ async function savePoster() {
   isSaving.value = true
   try {
     // #ifdef MP-WEIXIN
-    const setting = await uni.getSetting()
-    if (!setting.authSetting['scope.writePhotosAlbum']) {
-      await uni.authorize({ scope: 'scope.writePhotosAlbum' })
-    }
-    await uni.saveImageToPhotosAlbum({
-      filePath: posterUrl.value,
-      success: () => {
-        uni.showToast({ title: '已保存到相册', icon: 'success' })
-      },
-      fail: (err: any) => {
-        if (err.errMsg.includes('auth deny')) {
-          uni.showModal({
-            title: '提示',
-            content: '需要相册权限才能保存海报，请在设置中开启',
-            confirmText: '去设置',
-            success: (res) => {
-              if (res.confirm) {
-                uni.openSetting({})
-              }
-            },
-          })
-        } else {
-          uni.showToast({ title: '保存失败', icon: 'error' })
-        }
-      },
+    await new Promise<void>((resolve) => {
+      uni.saveImageToPhotosAlbum({
+        filePath: posterSavePath.value || posterUrl.value,
+        success: () => {
+          uni.showToast({ title: '已保存到相册', icon: 'success' })
+          resolve()
+        },
+        fail: (err: any) => {
+          if (err.errMsg.includes('auth deny')) {
+            uni.showModal({
+              title: '提示',
+              content: '需要相册权限才能保存海报，请在设置中开启',
+              confirmText: '去设置',
+              success: (res) => {
+                if (res.confirm) uni.openSetting({})
+              },
+            })
+          } else {
+            uni.showToast({ title: '保存失败', icon: 'error' })
+          }
+          resolve()
+        },
+      })
     })
     // #endif
 
@@ -174,6 +176,7 @@ watch(
     if (val) {
       posterReady.value = false
       posterUrl.value = ''
+      posterSavePath.value = ''
       posterError.value = ''
       // 未登录给错误提示，不自动引导登录
       if (!isLoggedIn()) {
