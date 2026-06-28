@@ -8,7 +8,7 @@ const loading = ref(false)
 const error = ref('')
 
 async function doBind() {
-  const trimmed = code.value.trim().toUpperCase()
+  const trimmed = code.value.trim()
   if (!trimmed || trimmed.length !== 6) {
     error.value = '请输入 6 位邀请码'
     return
@@ -37,7 +37,7 @@ async function doBind() {
         <input
           v-model="code"
           class="code-input"
-          placeholder="请输入 6 位邀请码"
+          placeholder="请输入 6 位邀请码（区分大小写）"
           maxlength="6"
           auto-focus
           @input="error = ''"
