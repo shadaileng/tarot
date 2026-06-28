@@ -28,8 +28,8 @@ export async function fetchInviteCode(): Promise<{ referralCode: string }> {
   return apiGet<{ referralCode: string }>('/api/invite/code')
 }
 
-export async function fetchInviteRecords(): Promise<{ records: InviteRecord[] }> {
-  return apiGet<{ records: InviteRecord[] }>('/api/invite/records')
+export async function fetchInviteRecords(): Promise<{ records: InviteRecord[]; inviter: InviterInfo | null }> {
+  return apiGet<{ records: InviteRecord[]; inviter: InviterInfo | null }>('/api/invite/records')
 }
 
 export async function fetchLevels(): Promise<{ levels: LevelDefinition[] }> {

@@ -170,6 +170,13 @@ export interface LevelDefinition {
   max_extra_quota: number
 }
 
+/** 我的邀请人信息 */
+export interface InviterInfo {
+  referralCode: string
+  nickname: string
+  avatarUrl: string | null
+}
+
 /** 邀请记录 */
 export interface InviteRecord {
   id: string
