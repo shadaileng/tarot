@@ -129,6 +129,11 @@ function handleTabChange(path: string) {
         <text class="menu-label">邀请好友</text>
         <text class="menu-arrow">›</text>
       </view>
+      <view class="menu-item" @click="goTo('/pages/invite-input/invite-input')">
+        <text class="menu-icon">🔗</text>
+        <text class="menu-label">输入邀请码</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item" @click="goTo('/pages/history/history')">
         <text class="menu-icon">📖</text>
         <text class="menu-label">占卜记录</text>

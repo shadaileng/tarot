@@ -35,3 +35,7 @@ export async function fetchInviteRecords(): Promise<{ records: InviteRecord[] }>
 export async function fetchLevels(): Promise<{ levels: LevelDefinition[] }> {
   return apiGet<{ levels: LevelDefinition[] }>('/api/levels')
 }
+
+export async function bindReferral(referralCode: string): Promise<{ success: boolean; message: string }> {
+  return apiPost('/api/user/bind-referral', { referralCode })
+}
