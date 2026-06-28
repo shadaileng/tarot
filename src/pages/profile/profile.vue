@@ -5,7 +5,7 @@ import { navTo } from '@/utils'
 import TabBar from '@/components/TabBar/TabBar.vue'
 import LoginGuide from '@/components/LoginGuide/LoginGuide.vue'
 import {
-  isLoggedIn, getUserInfo,
+  isLoggedIn, getUserInfo, login,
 } from '@/services/auth'
 import { fetchUserStats } from '@/services/user-stats'
 import type { UserInfo } from '@/services/auth'
@@ -14,10 +14,12 @@ import type { UserLevelInfo } from '@/types'
 const loggedIn = ref(isLoggedIn())
 const userInfo = ref<UserInfo | null>(getUserInfo())
 const stats = ref<UserLevelInfo | null>(null)
+const showLoginGuide = ref(!loggedIn.value)
 
 onShow(() => {
   loggedIn.value = isLoggedIn()
   userInfo.value = getUserInfo()
+  showLoginGuide.value = !loggedIn.value
   if (loggedIn.value) loadStats()
 })
 
@@ -30,7 +32,12 @@ async function loadStats() {
 function handleLoginSuccess() {
   loggedIn.value = true
   userInfo.value = getUserInfo()
+  showLoginGuide.value = false
   loadStats()
+}
+
+function handleLogin() {
+  showLoginGuide.value = true
 }
 
 function maskMiddle(val: string, keep = 3): string {
@@ -39,7 +46,7 @@ function maskMiddle(val: string, keep = 3): string {
 }
 
 function goToDetail() {
-  navTo('/pages/profile-detail/profile-detail')
+  if (loggedIn.value) navTo('/pages/profile-detail/profile-detail')
 }
 
 function goTo(url: string) {
@@ -60,7 +67,7 @@ function handleTabChange(path: string) {
 
 <template>
   <view class="page-container profile-page">
-    <view v-if="loggedIn && userInfo" class="profile-card" @click="goToDetail">
+    <view v-if="userInfo" class="profile-card" :class="{ clickable: loggedIn }" @click="goToDetail">
       <view class="profile-header">
         <image
           v-if="userInfo.avatarUrl"
@@ -75,7 +82,8 @@ function handleTabChange(path: string) {
           <text class="profile-id">ID {{ maskMiddle(userInfo.id, 4) }}</text>
         </view>
 
-        <text class="profile-arrow">›</text>
+        <text v-if="loggedIn" class="profile-arrow">›</text>
+        <button v-else class="login-btn" @click.stop="handleLogin">一键登录</button>
       </view>
     </view>
 
@@ -128,7 +136,7 @@ function handleTabChange(path: string) {
       </view>
     </view>
 
-    <LoginGuide v-if="!loggedIn" @login-success="handleLoginSuccess" />
+    <LoginGuide v-if="showLoginGuide && !loggedIn" @login-success="handleLoginSuccess" />
 
     <TabBar :current-path="'pages/profile/profile'" :tabs="tabList" @change="handleTabChange" />
   </view>
@@ -145,7 +153,10 @@ function handleTabChange(path: string) {
   border-radius: $radius-md;
   padding: 28rpx 32rpx;
   margin-bottom: 24rpx;
-  cursor: pointer;
+
+  &.clickable {
+    cursor: pointer;
+  }
 }
 
 .profile-header {
@@ -198,6 +209,18 @@ function handleTabChange(path: string) {
   color: $text-muted;
   flex-shrink: 0;
   padding: 0 8rpx;
+}
+
+.login-btn {
+  flex-shrink: 0;
+  padding: 8rpx 24rpx;
+  background: linear-gradient(135deg, $accent-gold, $accent-gold-light);
+  color: $bg-primary;
+  border: none;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .stats-card {
@@ -314,72 +337,5 @@ function handleTabChange(path: string) {
 .menu-arrow {
   font-size: 36rpx;
   color: $text-muted;
-}
-</style>
-
-<style lang="scss" scoped>
-.profile-page {
-  padding: 24rpx;
-  padding-bottom: 40rpx;
-}
-
-.profile-card {
-  background: $bg-card;
-  border-radius: $radius-md;
-  padding: 28rpx 32rpx;
-  margin-bottom: 32rpx;
-  cursor: pointer;
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-
-.profile-avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: $radius-round;
-  flex-shrink: 0;
-}
-
-.profile-avatar-placeholder {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: $radius-round;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(201, 169, 110, 0.2);
-  font-size: 36rpx;
-}
-
-.profile-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.profile-nickname {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: $text-white;
-}
-
-.profile-id {
-  font-size: 22rpx;
-  color: $text-muted;
-  font-family: monospace;
-}
-
-.profile-arrow {
-  font-size: 40rpx;
-  color: $text-muted;
-  flex-shrink: 0;
-  padding: 0 8rpx;
 }
 </style>
