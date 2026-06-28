@@ -3,11 +3,10 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { showToast } from '@/utils'
 import { fetchInviteCode, fetchInviteRecords } from '@/services/user-stats'
-import type { InviteRecord, InviterInfo } from '@/types'
+import type { InviteRecord } from '@/types'
 
 const referralCode = ref('')
 const records = ref<InviteRecord[]>([])
-const inviter = ref<InviterInfo | null>(null)
 const loading = ref(false)
 
 async function loadData() {
@@ -19,7 +18,6 @@ async function loadData() {
     ])
     referralCode.value = codeData.referralCode
     records.value = recordsData.records
-    inviter.value = recordsData.inviter
   } catch {
     showToast('加载邀请信息失败')
   } finally {
@@ -48,15 +46,6 @@ onShow(() => {
 
 <template>
   <view class="page-container invite-page">
-    <view v-if="inviter" class="inviter-card">
-      <text class="inviter-icon">🎉</text>
-      <view class="inviter-info">
-        <text class="inviter-label">已绑定邀请人</text>
-        <text class="inviter-name">{{ inviter.nickname }}</text>
-        <text class="inviter-code">邀请码：{{ inviter.referralCode }}</text>
-      </view>
-    </view>
-
     <view class="invite-card">
       <text class="invite-title">🎉 邀请好友</text>
       <text class="invite-desc">邀请好友注册并完成首次占卜，双方均可获得奖励</text>
@@ -99,45 +88,6 @@ onShow(() => {
 <style lang="scss" scoped>
 .invite-page {
   padding: 32rpx;
-}
-
-.inviter-card {
-  background: linear-gradient(135deg, rgba($success, 0.15), rgba($accent-gold, 0.1));
-  border-radius: $radius-md;
-  padding: 28rpx 32rpx;
-  margin-bottom: 24rpx;
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  border: 1rpx solid rgba($success, 0.3);
-}
-
-.inviter-icon {
-  font-size: 40rpx;
-}
-
-.inviter-info {
-  flex: 1;
-}
-
-.inviter-label {
-  font-size: 22rpx;
-  color: $success;
-  display: block;
-  margin-bottom: 4rpx;
-}
-
-.inviter-name {
-  font-size: 30rpx;
-  color: $text-white;
-  font-weight: 600;
-  display: block;
-}
-
-.inviter-code {
-  font-size: 22rpx;
-  color: $text-muted;
-  font-family: monospace;
 }
 
 .invite-card {

@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { navBack, showToast } from '@/utils'
-import { bindReferral } from '@/services/user-stats'
+import { bindReferral, fetchInviteRecords } from '@/services/user-stats'
+import type { InviterInfo } from '@/types'
 
 const code = ref('')
 const loading = ref(false)
 const error = ref('')
+const inviter = ref<InviterInfo | null>(null)
+
+onShow(async () => {
+  try {
+    const data = await fetchInviteRecords()
+    inviter.value = data.inviter
+  } catch {}
+})
 
 async function doBind() {
   const trimmed = code.value.trim()
@@ -29,30 +39,45 @@ async function doBind() {
 
 <template>
   <view class="page-container invite-input-page">
+    <view v-if="inviter" class="inviter-card">
+      <text class="inviter-icon">🎉</text>
+      <view class="inviter-info">
+        <text class="inviter-label">已绑定邀请人</text>
+        <text class="inviter-name">{{ inviter.nickname }}</text>
+        <text class="inviter-code">邀请码：{{ inviter.referralCode }}</text>
+      </view>
+    </view>
+
     <view class="input-card">
-      <text class="page-title">输入邀请码</text>
+      <text class="page-title">{{ inviter ? '已绑定邀请人' : '输入邀请码' }}</text>
       <text class="page-desc">输入好友的 6 位邀请码，双方均可获得额外奖励</text>
 
-      <view class="input-wrap">
-        <input
-          v-model="code"
-          class="code-input"
-          placeholder="请输入 6 位邀请码（区分大小写）"
-          maxlength="6"
-          auto-focus
-          @input="error = ''"
-        />
+      <template v-if="!inviter">
+        <view class="input-wrap">
+          <input
+            v-model="code"
+            class="code-input"
+            placeholder="请输入 6 位邀请码（区分大小写）"
+            maxlength="6"
+            auto-focus
+            @input="error = ''"
+          />
+        </view>
+
+        <text v-if="error" class="error-text">{{ error }}</text>
+
+        <button
+          class="submit-btn"
+          :disabled="loading || code.trim().length !== 6"
+          @click="doBind"
+        >
+          {{ loading ? '提交中...' : '确认绑定' }}
+        </button>
+      </template>
+
+      <view v-else class="bound-hint">
+        <text>已绑定邀请人，无需重复操作</text>
       </view>
-
-      <text v-if="error" class="error-text">{{ error }}</text>
-
-      <button
-        class="submit-btn"
-        :disabled="loading || code.trim().length !== 6"
-        @click="doBind"
-      >
-        {{ loading ? '提交中...' : '确认绑定' }}
-      </button>
 
       <view class="reward-section">
         <text class="reward-title">邀请奖励</text>
@@ -67,6 +92,45 @@ async function doBind() {
 <style lang="scss" scoped>
 .invite-input-page {
   padding: 40rpx 32rpx;
+}
+
+.inviter-card {
+  background: linear-gradient(135deg, rgba($success, 0.15), rgba($accent-gold, 0.1));
+  border-radius: $radius-md;
+  padding: 24rpx 28rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  border: 1rpx solid rgba($success, 0.3);
+}
+
+.inviter-icon {
+  font-size: 40rpx;
+}
+
+.inviter-info {
+  flex: 1;
+}
+
+.inviter-label {
+  font-size: 22rpx;
+  color: $success;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.inviter-name {
+  font-size: 28rpx;
+  color: $text-white;
+  font-weight: 600;
+  display: block;
+}
+
+.inviter-code {
+  font-size: 22rpx;
+  color: $text-muted;
+  font-family: monospace;
 }
 
 .input-card {
@@ -133,6 +197,14 @@ async function doBind() {
   &[disabled] {
     opacity: 0.4;
   }
+}
+
+.bound-hint {
+  text-align: center;
+  color: $text-muted;
+  font-size: 26rpx;
+  padding: 40rpx 0;
+  margin-bottom: 32rpx;
 }
 
 .reward-section {
