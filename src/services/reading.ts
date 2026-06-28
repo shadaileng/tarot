@@ -21,6 +21,8 @@ export interface ReadingResult {
   isPartialOnline: boolean
   /** 综合解读文本（优先在线生成的，没有则本地生成） */
   comprehensiveInterpretation?: string
+  /** 降级原因：quota=额度用完，error=其他错误 */
+  fallbackReason?: 'quota' | 'error'
 }
 
 /**
@@ -57,10 +59,21 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
       return { reading: data.reading, isOnline: true, isPartialOnline: false, comprehensiveInterpretation: summary || undefined }
     }
     throw new Error('Empty reading')
-  } catch {
+  } catch (e) {
     const localReading = generateLocalReading(question, cards)
     const localSummary = generateSummaryOnlyText(question, cards)
-    return { reading: localReading, isOnline: false, isPartialOnline: false, comprehensiveInterpretation: localSummary }
+    const isQuota = e instanceof Error && (
+      e.message.includes('额度') ||
+      e.message.includes('DAILY_QUOTA_EXCEEDED') ||
+      e.message.includes('GUEST_DAILY_LIMIT')
+    )
+    return {
+      reading: localReading,
+      isOnline: false,
+      isPartialOnline: false,
+      comprehensiveInterpretation: localSummary,
+      fallbackReason: isQuota ? 'quota' : 'error',
+    }
   }
 }
 

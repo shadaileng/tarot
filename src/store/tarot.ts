@@ -126,6 +126,12 @@ export const useTarotStore = defineStore('tarot', () => {
       }
 
       const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
+      if (!result.isOnline) {
+        const msg = result.fallbackReason === 'quota'
+          ? '今日解读额度已用完，已切换为本地解读'
+          : '深度解读暂时不可用，已切换为本地解读'
+        uni.showToast({ title: msg, icon: 'none', duration: 2000 })
+      }
       if (currentReading.value) {
         currentReading.value.interpretation = result.reading
         currentReading.value.isOnlineInterpretation = result.isOnline

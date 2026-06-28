@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-06-28
+
+### Added
+
+- 额度用尽时自动降级本地解读并弹出 Toast 提醒"今日解读额度已用完，已切换为本地解读"
+- 区分额度用尽与其他错误（网络/服务器）的降级原因，其他错误提示"深度解读暂时不可用，已切换为本地解读"
+
 ## [2.2.1] - 2026-06-28
 
 ### Fixed
