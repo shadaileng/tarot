@@ -86,3 +86,97 @@ export interface ReadingRecord {
   /** 是否已同步到云端 */
   synced?: boolean
 }
+
+// ========== 积分等级体系 ==========
+
+/** 用户等级信息 */
+export interface UserLevelInfo {
+  level: number
+  title: string
+  points: number
+  nextLevelPoints: number | null
+  nextLevelTitle: string | null
+  progress: number
+  totalQuota: number
+  usedQuota: number
+  remainingQuota: number
+  extraQuota: number
+  totalReadings: number
+}
+
+/** 签到结果 */
+export interface CheckinResult {
+  success: boolean
+  streak: number
+  streakBonus: number
+  basePoints: number
+  totalPoints: number
+  today: string
+}
+
+/** 签到状态 */
+export interface CheckinStatus {
+  isCheckedIn: boolean
+  streak: number
+  lastCheckinDate: string | null
+}
+
+/** 任务定义 */
+export interface TaskDefinition {
+  id: string
+  title: string
+  description: string | null
+  type: 'daily' | 'achievement'
+  requirement_type: string
+  requirement_count: number
+  points_reward: number
+  extra_quota_reward: number
+  icon: string | null
+  sort_order: number
+  is_active: number
+}
+
+/** 用户任务 */
+export interface UserTaskItem {
+  id: string
+  user_id: string
+  task_id: string
+  progress: number
+  is_completed: number
+  reward_claimed: number
+  completed_at: string | null
+  claimed_at: string | null
+  reset_date: string | null
+  created_at: string
+  title: string
+  description: string | null
+  type: string
+  requirement_type: string
+  requirement_count: number
+  points_reward: number
+  extra_quota_reward: number
+  icon: string | null
+  sort_order: number
+  progressPercent: number
+  canClaim: number
+}
+
+/** 等级定义 */
+export interface LevelDefinition {
+  level: number
+  title: string
+  points_required: number
+  daily_quota: number
+  max_extra_quota: number
+}
+
+/** 邀请记录 */
+export interface InviteRecord {
+  id: string
+  invitee_id: string
+  status: string
+  created_at: string
+  completed_at: string | null
+  nickname: string | null
+  avatar_url: string | null
+}
