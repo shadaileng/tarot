@@ -5,6 +5,22 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-06-29
+
+### Fixed
+
+- 修复反馈记录页面 `ref` 从 `@dcloudio/uni-app` 导入导致 H5 构建失败的问题（应导入自 `vue`）
+
+## [2.5.0] - 2026-06-29
+
+### Added
+
+- 新增意见反馈功能：用户可提交反馈（分类 + 文本 + 最多 3 张图片）
+- 新增反馈记录列表页面，支持分页加载
+- 新增反馈详情页面，展示反馈内容和管理员回复
+- 在「我的」页面添加意见反馈和反馈记录入口
+- 后端新增反馈 CRUD 和管理员回复 API
+
 ## [2.4.0] - 2026-06-29
 
 ### Added

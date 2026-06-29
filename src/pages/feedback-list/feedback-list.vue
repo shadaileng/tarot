@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onShow } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { navTo } from '@/utils'
 import { getMyFeedbackList } from '@/services/feedback'
 import type { Feedback } from '@/types'
