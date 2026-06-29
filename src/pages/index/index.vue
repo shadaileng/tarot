@@ -92,7 +92,7 @@ function handleTabChange(path: string) {
     <view class="hero-section">
       <view class="hero-glow" />
       <text class="hero-title">卡牌抽牌</text>
-      <text class="hero-subtitle">探索命运的神秘指引</text>
+      <text class="hero-subtitle">选择困难症快点抽牌</text>
       <view class="hero-stars">
         <text class="star">✦</text>
         <text class="star">✦</text>
