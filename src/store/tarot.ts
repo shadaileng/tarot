@@ -80,6 +80,7 @@ export const useTarotStore = defineStore('tarot', () => {
       question,
       timestamp,
       date: formatDate(timestamp),
+      interpretation: '',
     })
 
     // 最多保留 100 条记录
@@ -142,6 +143,14 @@ export const useTarotStore = defineStore('tarot', () => {
       console.error('获取解读失败:', e)
     } finally {
       isLoadingInterpretation.value = false
+      // 将解读保存到对应的 record 中
+      if (currentReading.value?.interpretation) {
+        const currentRecord = records.value[0]
+        if (currentRecord && currentRecord.cards === currentReading.value.cards) {
+          currentRecord.interpretation = currentReading.value.interpretation
+          saveRecords()
+        }
+      }
     }
   }
 
@@ -149,6 +158,23 @@ export const useTarotStore = defineStore('tarot', () => {
   function clearReading() {
     currentReading.value = null
     isLoadingInterpretation.value = false
+  }
+
+  /** 根据 ID 加载历史记录到 currentReading */
+  function viewRecord(id: string) {
+    const record = records.value.find(r => r.id === id)
+    if (record) {
+      currentReading.value = {
+        cards: record.cards,
+        spreadType: record.spreadType,
+        question: record.question,
+        useOnlineReading: true,
+        interpretation: record.interpretation || '',
+        isOnlineInterpretation: false,
+        isPartialOnlineInterpretation: false,
+        comprehensiveInterpretation: '',
+      }
+    }
   }
 
   /** 保存记录到本地存储 */
@@ -237,6 +263,7 @@ export const useTarotStore = defineStore('tarot', () => {
     drawCards,
     fetchInterpretation,
     clearReading,
+    viewRecord,
     loadRecords,
     deleteRecord,
     clearAllRecords,

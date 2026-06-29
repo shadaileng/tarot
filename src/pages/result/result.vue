@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, nextTick } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { useTarotStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
@@ -9,6 +10,14 @@ import type { TarotCard, CardOrientation } from '@/types'
 
 const store = useTarotStore()
 const reading = computed(() => store.currentReading)
+
+// 从 URL 参数加载历史记录
+onLoad((options) => {
+  const id = options?.id
+  if (id) {
+    store.viewRecord(id)
+  }
+})
 
 const flippedCards = ref<Set<number>>(new Set())
 const allFlipped = computed(() => flippedCards.value.size === (reading.value?.cards.length ?? 0))

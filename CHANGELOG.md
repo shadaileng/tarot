@@ -5,6 +5,19 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-06-29
+
+### Fixed
+
+- 修复占卜记录页面点击任意记录都显示第一条结果的问题（result.vue 未读取 URL 中的 id 参数）
+- 新增 `viewRecord(id)` action，根据 id 从历史记录加载数据到 currentReading
+
+### Added
+
+- `ReadingRecord` 类型新增 `interpretation` 字段，支持保存解读文本
+- `fetchInterpretation` 完成后自动将解读保存到对应的 record 中
+- 同步服务支持 `interpretation` 字段的上传和下载
+
 ## [2.3.0] - 2026-06-28
 
 ### Added

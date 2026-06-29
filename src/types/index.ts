@@ -85,6 +85,8 @@ export interface ReadingRecord {
   backendId?: string
   /** 是否已同步到云端 */
   synced?: boolean
+  /** 解读文本 */
+  interpretation?: string
 }
 
 // ========== 积分等级体系 ==========

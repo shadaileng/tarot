@@ -18,6 +18,7 @@ interface BackendRecord {
   reading: string
   model: string | null
   is_local: number
+  interpretation: string | null
 }
 
 interface BackendRecordList {
@@ -41,7 +42,8 @@ export async function syncRecordToCloud(record: ReadingRecord): Promise<string |
       spreadType: record.spreadType,
       question: record.question,
       cardsJson: JSON.stringify(record.cards),
-      reading: '',  // 后续可补充解读文本
+      reading: '',
+      interpretation: record.interpretation || '',
       isLocal: true,
     }, { timeout: 10000 })
 
@@ -98,6 +100,7 @@ function backendToLocal(record: BackendRecord): ReadingRecord {
     question: record.question || '',
     timestamp: ts,
     date: formatTimestamp(ts),
+    interpretation: record.interpretation || '',
   }
 }
 
