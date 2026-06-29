@@ -5,7 +5,7 @@ import { drawRandomCards } from '@/data/tarot-cards'
 import { getSpread } from '@/data/spreads'
 import { fetchReading, generateLocalReading, type BackendStatus } from '@/services/reading'
 import { isLoggedIn } from '@/services/auth'
-import { syncRecordToCloud, pullAndMerge, deleteCloudRecord } from '@/services/record-sync'
+import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -52,6 +52,9 @@ export const useTarotStore = defineStore('tarot', () => {
   /** 后端服务分层健康状态 */
   const backendStatus = ref<BackendStatus>({ status: 'checking', worker: 'down', gemini: 'unknown' })
 
+  /** 是否正在查看历史记录 */
+  const isViewingHistory = ref(false)
+
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
 
@@ -59,6 +62,7 @@ export const useTarotStore = defineStore('tarot', () => {
 
   /** 执行抽牌 */
   function drawCards(spreadType: SpreadType, question = '', useOnlineReading = true) {
+    isViewingHistory.value = false
     const spread = getSpread(spreadType)
     const drawn = drawRandomCards(spread.positions.length)
 
@@ -149,6 +153,10 @@ export const useTarotStore = defineStore('tarot', () => {
         if (currentRecord && currentRecord.cards === currentReading.value.cards) {
           currentRecord.interpretation = currentReading.value.interpretation
           saveRecords()
+          // 同步到云端
+          if (currentRecord.backendId) {
+            updateCloudRecordInterpretation(currentRecord.backendId, currentReading.value.interpretation)
+          }
         }
       }
     }
@@ -158,21 +166,40 @@ export const useTarotStore = defineStore('tarot', () => {
   function clearReading() {
     currentReading.value = null
     isLoadingInterpretation.value = false
+    isViewingHistory.value = false
   }
 
   /** 根据 ID 加载历史记录到 currentReading */
   function viewRecord(id: string) {
     const record = records.value.find(r => r.id === id)
     if (record) {
-      currentReading.value = {
-        cards: record.cards,
-        spreadType: record.spreadType,
-        question: record.question,
-        useOnlineReading: true,
-        interpretation: record.interpretation || '',
-        isOnlineInterpretation: false,
-        isPartialOnlineInterpretation: false,
-        comprehensiveInterpretation: '',
+      isViewingHistory.value = true
+
+      // 如果已有解读，直接使用（历史数据默认为在线解读）
+      if (record.interpretation) {
+        currentReading.value = {
+          cards: record.cards,
+          spreadType: record.spreadType,
+          question: record.question,
+          useOnlineReading: true,
+          interpretation: record.interpretation,
+          isOnlineInterpretation: true,
+          isPartialOnlineInterpretation: false,
+          comprehensiveInterpretation: '',
+        }
+      } else {
+        // 没有解读，先生成本地解读
+        const localReading = generateLocalReading(record.question, record.cards)
+        currentReading.value = {
+          cards: record.cards,
+          spreadType: record.spreadType,
+          question: record.question,
+          useOnlineReading: true,
+          interpretation: localReading,
+          isOnlineInterpretation: false,
+          isPartialOnlineInterpretation: false,
+          comprehensiveInterpretation: '',
+        }
       }
     }
   }
@@ -237,6 +264,14 @@ export const useTarotStore = defineStore('tarot', () => {
     backendStatus.value = status
   }
 
+  /** 手动触发深度解读（从本地解读升级） */
+  async function upgradeToOnlineReading() {
+    if (!currentReading.value) return
+    currentReading.value.interpretation = ''
+    currentReading.value.useOnlineReading = true
+    await fetchInterpretation()
+  }
+
   /** 静默同步单条记录到云端（内部使用） */
   async function syncToCloudIfLoggedIn(record: ReadingRecord) {
     if (!isLoggedIn()) return
@@ -259,11 +294,13 @@ export const useTarotStore = defineStore('tarot', () => {
     isLoadingInterpretation,
     isSyncing,
     backendStatus,
+    isViewingHistory,
     setBackendStatus,
     drawCards,
     fetchInterpretation,
     clearReading,
     viewRecord,
+    upgradeToOnlineReading,
     loadRecords,
     deleteRecord,
     clearAllRecords,

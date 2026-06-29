@@ -141,3 +141,10 @@ export function apiPut<T>(url: string, data?: any, options?: RequestOptions): Pr
 export function apiDelete<T>(url: string, options?: RequestOptions): Promise<T> {
   return request<T>('DELETE', url, undefined, options)
 }
+
+/**
+ * PATCH 请求（自动注入 JWT）
+ */
+export function apiPatch<T>(url: string, data?: any, options?: RequestOptions): Promise<T> {
+  return request<T>('PATCH', url, data, options)
+}

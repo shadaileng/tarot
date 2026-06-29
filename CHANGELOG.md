@@ -5,6 +5,21 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-06-29
+
+### Added
+
+- 新增 `isViewingHistory` 状态，用于跟踪是否正在查看历史记录
+- 新增 `upgradeToOnlineReading()` action，支持手动升级为深度解读
+- result.vue 添加「升级为深度解读」按钮，登录用户可将本地解读升级为 AI 深度解读
+- 解读完成后自动同步更新后端数据库
+- request.ts 新增 `apiPatch` 方法
+
+### Changed
+
+- 查看历史记录时自动生成本地解读，不再自动调用深度解读 API
+- `viewRecord()` 加载历史记录时，如果没有解读文本则自动生成本地解读
+
 ## [2.3.1] - 2026-06-29
 
 ### Fixed

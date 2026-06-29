@@ -2,7 +2,7 @@
 // 将本地占卜记录同步到后端 / 从后端拉取合并
 
 import type { ReadingRecord } from '@/types'
-import { apiPost, apiGet, apiDelete } from '@/utils/request'
+import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'
 import { isLoggedIn } from '@/services/auth'
 
 // ========== 类型 ==========
@@ -174,6 +174,26 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
     return true
   } catch (err) {
     console.warn('删除云端记录失败:', err)
+    return false
+  }
+}
+
+// ========== 更新同步 ==========
+
+/**
+ * 更新云端记录的解读文本
+ */
+export async function updateCloudRecordInterpretation(
+  backendId: string,
+  interpretation: string
+): Promise<boolean> {
+  if (!isLoggedIn()) return false
+
+  try {
+    await apiPatch(`/api/user/records/${backendId}`, { interpretation }, { timeout: 10000 })
+    return true
+  } catch (err) {
+    console.warn('更新云端记录解读失败:', err)
     return false
   }
 }

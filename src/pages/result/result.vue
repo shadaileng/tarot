@@ -151,12 +151,17 @@ watch(
   { immediate: true },
 )
 
-// 全部翻完后自动获取解读
+// 全部翻完后自动获取解读（仅新占卜时触发）
 watch(allFlipped, (flipped) => {
-  if (flipped && reading.value && !reading.value.interpretation) {
+  if (flipped && reading.value && !reading.value.interpretation && !store.isViewingHistory) {
     store.fetchInterpretation()
   }
 })
+
+/** 手动触发深度解读 */
+function handleUpgradeReading() {
+  store.upgradeToOnlineReading()
+}
 
 </script>
 
@@ -425,6 +430,18 @@ watch(allFlipped, (flipped) => {
           </view>
           <view class="reading-content">
             <text class="reading-text">{{ reading.interpretation }}</text>
+          </view>
+          <!-- 升级为深度解读按钮 -->
+          <view 
+            v-if="store.isViewingHistory && !reading.isOnlineInterpretation && isLoggedIn() && !store.isLoadingInterpretation" 
+            class="upgrade-section"
+          >
+            <view class="login-guide">
+              <text class="login-guide-text">当前为本地解读，点击升级获取 AI 深度解读</text>
+            </view>
+            <view class="btn-secondary" @click="handleUpgradeReading">
+              <text>✨ 升级为深度解读</text>
+            </view>
           </view>
         </view>
 
@@ -1010,6 +1027,17 @@ watch(allFlipped, (flipped) => {
   color: $text-secondary;
   line-height: 1.8;
   white-space: pre-wrap;
+}
+
+// 升级为深度解读
+.upgrade-section {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(139, 92, 246, 0.15);
+
+  .btn-secondary {
+    margin-top: 16rpx;
+  }
 }
 
 // 解读加载中
