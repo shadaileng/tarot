@@ -22,7 +22,7 @@ export interface PosterCard {
   name: string
   /** 牌面图片路径 */
   image: string
-  /** 在牌阵中的位置 */
+  /** 在牌型中的位置 */
   position: string
   /** 正位/逆位 */
   orientation: 'upright' | 'reversed'

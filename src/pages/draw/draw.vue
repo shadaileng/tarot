@@ -24,7 +24,7 @@ const cardCount = computed(() => currentSpread.value?.positions.length ?? 1)
 /** 抽到的牌数据（动画期间使用） */
 const drawnCards = ref<DrawnCard[]>([])
 
-/** 牌阵位槽布局信息 */
+/** 牌型位槽布局信息 */
 interface SlotLayout {
   x: number
   y: number
@@ -32,7 +32,7 @@ interface SlotLayout {
   scale: number
 }
 
-/** 根据牌阵类型计算各槽位的目标布局（rpx） */
+/** 根据牌型类型计算各槽位的目标布局（rpx） */
 function getSlotLayouts(spreadType: SpreadType): SlotLayout[] {
   switch (spreadType) {
     case 'single':
@@ -61,7 +61,7 @@ function getSlotLayouts(spreadType: SpreadType): SlotLayout[] {
   }
 }
 
-/** 当前牌阵的槽位布局 */
+/** 当前牌型的槽位布局 */
 const slotLayouts = computed(() => getSlotLayouts(selectedSpread.value))
 
 /** 已落地的牌索引列表（控制 CSS transition 触发） */
@@ -174,7 +174,7 @@ function handleTabChange(path: string) {
           {{ animPhase === 'dealt' ? '命运之轮已揭示答案' : '命运之轮正在转动...' }}
         </text>
 
-        <!-- 牌阵槽位（CSS transition 驱动从底部飞入） -->
+        <!-- 牌型槽位（CSS transition 驱动从底部飞入） -->
         <view class="deal-slots" :class="[`slots-${currentSpread?.type}`]">
           <view
             v-for="(pos, i) in currentSpread?.positions"
@@ -221,9 +221,9 @@ function handleTabChange(path: string) {
 
     <!-- ========== 选择区域（动画时隐藏） ========== -->
     <template v-if="animPhase === 'idle'">
-      <!-- 牌阵选择 -->
+      <!-- 牌型选择 -->
       <view class="spread-select">
-        <text class="section-title">选择牌阵</text>
+        <text class="section-title">选择牌型</text>
         <view class="spread-grid">
           <view
             v-for="spread in spreadList"
@@ -263,9 +263,9 @@ function handleTabChange(path: string) {
         />
       </view>
 
-      <!-- 牌阵预览 -->
+      <!-- 牌型预览 -->
       <view class="spread-preview">
-        <text class="section-title">牌阵预览：{{ currentSpread?.name }}</text>
+        <text class="section-title">牌型预览：{{ currentSpread?.name }}</text>
         <view class="preview-cards">
           <view
             v-for="(pos, i) in currentSpread?.positions"
@@ -498,7 +498,7 @@ function handleTabChange(path: string) {
   50% { opacity: 1; }
 }
 
-// -------- 牌阵槽位容器 --------
+// -------- 牌型槽位容器 --------
 .deal-slots {
   display: flex;
   gap: 24rpx;

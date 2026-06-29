@@ -106,9 +106,9 @@ function handleTabChange(path: string) {
       <text class="status-text">{{ backendText }}</text>
     </view>
 
-    <!-- 牌阵选择 -->
+    <!-- 牌型选择 -->
     <view class="spread-section">
-      <text class="section-title">选择牌阵</text>
+      <text class="section-title">选择牌型</text>
       <view class="spread-list">
         <view
           v-for="spread in spreadList"
@@ -285,7 +285,7 @@ function handleTabChange(path: string) {
   50% { opacity: 0.3; }
 }
 
-// 牌阵
+// 牌型
 .spread-section {
   width: 100%;
   margin-bottom: 40rpx;

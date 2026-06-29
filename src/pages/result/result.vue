@@ -334,7 +334,7 @@ function handleUpgradeReading() {
         </view>
       </view>
 
-      <!-- 其他牌阵（单张、三牌）：通用布局 -->
+      <!-- 其他牌型（单张、三牌）：通用布局 -->
       <view
         v-else
         class="result-cards"
@@ -418,7 +418,7 @@ function handleUpgradeReading() {
 
       <!-- 解读总结 -->
       <view v-if="allFlipped" class="reading-summary">
-        <text class="summary-title">✨ 牌阵解读</text>
+        <text class="summary-title">✨ 牌型解读</text>
 
         <!-- 个性化解读 -->
         <view v-if="reading.interpretation" class="reading-section">
@@ -551,13 +551,13 @@ function handleUpgradeReading() {
   margin-top: 8rpx;
 }
 
-// ========== 牌阵布局 ==========
+// ========== 牌型布局 ==========
 .result-cards {
   display: flex;
   flex-direction: column;
   gap: 40rpx;
 
-  // 单张牌阵 - 一行三列，卡牌放第二列
+  // 单张牌型 - 一行三列，卡牌放第二列
   &.spread-single {
     flex-direction: row;
     flex-wrap: wrap;
@@ -576,7 +576,7 @@ function handleUpgradeReading() {
     }
   }
 
-  // 三牌阵 - 横向排列
+  // 三牌型 - 横向排列
   &.spread-three {
     flex-direction: row;
     flex-wrap: wrap;

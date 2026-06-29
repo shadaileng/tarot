@@ -1,15 +1,15 @@
 import type { Spread, SpreadType } from '@/types'
 
-/** 所有牌阵 */
+/** 所有牌型 */
 export const spreads: Record<SpreadType, Spread> = {
   single: {
     type: 'single',
-    name: '单张牌阵',
+    name: '单张牌型',
     positions: ['今日指引'],
   },
   three: {
     type: 'three',
-    name: '三牌阵',
+    name: '三牌型',
     positions: ['过去', '现在', '未来'],
   },
   'celtic-cross': {
@@ -23,10 +23,10 @@ export const spreads: Record<SpreadType, Spread> = {
   },
 }
 
-/** 获取牌阵 */
+/** 获取牌型 */
 export function getSpread(type: SpreadType): Spread {
   return spreads[type]
 }
 
-/** 所有牌阵列表 */
+/** 所有牌型列表 */
 export const spreadList: Spread[] = Object.values(spreads)

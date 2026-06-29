@@ -42,16 +42,16 @@ export interface Card {
 export interface DrawnCard {
   card: Card
   orientation: CardOrientation
-  /** 在牌阵中的位置描述，如 "过去"、"现在"、"未来" */
+  /** 在牌型中的位置描述，如 "过去"、"现在"、"未来" */
   position: string
   /** 个性化解读（针对此牌在此位置、此问题的解读） */
   deepMeaning?: string
 }
 
-/** 牌阵类型 */
+/** 牌型类型 */
 export type SpreadType = 'single' | 'three' | 'celtic-cross'
 
-/** 牌阵定义 */
+/** 牌型定义 */
 export interface Spread {
   type: SpreadType
   name: string
