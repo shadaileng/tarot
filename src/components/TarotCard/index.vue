@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { TarotCard, CardOrientation } from '@/types'
+import type { Card, CardOrientation } from '@/types'
 
 const props = withDefaults(
   defineProps<{
-    card: TarotCard
+    card: Card
     orientation?: CardOrientation
     flipped?: boolean
     showPosition?: string

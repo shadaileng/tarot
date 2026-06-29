@@ -2,13 +2,13 @@
 import { ref, onMounted, computed } from 'vue'
 import type { SpreadType } from '@/types'
 import { spreadList } from '@/data/spreads'
-import { useTarotStore } from '@/store'
+import { useCardStore } from '@/store'
 import { navTo } from '@/utils'
 
 import { isLoggedIn } from '@/services/auth'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
-const store = useTarotStore()
+const store = useCardStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
 const useOnlineReading = ref(isLoggedIn())
@@ -91,7 +91,7 @@ function handleTabChange(path: string) {
     <!-- 顶部区域 -->
     <view class="hero-section">
       <view class="hero-glow" />
-      <text class="hero-title">塔罗牌占卜</text>
+      <text class="hero-title">卡牌抽牌</text>
       <text class="hero-subtitle">探索命运的神秘指引</text>
       <view class="hero-stars">
         <text class="star">✦</text>
@@ -155,7 +155,7 @@ function handleTabChange(path: string) {
     <view class="draw-btn-wrap">
       <view class="btn-primary draw-btn" @click="handleDraw">
         <text class="draw-btn-icon">🔮</text>
-        <text class="draw-btn-text">开始占卜</text>
+        <text class="draw-btn-text">开始抽牌</text>
       </view>
     </view>
 

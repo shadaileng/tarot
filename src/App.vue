@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { onLaunch, onShow } from '@dcloudio/uni-app'
-import { useTarotStore } from '@/store'
+import { useCardStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
 import { checkBackendHealth } from '@/services/reading'
 
 onLaunch(() => {
-  const store = useTarotStore()
+  const store = useCardStore()
 
   // 异步初始化（延迟到框架页面栈初始化完成后执行，避免自定义 tabBar + async onLaunch
   // 触发微信 SDK 3.x "appLaunch with non-empty page stack" 内部错误）
   setTimeout(async () => {
     await store.loadRecords()
-    console.log('🃏 塔罗牌小程序启动')
+    console.log('🃏 卡牌小程序启动')
 
     // 静默检查登录态
     if (isLoggedIn()) {

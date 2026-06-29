@@ -1,5 +1,5 @@
 // ========== 云端记录同步服务 ==========
-// 将本地占卜记录同步到后端 / 从后端拉取合并
+// 将本地抽牌记录同步到后端 / 从后端拉取合并
 
 import type { ReadingRecord } from '@/types'
 import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'

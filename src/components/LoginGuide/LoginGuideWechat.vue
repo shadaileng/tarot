@@ -29,7 +29,7 @@ async function handleWechatLogin() {
     <!-- 登录引导 -->
     <view class="lg-card">
       <text class="lg-icon">🔮</text>
-      <text class="lg-title">登录后同步占卜记录</text>
+      <text class="lg-title">登录后同步抽牌记录</text>
       <text class="lg-desc">登录后可云端保存记录，换设备不丢失</text>
 
       <view

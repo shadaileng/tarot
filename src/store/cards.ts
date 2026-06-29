@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { TarotCard, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
-import { drawRandomCards } from '@/data/tarot-cards'
+import type { Card, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
+import { drawRandomCards } from '@/data/cards'
 import { getSpread } from '@/data/spreads'
 import { fetchReading, generateLocalReading, type BackendStatus } from '@/services/reading'
 import { isLoggedIn } from '@/services/auth'
@@ -23,7 +23,7 @@ function formatDate(ts: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export const useTarotStore = defineStore('tarot', () => {
+export const useCardStore = defineStore('cards', () => {
   // ========== State ==========
   const currentReading = ref<{
     cards: DrawnCard[]
@@ -162,7 +162,7 @@ export const useTarotStore = defineStore('tarot', () => {
     }
   }
 
-  /** 清除当前占卜结果 */
+  /** 清除当前抽牌结果 */
   function clearReading() {
     currentReading.value = null
     isLoadingInterpretation.value = false

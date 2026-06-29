@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, nextTick } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { useTarotStore } from '@/store'
+import { useCardStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
-import type { TarotCard, CardOrientation } from '@/types'
+import type { Card, CardOrientation } from '@/types'
 
-const store = useTarotStore()
+const store = useCardStore()
 const reading = computed(() => store.currentReading)
 
 // 从 URL 参数加载历史记录
@@ -37,7 +37,7 @@ function onImgError(index: number) {
 
 // 牌面详情弹窗
 const detailVisible = ref(false)
-const detailCard = ref<TarotCard | null>(null)
+const detailCard = ref<Card | null>(null)
 const detailOrientation = ref<CardOrientation>('upright')
 const detailDeepMeaning = ref('')
 
@@ -67,7 +67,7 @@ function escapeRegex(str: string): string {
 // 分享海报弹窗
 const posterVisible = ref(false)
 
-function openDetail(card: TarotCard, orientation: CardOrientation) {
+function openDetail(card: Card, orientation: CardOrientation) {
   detailCard.value = card
   detailOrientation.value = orientation
   // 从 reading 中查找该牌的 position
@@ -151,7 +151,7 @@ watch(
   { immediate: true },
 )
 
-// 全部翻完后自动获取解读（仅新占卜时触发）
+// 全部翻完后自动获取解读（仅新抽牌时触发）
 watch(allFlipped, (flipped) => {
   if (flipped && reading.value && !reading.value.interpretation && !store.isViewingHistory) {
     store.fetchInterpretation()
@@ -480,7 +480,7 @@ function handleUpgradeReading() {
       <!-- 操作按钮 -->
       <view class="result-actions">
         <view class="btn-primary" @click="handleNewReading">
-          <text>🔮 重新占卜</text>
+          <text>🔮 重新抽牌</text>
         </view>
         <view class="btn-secondary" style="margin-top: 20rpx;" @click="handleSharePoster">
           <text>📤 生成分享海报</text>
@@ -495,9 +495,9 @@ function handleUpgradeReading() {
     <template v-else>
       <view class="empty-state">
         <text class="empty-icon">🔮</text>
-        <text class="empty-text">暂无占卜结果</text>
+        <text class="empty-text">暂无抽牌结果</text>
         <view class="btn-primary" @click="handleNewReading">
-          <text>开始占卜</text>
+          <text>开始抽牌</text>
         </view>
       </view>
     </template>

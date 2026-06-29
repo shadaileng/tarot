@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
-import { allCards, majorArcana, minorArcana } from '@/data/tarot-cards'
-import type { TarotCard } from '@/types'
+import { allCards, majorArcana, minorArcana } from '@/data/cards'
+import type { Card } from '@/types'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 type CardCategory = 'all' | 'major' | 'minor'
@@ -48,7 +48,7 @@ const tabList = [
   { pagePath: 'pages/profile/profile', text: '我的' },
 ]
 
-const filteredCards = computed<TarotCard[]>(() => {
+const filteredCards = computed<Card[]>(() => {
   let cards = allCards
 
   if (activeCategory.value === 'major') {

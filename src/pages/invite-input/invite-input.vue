@@ -83,7 +83,7 @@ async function doBind() {
         <text class="reward-title">邀请奖励</text>
         <text class="reward-item">• 邀请 1 位好友：+50 积分 + 10 次额度</text>
         <text class="reward-item">• 邀请 3 位好友：+200 积分 + 30 次额度</text>
-        <text class="reward-item">• 被邀请人完成首次占卜后自动发放</text>
+        <text class="reward-item">• 被邀请人完成首次抽牌后自动发放</text>
       </view>
     </view>
   </view>

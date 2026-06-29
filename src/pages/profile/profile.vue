@@ -108,7 +108,7 @@ function handleTabChange(path: string) {
       </view>
       <view class="quota-row">
         <text class="quota-item">今日额度：{{ stats.remainingQuota }}/{{ stats.totalQuota }}</text>
-        <text class="quota-item">占卜次数：{{ stats.totalReadings }}</text>
+        <text class="quota-item">抽牌次数：{{ stats.totalReadings }}</text>
       </view>
     </view>
 
@@ -136,7 +136,7 @@ function handleTabChange(path: string) {
       </view>
       <view class="menu-item" @click="goTo('/pages/history/history')">
         <text class="menu-icon">📖</text>
-        <text class="menu-label">占卜记录</text>
+        <text class="menu-label">抽牌记录</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>

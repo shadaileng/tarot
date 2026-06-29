@@ -1,2 +1,2 @@
-export * from './tarot-cards'
+export * from './cards'
 export * from './spreads'

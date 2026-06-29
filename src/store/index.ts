@@ -1,1 +1,1 @@
-export { useTarotStore } from './tarot'
+export { useCardStore } from './cards'

@@ -48,7 +48,7 @@ onShow(() => {
   <view class="page-container invite-page">
     <view class="invite-card">
       <text class="invite-title">🎉 邀请好友</text>
-      <text class="invite-desc">邀请好友注册并完成首次占卜，双方均可获得奖励</text>
+      <text class="invite-desc">邀请好友注册并完成首次抽牌，双方均可获得奖励</text>
 
       <view class="code-section">
         <text class="code-label">我的邀请码</text>
@@ -77,7 +77,7 @@ onShow(() => {
         </view>
         <view class="record-info">
           <text class="record-name">{{ record.nickname || '匿名用户' }}</text>
-          <text class="record-status">{{ record.status === 'completed' ? '已完成首次占卜' : '待完成' }}</text>
+          <text class="record-status">{{ record.status === 'completed' ? '已完成首次抽牌' : '待完成' }}</text>
         </view>
         <text class="record-date">{{ record.completed_at?.slice(0, 10) || record.created_at.slice(0, 10) }}</text>
       </view>

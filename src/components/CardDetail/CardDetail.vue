@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { TarotCard, CardOrientation } from '@/types'
+import type { Card, CardOrientation } from '@/types'
 
 const props = defineProps<{
   visible: boolean
-  card: TarotCard | null
+  card: Card | null
   orientation?: CardOrientation
   /** 个性化解读文本 */
   deepMeaning?: string

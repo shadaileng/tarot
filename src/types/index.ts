@@ -1,4 +1,4 @@
-// ========== 塔罗牌类型定义 ==========
+// ========== 卡牌类型定义 ==========
 
 /** 牌面方向 */
 export type CardOrientation = 'upright' | 'reversed'
@@ -17,8 +17,8 @@ export type Suit = 'wands' | 'cups' | 'swords' | 'pentacles'
 /** 小阿卡纳牌 */
 export type MinorArcanaName = string
 
-/** 单张塔罗牌 */
-export interface TarotCard {
+/** 单张卡牌 */
+export interface Card {
   id: string
   name: string
   nameEn: string
@@ -40,7 +40,7 @@ export interface TarotCard {
 
 /** 抽到的牌 */
 export interface DrawnCard {
-  card: TarotCard
+  card: Card
   orientation: CardOrientation
   /** 在牌阵中的位置描述，如 "过去"、"现在"、"未来" */
   position: string
@@ -58,7 +58,7 @@ export interface Spread {
   positions: string[]
 }
 
-/** 占卜结果 */
+/** 抽牌结果 */
 export interface Reading {
   id: string
   spreadType: SpreadType
@@ -72,7 +72,7 @@ export interface Reading {
   isOnlineInterpretation?: boolean
 }
 
-/** 占卜记录（持久化） */
+/** 抽牌记录（持久化） */
 export interface ReadingRecord {
   id: string
   spreadType: SpreadType

@@ -1,7 +1,7 @@
-import type { TarotCard, Suit } from '@/types'
+import type { Card, Suit } from '@/types'
 
 // ========== 大阿卡纳（22张） ==========
-export const majorArcana: TarotCard[] = [
+export const majorArcana: Card[] = [
   {
     id: 'major-00', name: '愚者', nameEn: 'The Fool', type: 'major', number: 0,
     image: '/static/cards/major-00.svg', keywords: ['开始', '冒险', '天真'],
@@ -140,7 +140,7 @@ export const majorArcana: TarotCard[] = [
     image: '/static/cards/major-19.svg', keywords: ['快乐', '成功', '活力'],
     uprightMeaning: '幸福快乐，成功辉煌，充满活力',
     reversedMeaning: '短暂的不快，延迟的成功，缺乏活力',
-    description: '太阳是塔罗中最积极的牌之一，象征着快乐、成功和生命力。',
+    description: '太阳是卡牌中最积极的牌之一，象征着快乐、成功和生命力。',
   },
   {
     id: 'major-20', name: '审判', nameEn: 'Judgement', type: 'major', number: 20,
@@ -212,7 +212,7 @@ const minorKeywords: Record<Suit, string[][]> = {
   ],
 }
 
-export const minorArcana: TarotCard[] = (Object.keys(suitNames) as Suit[]).flatMap((suit) =>
+export const minorArcana: Card[] = (Object.keys(suitNames) as Suit[]).flatMap((suit) =>
   minorNames[suit].map((name, i) => ({
     id: `minor-${suit}-${String(i + 1).padStart(2, '0')}`,
     name: `${suitNames[suit].cn}${name}`,
@@ -227,16 +227,16 @@ export const minorArcana: TarotCard[] = (Object.keys(suitNames) as Suit[]).flatM
   })),
 )
 
-/** 所有 78 张塔罗牌 */
-export const allCards: TarotCard[] = [...majorArcana, ...minorArcana]
+/** 所有 78 张卡牌 */
+export const allCards: Card[] = [...majorArcana, ...minorArcana]
 
 /** 根据 ID 获取牌 */
-export function getCardById(id: string): TarotCard | undefined {
+export function getCardById(id: string): Card | undefined {
   return allCards.find((c) => c.id === id)
 }
 
 /** 随机抽取 N 张牌 */
-export function drawRandomCards(count: number): TarotCard[] {
+export function drawRandomCards(count: number): Card[] {
   const shuffled = [...allCards].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, count)
 }

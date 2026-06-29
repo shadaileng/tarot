@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useTarotStore } from '@/store'
+import { useCardStore } from '@/store'
 import { navTo } from '@/utils'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
-const store = useTarotStore()
+const store = useCardStore()
 const records = computed(() => store.records)
 
 // ========== tabBar & 记录管理 ==========
@@ -37,7 +37,7 @@ function handleClearAll() {
   if (records.value.length === 0) return
   uni.showModal({
     title: '确认清空',
-    content: '确定要清空所有占卜记录吗？此操作不可撤销。',
+    content: '确定要清空所有抽牌记录吗？此操作不可撤销。',
     success: (res) => {
       if (res.confirm) {
         store.clearAllRecords()
@@ -108,10 +108,10 @@ function getOrientationLabel(ori: string): string {
     <!-- 空状态 -->
     <view v-if="records.length === 0" class="empty-state">
       <text class="empty-icon">📜</text>
-      <text class="empty-title">暂无占卜记录</text>
-      <text class="empty-desc">开始你的第一次占卜吧</text>
+      <text class="empty-title">暂无抽牌记录</text>
+      <text class="empty-desc">开始你的第一次抽牌吧</text>
       <view class="btn-primary empty-btn" @click="navTo('/pages/draw/draw')">
-        <text>去占卜</text>
+        <text>去抽牌</text>
       </view>
     </view>
 
