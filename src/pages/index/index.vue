@@ -127,7 +127,7 @@ function handleTabChange(path: string) {
     <!-- 问题输入 -->
     <view class="question-section">
         <view class="section-title-row">
-        <text class="section-title">你想问什么？（选填）</text>
+        <text class="section-title">今晚吃什么？（选填）</text>
         <view class="online-toggle">
           <text class="online-toggle-label">深度解读</text>
           <switch
@@ -142,7 +142,7 @@ function handleTabChange(path: string) {
         <textarea
           v-model="question"
           class="question-input"
-          placeholder="默想你的问题..."
+          placeholder="点指兵兵，谁人做大兵..."
           placeholder-style="color: #6b5e53"
           maxlength="200"
           :auto-height="true"

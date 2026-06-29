@@ -242,7 +242,7 @@ function handleTabChange(path: string) {
       <!-- 问题 -->
       <view class="question-wrap">
         <view class="section-title-row">
-          <text class="section-title">默想你的问题</text>
+          <text class="section-title">点指兵兵，谁人做大兵</text>
           <view class="online-toggle">
             <text class="online-toggle-label">深度解读</text>
             <switch
@@ -256,7 +256,7 @@ function handleTabChange(path: string) {
         <textarea
           v-model="question"
           class="question-textarea"
-          placeholder="在心中默想你的问题，也可以写在这里..."
+          placeholder="点指兵兵，谁人做大兵..."
           placeholder-style="color: #6b5e53"
           maxlength="200"
           :auto-height="true"
