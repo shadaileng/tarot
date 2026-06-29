@@ -124,6 +124,16 @@ function handleTabChange(path: string) {
         <text class="menu-label">任务中心</text>
         <text class="menu-arrow">›</text>
       </view>
+      <view class="menu-item" @click="goTo('/pages/feedback/feedback')">
+        <text class="menu-icon">💬</text>
+        <text class="menu-label">意见反馈</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" @click="goTo('/pages/feedback-list/feedback-list')">
+        <text class="menu-icon">📋</text>
+        <text class="menu-label">反馈记录</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item" @click="goTo('/pages/invite/invite')">
         <text class="menu-icon">👥</text>
         <text class="menu-label">邀请好友</text>

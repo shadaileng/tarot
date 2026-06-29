@@ -189,3 +189,23 @@ export interface InviteRecord {
   nickname: string | null
   avatar_url: string | null
 }
+
+// ========== 意见反馈 ==========
+
+export interface Feedback {
+  id: string
+  category: 'bug' | 'suggestion' | 'other'
+  content: string
+  images: string[]
+  status: 'pending' | 'replied' | 'closed'
+  adminReply?: string
+  repliedAt?: string
+  createdAt: string
+}
+
+export interface FeedbackListResponse {
+  total: number
+  page: number
+  limit: number
+  data: Feedback[]
+}
