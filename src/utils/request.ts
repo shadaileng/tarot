@@ -29,7 +29,6 @@ export function setStoredToken(token: string): void {
  */
 export function removeStoredToken(): void {
   console.warn('[REQ] removeStoredToken() called!')
-  console.trace('[REQ] removeStoredToken() stack trace')
   uni.removeStorageSync(TOKEN_KEY)
 }
 
