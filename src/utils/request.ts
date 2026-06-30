@@ -8,20 +8,28 @@ const TOKEN_KEY = 'auth_token'
  * 获取本地存储的 JWT token
  */
 export function getStoredToken(): string | null {
-  return uni.getStorageSync(TOKEN_KEY) || null
+  const raw = uni.getStorageSync(TOKEN_KEY)
+  console.log('[REQ] getStoredToken() raw:', typeof raw, raw ? `"${String(raw).substring(0, 40)}"` : 'FALSY')
+  return raw || null
 }
 
 /**
  * 保存 JWT token
  */
 export function setStoredToken(token: string): void {
+  console.log('[REQ] setStoredToken() saving:', token ? `${token.substring(0, 30)}...` : 'EMPTY')
   uni.setStorageSync(TOKEN_KEY, token)
+  // 验证写入是否成功
+  const verify = uni.getStorageSync(TOKEN_KEY)
+  console.log('[REQ] setStoredToken() verify read:', verify ? 'OK' : 'FAILED')
 }
 
 /**
  * 清除 JWT token
  */
 export function removeStoredToken(): void {
+  console.warn('[REQ] removeStoredToken() called!')
+  console.trace('[REQ] removeStoredToken() stack trace')
   uni.removeStorageSync(TOKEN_KEY)
 }
 
@@ -88,6 +96,7 @@ function request<T>(
       responseType: responseType || 'text',
       success: (res) => {
         if (res.statusCode === 401) {
+          console.error('[REQ] 401 received for URL:', fullUrl)
           // Token 过期或无效：同步清除 token + userInfo，保持状态一致
           removeStoredToken()
           uni.removeStorageSync('user_info')

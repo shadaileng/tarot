@@ -50,18 +50,24 @@ function setUserInfo(user: UserInfo): void {
 /** 检查是否已登录 */
 export function isLoggedIn(): boolean {
   const token = getToken()
+  console.log('[AUTH] isLoggedIn() token:', token ? `${token.substring(0, 30)}...` : 'NULL')
   if (!token) return false
-  return !isTokenExpired(token)
+  const expired = isTokenExpired(token)
+  console.log('[AUTH] isLoggedIn() isTokenExpired:', expired, '→ result:', !expired)
+  return !expired
 }
 
 /** 简单 JWT 过期检测（不验证签名，仅检查 exp） */
 function isTokenExpired(token: string): boolean {
   try {
     const payloadBase64 = token.split('.')[1]
+    console.log('[AUTH] isTokenExpired() payloadBase64:', payloadBase64 ? payloadBase64.substring(0, 20) + '...' : 'EMPTY')
     const payload = JSON.parse(atob(payloadBase64))
+    console.log('[AUTH] isTokenExpired() payload.exp:', payload.exp, 'Date.now():', Date.now())
     if (!payload.exp) return false
     return Date.now() >= payload.exp * 1000
-  } catch {
+  } catch (err) {
+    console.error('[AUTH] isTokenExpired() PARSE FAILED:', err)
     return true // 解析失败认为已过期
   }
 }

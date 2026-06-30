@@ -14,6 +14,10 @@ async function handleWechatLogin() {
   errorMsg.value = ''
   try {
     const result = await login()
+    console.log('[LOGIN] login success, token stored:', !!result.token, 'user:', result.user.nickname)
+    // 验证 token 确实在 storage 中
+    const storedToken = uni.getStorageSync('auth_token')
+    console.log('[LOGIN] verification: auth_token in storage:', storedToken ? 'YES' : 'NO')
     uni.showToast({ title: `欢迎，${result.user.nickname}`, icon: 'success' })
     emit('loginSuccess')
   } catch (err: any) {

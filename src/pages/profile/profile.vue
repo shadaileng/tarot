@@ -17,12 +17,21 @@ const stats = ref<UserLevelInfo | null>(null)
 const showLoginGuide = ref(!loggedIn.value)
 
 onShow(() => {
+  console.log('[PROFILE] onShow fired')
+  const beforeLoggedIn = loggedIn.value
   loggedIn.value = isLoggedIn()
   userInfo.value = getUserInfo()
   showLoginGuide.value = !loggedIn.value
+  console.log('[PROFILE] onShow state:', {
+    beforeLoggedIn,
+    afterLoggedIn: loggedIn.value,
+    hasUserInfo: !!userInfo.value,
+    showLoginGuide: showLoginGuide.value
+  })
 
   // 防护：token 丢失时同步清除残留 userInfo，避免 UI 不一致
   if (!loggedIn.value && userInfo.value) {
+    console.warn('[PROFILE] onShow: token lost but userInfo exists, clearing userInfo')
     userInfo.value = null
   }
 
