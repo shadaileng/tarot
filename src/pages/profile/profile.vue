@@ -29,10 +29,10 @@ onShow(() => {
     showLoginGuide: showLoginGuide.value
   })
 
-  // 防护：token 丢失时同步清除残留 userInfo，避免 UI 不一致
-  if (!loggedIn.value && userInfo.value) {
-    console.warn('[PROFILE] onShow: token lost but userInfo exists, clearing userInfo')
-    userInfo.value = null
+  // 防护：token 丢失时同步清除残留 userInfo 和 stats，避免 UI 不一致
+  if (!loggedIn.value) {
+    if (userInfo.value) userInfo.value = null
+    if (stats.value) stats.value = null
   }
 
   if (loggedIn.value) loadStats()
