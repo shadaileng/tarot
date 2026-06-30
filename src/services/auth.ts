@@ -57,12 +57,31 @@ export function isLoggedIn(): boolean {
   return !expired
 }
 
+/** Base64 URL 解码（兼容微信小程序，不依赖 atob） */
+function base64UrlDecode(str: string): string {
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  while (base64.length % 4) base64 += '='
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+  let result = ''
+  for (let i = 0; i < base64.length; i += 4) {
+    const a = chars.indexOf(base64[i])
+    const b = chars.indexOf(base64[i + 1])
+    const c = chars.indexOf(base64[i + 2])
+    const d = chars.indexOf(base64[i + 3])
+    result += String.fromCharCode((a << 2) | (b >> 4))
+    if (c !== 64) result += String.fromCharCode(((b & 15) << 4) | (c >> 2))
+    if (d !== 64) result += String.fromCharCode(((c & 3) << 6) | d)
+  }
+  // 处理 UTF-8 多字节字符（如中文昵称）
+  return decodeURIComponent(escape(result))
+}
+
 /** 简单 JWT 过期检测（不验证签名，仅检查 exp） */
 function isTokenExpired(token: string): boolean {
   try {
     const payloadBase64 = token.split('.')[1]
     console.log('[AUTH] isTokenExpired() payloadBase64:', payloadBase64 ? payloadBase64.substring(0, 20) + '...' : 'EMPTY')
-    const payload = JSON.parse(atob(payloadBase64))
+    const payload = JSON.parse(base64UrlDecode(payloadBase64))
     console.log('[AUTH] isTokenExpired() payload.exp:', payload.exp, 'Date.now():', Date.now())
     if (!payload.exp) return false
     return Date.now() >= payload.exp * 1000

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- 修复真机环境下 `atob is not defined` 导致登录态检测永远失败的问题（用纯 JS Base64 解码替代 `atob`）
 - 修复微信一键登录后切换 Tab 再返回即丢失登录状态的问题
 - 401 时同步清除 `user_info`，避免 token 丢失但用户信息残留导致 UI 不一致
 - 新增重登录锁防止多个 401 并发触发多次 `wx.login`
