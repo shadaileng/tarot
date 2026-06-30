@@ -9,7 +9,6 @@ const TOKEN_KEY = 'auth_token'
  */
 export function getStoredToken(): string | null {
   const raw = uni.getStorageSync(TOKEN_KEY)
-  console.log('[REQ] getStoredToken() raw:', typeof raw, raw ? `"${String(raw).substring(0, 40)}"` : 'FALSY')
   return raw || null
 }
 
@@ -17,11 +16,9 @@ export function getStoredToken(): string | null {
  * 保存 JWT token
  */
 export function setStoredToken(token: string): void {
-  console.log('[REQ] setStoredToken() saving:', token ? `${token.substring(0, 30)}...` : 'EMPTY')
   uni.setStorageSync(TOKEN_KEY, token)
-  // 验证写入是否成功
   const verify = uni.getStorageSync(TOKEN_KEY)
-  console.log('[REQ] setStoredToken() verify read:', verify ? 'OK' : 'FAILED')
+  console.log('[REQ] setStoredToken() verify:', verify ? 'OK' : 'FAILED')
 }
 
 /**

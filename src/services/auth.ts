@@ -50,7 +50,6 @@ function setUserInfo(user: UserInfo): void {
 /** 检查是否已登录 */
 export function isLoggedIn(): boolean {
   const token = getToken()
-  console.log('[AUTH] isLoggedIn() token:', token ? `${token.substring(0, 30)}...` : 'NULL')
   if (!token) return false
   const expired = isTokenExpired(token)
   console.log('[AUTH] isLoggedIn() isTokenExpired:', expired, '→ result:', !expired)
@@ -80,7 +79,6 @@ function base64UrlDecode(str: string): string {
 function isTokenExpired(token: string): boolean {
   try {
     const payloadBase64 = token.split('.')[1]
-    console.log('[AUTH] isTokenExpired() payloadBase64:', payloadBase64 ? payloadBase64.substring(0, 20) + '...' : 'EMPTY')
     const payload = JSON.parse(base64UrlDecode(payloadBase64))
     console.log('[AUTH] isTokenExpired() payload.exp:', payload.exp, 'Date.now():', Date.now())
     if (!payload.exp) return false
