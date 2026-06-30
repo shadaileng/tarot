@@ -37,12 +37,20 @@ interface RequestOptions {
 }
 
 let onUnauthorized: (() => void) | null = null
+let isRefreshing = false
 
 /**
  * 注册 401 回调（由 auth service 调用）
  */
 export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler
+}
+
+/**
+ * 重置重登录锁（由 App.vue 重登录完成后调用）
+ */
+export function resetAuthRefreshLock(): void {
+  isRefreshing = false
 }
 
 /**
@@ -80,9 +88,11 @@ function request<T>(
       responseType: responseType || 'text',
       success: (res) => {
         if (res.statusCode === 401) {
-          // Token 过期或无效
+          // Token 过期或无效：同步清除 token + userInfo，保持状态一致
           removeStoredToken()
-          if (!skipAuthRefresh && onUnauthorized) {
+          uni.removeStorageSync('user_info')
+          if (!skipAuthRefresh && onUnauthorized && !isRefreshing) {
+            isRefreshing = true
             onUnauthorized()
           }
           reject(new Error('UNAUTHORIZED'))

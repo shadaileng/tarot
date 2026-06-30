@@ -20,6 +20,12 @@ onShow(() => {
   loggedIn.value = isLoggedIn()
   userInfo.value = getUserInfo()
   showLoginGuide.value = !loggedIn.value
+
+  // 防护：token 丢失时同步清除残留 userInfo，避免 UI 不一致
+  if (!loggedIn.value && userInfo.value) {
+    userInfo.value = null
+  }
+
   if (loggedIn.value) loadStats()
 })
 
@@ -33,7 +39,6 @@ function handleLoginSuccess() {
   loggedIn.value = true
   userInfo.value = getUserInfo()
   showLoginGuide.value = false
-  loadStats()
 }
 
 function handleLogin() {

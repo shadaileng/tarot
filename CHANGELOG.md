@@ -5,6 +5,16 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.2] - 2026-06-30
+
+### Fixed
+
+- 修复微信一键登录后切换 Tab 再返回即丢失登录状态的问题
+- 401 时同步清除 `user_info`，避免 token 丢失但用户信息残留导致 UI 不一致
+- 新增重登录锁防止多个 401 并发触发多次 `wx.login`
+- `initAuth` 提前到 `loadRecords` 之前注册，确保启动阶段 401 也能触发自动重登录
+- 登录成功后不再立即调用 `loadStats()`，由 `onShow` 统一触发，避免登录后立即触发 401
+
 ## [2.5.1] - 2026-06-29
 
 ### Fixed
@@ -279,3 +289,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.1.3]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.3
 [1.1.2]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.2
 [1.1.0]: https://github.com/your-org/tarot-miniprogram/releases/tag/v1.1.0
+[2.5.2]: https://github.com/your-org/tarot-miniprogram/releases/tag/v2.5.2
