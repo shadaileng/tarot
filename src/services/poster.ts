@@ -62,28 +62,27 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   // #ifdef MP-WEIXIN
   const token = getStoredToken()
 
-  // Step 1: POST 生成海报，获取缓存 key
-  const postRes = await new Promise<any>((resolve, reject) => {
+  // Step 1: POST /api/poster/key → 从 JSON body 获取 cacheKey（不依赖 arraybuffer 响应头）
+  const keyRes = await new Promise<any>((resolve, reject) => {
     uni.request({
-      url: `${BACKEND_API}/api/poster`,
+      url: `${BACKEND_API}/api/poster/key`,
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
       data: payload,
-      responseType: 'arraybuffer',
       success: (res) => resolve(res),
       fail: (err) => reject(new Error(err.errMsg)),
     })
   })
-  if (postRes.statusCode === 401) throw new Error('UNAUTHORIZED')
-  if (postRes.statusCode !== 200) throw new Error(`海报生成失败 (${postRes.statusCode})`)
+  if (keyRes.statusCode === 401) throw new Error('UNAUTHORIZED')
+  if (keyRes.statusCode !== 200) throw new Error(`海报生成失败 (${keyRes.statusCode})`)
 
-  const cacheKey = postRes.header?.['X-Cache-Key']
+  const cacheKey = keyRes.data?.cacheKey
   if (!cacheKey) throw new Error('海报缓存不可用')
 
-  // Step 2: 通过 GET 下载缓存海报 → http://tmp/ 路径（DevTools 可渲染，用于展示）
+  // Step 2: 通过 GET 下载缓存海报 → tempFilePath（展示用）
   const dlRes = await new Promise<any>((resolve, reject) => {
     uni.downloadFile({
       url: `${BACKEND_API}/api/poster/${cacheKey}`,
@@ -94,13 +93,13 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   })
   if (dlRes.statusCode !== 200) throw new Error(`海报下载失败 (${dlRes.statusCode})`)
 
-  // Step 3: 用 ArrayBuffer 写入 USER_DATA_PATH（真实文件路径，供保存到相册用）
+  // Step 3: 将临时文件写入 USER_DATA_PATH（真实文件路径，供保存到相册用）
   let savePath: string | undefined
   try {
     const fs = uni.getFileSystemManager()
-    const base64 = wx.arrayBufferToBase64(postRes.data)
+    const data = fs.readFileSync(dlRes.tempFilePath)
     savePath = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
-    fs.writeFileSync(savePath, base64, 'base64')
+    fs.writeFileSync(savePath, data)
   } catch (e) {
     console.error('[poster] 写入持久文件失败:', e)
   }
