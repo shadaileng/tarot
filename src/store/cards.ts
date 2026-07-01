@@ -126,15 +126,15 @@ export const useCardStore = defineStore('cards', () => {
           currentReading.value.isPartialOnlineInterpretation = false
           currentReading.value.comprehensiveInterpretation = ''
         }
-        uni.showToast({ title: '未登录，已为你生成本地解读', icon: 'none', duration: 2000 })
+        uni.showToast({ title: '未登录，已为你生成本地分析', icon: 'none', duration: 2000 })
         return
       }
 
       const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
       if (!result.isOnline) {
         const msg = result.fallbackReason === 'quota'
-          ? '今日解读额度已用完，已切换为本地解读'
-          : '深度解读暂时不可用，已切换为本地解读'
+          ? '今日分析额度已用完，已切换为本地分析'
+          : '卡牌分析暂时不可用，已切换为本地分析'
         uni.showToast({ title: msg, icon: 'none', duration: 2000 })
       }
       if (currentReading.value) {

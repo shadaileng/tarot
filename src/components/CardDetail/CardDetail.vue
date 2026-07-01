@@ -137,7 +137,7 @@ function handleMaskClick() {
           :class="{ active: activeTab === 'deep' }"
           @click="activeTab = 'deep'"
         >
-          <text>个性化解读 ✨</text>
+          <text>个性化分析 ✨</text>
         </view>
       </view>
 
@@ -145,7 +145,7 @@ function handleMaskClick() {
       <view class="detail-content">
         <!-- 个性化解读 -->
         <view v-if="activeTab === 'deep' && deepMeaning" class="detail-meaning detail-deep-meaning">
-          <text class="detail-meaning-label">✨ 个性化解读</text>
+          <text class="detail-meaning-label">✨ 个性化分析</text>
           <text class="detail-meaning-text">{{ deepMeaning }}</text>
         </view>
 

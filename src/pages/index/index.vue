@@ -24,8 +24,8 @@ const backendText = computed(() => {
   const s = backendStatus.value
   if (s.status === 'checking') return '正在检测服务...'
   if (s.worker === 'up' && s.gemini === 'up') return '已连接后台服务器'
-  if (s.worker === 'up' && s.gemini !== 'up') return '后台服务不可用，将使用本地解读'
-  return '服务不可用，将使用本地解读'
+  if (s.worker === 'up' && s.gemini !== 'up') return '后台服务不可用，将使用本地分析'
+  return '服务不可用，将使用本地分析'
 })
 
 // 星空粒子

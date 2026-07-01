@@ -418,15 +418,15 @@ function handleUpgradeReading() {
 
       <!-- 解读总结 -->
       <view v-if="allFlipped" class="reading-summary">
-        <text class="summary-title">✨ 牌型解读</text>
+        <text class="summary-title">✨ 牌型分析</text>
 
         <!-- 个性化解读 -->
         <view v-if="reading.interpretation" class="reading-section">
           <view class="reading-badge" :class="{ 'reading-badge-local': !reading.isOnlineInterpretation, 'reading-badge-partial': reading.isPartialOnlineInterpretation }">
-            <text>{{ reading.isOnlineInterpretation ? (reading.isPartialOnlineInterpretation ? '📖 深度解读（综合部分本地补充）' : '✨ 个性化解读') : '📖 本地解读' }}</text>
+            <text>{{ reading.isOnlineInterpretation ? (reading.isPartialOnlineInterpretation ? '📖 AI分析（综合部分本地补充）' : '✨ 个性化分析') : '📖 本地分析' }}</text>
           </view>
           <view v-if="!reading.isOnlineInterpretation && !isLoggedIn()" class="login-guide">
-            <text class="login-guide-text">登录后可获得更专业的深度解读</text>
+            <text class="login-guide-text">登录后可获得更专业的卡牌分析</text>
           </view>
           <view class="reading-content">
             <text class="reading-text">{{ reading.interpretation }}</text>
@@ -437,10 +437,10 @@ function handleUpgradeReading() {
             class="upgrade-section"
           >
             <view class="login-guide">
-              <text class="login-guide-text">当前为本地解读，点击升级获取 AI 深度解读</text>
+              <text class="login-guide-text">当前为本地分析，点击升级获取 AI 卡牌分析</text>
             </view>
             <view class="btn-secondary" @click="handleUpgradeReading">
-              <text>✨ 升级为深度解读</text>
+              <text>✨ 升级为卡牌分析</text>
             </view>
           </view>
         </view>
@@ -452,7 +452,7 @@ function handleUpgradeReading() {
             <view class="dot"></view>
             <view class="dot"></view>
           </view>
-          <text class="loading-text">正在为你解读牌面...</text>
+          <text class="loading-text">正在为你分析牌面...</text>
         </view>
 
         <!-- 通用含义（始终展示，作为补充参考） -->
