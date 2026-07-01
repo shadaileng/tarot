@@ -244,7 +244,7 @@ function handleTabChange(path: string) {
         <view class="section-title-row">
           <text class="section-title">点指兵兵，谁人做大兵</text>
           <view class="online-toggle">
-            <text class="online-toggle-label">深度解读</text>
+            <text class="online-toggle-label">卡牌分析</text>
             <switch
               :checked="useOnlineReading"
               color="#c9a96e"

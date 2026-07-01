@@ -23,8 +23,8 @@ const backendClass = computed(() => backendStatus.value.status)
 const backendText = computed(() => {
   const s = backendStatus.value
   if (s.status === 'checking') return '正在检测服务...'
-  if (s.worker === 'up' && s.gemini === 'up') return '深度解读服务已连接'
-  if (s.worker === 'up' && s.gemini !== 'up') return '深度解读服务不可用，将使用本地解读'
+  if (s.worker === 'up' && s.gemini === 'up') return '已连接后台服务器'
+  if (s.worker === 'up' && s.gemini !== 'up') return '后台服务不可用，将使用本地解读'
   return '服务不可用，将使用本地解读'
 })
 
@@ -129,7 +129,7 @@ function handleTabChange(path: string) {
         <view class="section-title-row">
         <text class="section-title">今晚吃什么？（选填）</text>
         <view class="online-toggle">
-          <text class="online-toggle-label">深度解读</text>
+          <text class="online-toggle-label">卡牌分析</text>
           <switch
             :checked="useOnlineReading"
             color="#c9a96e"
