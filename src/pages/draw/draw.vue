@@ -223,7 +223,7 @@ function handleTabChange(path: string) {
     <!-- ========== 选择区域（动画时隐藏） ========== -->
     <template v-if="animPhase === 'idle'">
       <!-- 牌型选择 -->
-      <view v-if="sectionConfig.draw?.spread_selection !== false" class="spread-select">
+      <view v-if="sectionConfig.draw?.spread_selection" class="spread-select">
         <text class="section-title">选择牌型</text>
         <view class="spread-grid">
           <view
@@ -241,7 +241,7 @@ function handleTabChange(path: string) {
       </view>
 
       <!-- 问题 -->
-      <view v-if="sectionConfig.draw?.question_input === true" class="question-wrap">
+      <view v-if="sectionConfig.draw?.question_input" class="question-wrap">
         <view class="section-title-row">
           <text class="section-title">点指兵兵，谁人做大兵</text>
           <view class="online-toggle">
@@ -265,7 +265,7 @@ function handleTabChange(path: string) {
       </view>
 
       <!-- 牌型预览 -->
-      <view v-if="sectionConfig.draw?.spread_preview !== false" class="spread-preview">
+      <view v-if="sectionConfig.draw?.spread_preview" class="spread-preview">
         <text class="section-title">牌型预览：{{ currentSpread?.name }}</text>
         <view class="preview-cards">
           <view
@@ -282,7 +282,7 @@ function handleTabChange(path: string) {
       </view>
 
       <!-- 抽牌按钮 -->
-      <view v-if="sectionConfig.draw?.draw_action !== false" class="draw-action">
+      <view v-if="sectionConfig.draw?.draw_action" class="draw-action">
         <view class="btn-primary" @click="handleDraw">
           <text>🔮 开始抽牌</text>
         </view>

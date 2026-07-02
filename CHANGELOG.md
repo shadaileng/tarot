@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- 修复首页和抽牌页问题输入、首页后台服务状态在获取页面配置前默认显示的问题（将条件从 `!== false` 改为 `=== true`，并给 `sectionConfig` 初始化显式 `false` 默认值）
+- 修复所有可控制 section 在页面配置加载前闪烁的问题（所有 section 初始化显式默认值，API 返回后覆盖对应项，未返回的保留默认值；模板条件简化为直接取值）
 
 ## [2.6.1] - 2026-07-02
 
