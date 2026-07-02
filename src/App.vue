@@ -3,6 +3,7 @@ import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { useCardStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
 import { checkBackendHealth } from '@/services/reading'
+import { loadPageSections } from '@/services/page-sections'
 import { resetAuthRefreshLock } from '@/utils/request'
 
 onLaunch(() => {
@@ -39,6 +40,9 @@ onLaunch(() => {
 
     // 全局健康检查：尽早检测后端服务状态
     store.setBackendStatus(await checkBackendHealth())
+
+    // 加载页面区域可见性配置
+    loadPageSections()
   }, 0)
 
   // 屏蔽框架内部 showShareMenu 权限报错（appId 审核通过后删除）

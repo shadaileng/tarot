@@ -6,6 +6,7 @@ import { useCardStore } from '@/store'
 import { navTo } from '@/utils'
 
 import { isLoggedIn } from '@/services/auth'
+import { sectionConfig } from '@/services/page-sections'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 const store = useCardStore()
@@ -71,7 +72,7 @@ function handleTabChange(path: string) {
 <template>
   <view class="page-container index-page">
     <!-- 星空背景粒子 -->
-    <view class="starfield-bg">
+    <view v-if="sectionConfig.index?.particle_background !== false" class="starfield-bg">
       <view
         v-for="(star, i) in stars"
         :key="i"
@@ -89,7 +90,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 顶部区域 -->
-    <view class="hero-section">
+    <view v-if="sectionConfig.index?.hero_section !== false" class="hero-section">
       <view class="hero-glow" />
       <text class="hero-title">卡牌抽牌</text>
       <text class="hero-subtitle">选择困难症快点抽牌</text>
@@ -101,13 +102,13 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 后台服务状态 -->
-    <view class="backend-status" :class="backendClass">
+    <view v-if="sectionConfig.index?.backend_status !== false" class="backend-status" :class="backendClass">
       <view class="status-dot" />
       <text class="status-text">{{ backendText }}</text>
     </view>
 
     <!-- 牌型选择 -->
-    <view class="spread-section">
+    <view v-if="sectionConfig.index?.spread_selection !== false" class="spread-section">
       <text class="section-title">选择牌型</text>
       <view class="spread-list">
         <view
@@ -125,7 +126,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 问题输入 -->
-    <view class="question-section">
+    <view v-if="sectionConfig.index?.question_input !== false" class="question-section">
         <view class="section-title-row">
         <text class="section-title">今晚吃什么？（选填）</text>
         <view class="online-toggle">
@@ -152,7 +153,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 抽牌按钮 -->
-    <view class="draw-btn-wrap">
+    <view v-if="sectionConfig.index?.draw_button !== false" class="draw-btn-wrap">
       <view class="btn-primary draw-btn" @click="handleDraw">
         <text class="draw-btn-icon">🔮</text>
         <text class="draw-btn-text">开始抽牌</text>
