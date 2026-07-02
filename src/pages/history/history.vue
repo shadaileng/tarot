@@ -116,7 +116,7 @@ function getOrientationLabel(ori: string): string {
     </view>
 
     <!-- 自定义底部导航 -->
-    <TabBar :current-path="'pages/history/history'" :tabs="tabList" @change="handleTabChange" />
+    <TabBar :current-path="'pages/history/history'" :tabs="tabList" @tab-change="handleTabChange" />
   </view>
 </template>
 

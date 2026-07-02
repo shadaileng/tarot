@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'change', path: string): void
+  (e: 'tab-change', path: string): void
 }>()
 
 const activeColor = '#c9a96e'
@@ -53,7 +53,7 @@ function getIconSrc(pagePath: string): string {
       :key="tab.pagePath"
       class="tab-bar-item"
       :class="{ active: currentPath === tab.pagePath }"
-      @click="emit('change', tab.pagePath)"
+      @click="emit('tab-change', tab.pagePath)"
     >
       <image
         class="tab-bar-icon"

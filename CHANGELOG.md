@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-07-02
+
+### Fixed
+
+- 修复自定义 TabBar 点击切换页面报错 `switchTab:fail page "[object Object]" is not found` 的问题（将 TabBar 自定义事件名从 `change` 改为 `tab-change`，避免与微信原生 `change` 事件冲突）
+
 ## [2.5.3] - 2026-07-01
 
 ### Fixed

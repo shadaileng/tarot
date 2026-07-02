@@ -167,7 +167,7 @@ function handleTabChange(path: string) {
 
     <LoginGuide v-if="showLoginGuide && !loggedIn" @login-success="handleLoginSuccess" />
 
-    <TabBar :current-path="'pages/profile/profile'" :tabs="tabList" @change="handleTabChange" />
+    <TabBar :current-path="'pages/profile/profile'" :tabs="tabList" @tab-change="handleTabChange" />
   </view>
 </template>
 

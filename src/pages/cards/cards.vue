@@ -147,7 +147,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 自定义底部导航 -->
-    <TabBar :current-path="'pages/cards/cards'" :tabs="tabList" @change="handleTabChange" />
+    <TabBar :current-path="'pages/cards/cards'" :tabs="tabList" @tab-change="handleTabChange" />
   </view>
 </template>
 
