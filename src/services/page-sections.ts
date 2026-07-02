@@ -2,7 +2,15 @@ import { reactive } from 'vue'
 import { apiGet } from '@/utils/request'
 
 // 页面区域可见性配置（内存响应式对象，App 启动时加载一次）
-export const sectionConfig = reactive<Record<string, Record<string, boolean>>>({})
+export const sectionConfig = reactive<Record<string, Record<string, boolean>>>({
+  index: {
+    backend_status: false,
+    question_input: false,
+  },
+  draw: {
+    question_input: false,
+  }
+})
 
 // 从后端拉取配置（App 启动时调用一次）
 export async function loadPageSections(): Promise<void> {

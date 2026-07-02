@@ -241,7 +241,7 @@ function handleTabChange(path: string) {
       </view>
 
       <!-- 问题 -->
-      <view v-if="sectionConfig.draw?.question_input !== false" class="question-wrap">
+      <view v-if="sectionConfig.draw?.question_input === true" class="question-wrap">
         <view class="section-title-row">
           <text class="section-title">点指兵兵，谁人做大兵</text>
           <view class="online-toggle">

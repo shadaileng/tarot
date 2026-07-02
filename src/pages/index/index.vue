@@ -102,7 +102,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 后台服务状态 -->
-    <view v-if="sectionConfig.index?.backend_status !== false" class="backend-status" :class="backendClass">
+    <view v-if="sectionConfig.index?.backend_status === true" class="backend-status" :class="backendClass">
       <view class="status-dot" />
       <text class="status-text">{{ backendText }}</text>
     </view>
@@ -126,7 +126,7 @@ function handleTabChange(path: string) {
     </view>
 
     <!-- 问题输入 -->
-    <view v-if="sectionConfig.index?.question_input !== false" class="question-section">
+    <view v-if="sectionConfig.index?.question_input === true" class="question-section">
         <view class="section-title-row">
         <text class="section-title">今晚吃什么？（选填）</text>
         <view class="online-toggle">

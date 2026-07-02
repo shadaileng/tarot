@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2026-07-02
+
+### Fixed
+
+- 修复首页和抽牌页问题输入、首页后台服务状态在获取页面配置前默认显示的问题（将条件从 `!== false` 改为 `=== true`，并给 `sectionConfig` 初始化显式 `false` 默认值）
+
 ## [2.6.1] - 2026-07-02
 
 ### Fixed
