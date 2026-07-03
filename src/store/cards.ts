@@ -46,6 +46,9 @@ export const useCardStore = defineStore('cards', () => {
   /** 解读加载状态 */
   const isLoadingInterpretation = ref(false)
 
+  /** 异步轮询等待状态 */
+  const isPolling = ref(false)
+
   /** 云端同步状态 */
   const isSyncing = ref(false)
 
@@ -130,7 +133,27 @@ export const useCardStore = defineStore('cards', () => {
         return
       }
 
+      // 异步解读（内部自动轮询）
+      isPolling.value = true
       const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
+      isPolling.value = false
+
+      if (!result.isOnline) {
+        const msg = result.fallbackReason === 'quota'
+          ? '今日分析额度已用完，已切换为本地分析'
+          : '卡牌分析暂时不可用，已切换为本地分析'
+        uni.showToast({ title: msg, icon: 'none', duration: 2000 })
+      }
+      if (currentReading.value) {
+        currentReading.value.interpretation = result.reading
+        currentReading.value.isOnlineInterpretation = result.isOnline
+        currentReading.value.isPartialOnlineInterpretation = result.isPartialOnline
+        currentReading.value.comprehensiveInterpretation = result.comprehensiveInterpretation
+      }
+    } catch (e) {
+      isPolling.value = false
+      console.error('获取解读失败:', e)
+    } finally {
       if (!result.isOnline) {
         const msg = result.fallbackReason === 'quota'
           ? '今日分析额度已用完，已切换为本地分析'
@@ -166,6 +189,7 @@ export const useCardStore = defineStore('cards', () => {
   function clearReading() {
     currentReading.value = null
     isLoadingInterpretation.value = false
+    isPolling.value = false
     isViewingHistory.value = false
   }
 
@@ -292,6 +316,7 @@ export const useCardStore = defineStore('cards', () => {
     records,
     recordCount,
     isLoadingInterpretation,
+    isPolling,
     isSyncing,
     backendStatus,
     isViewingHistory,

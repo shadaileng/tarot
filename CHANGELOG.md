@@ -5,6 +5,14 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-07-03
+
+### Changed
+
+- **解读接口改为异步轮询模式**：`fetchReading` 调用 `POST /api/reading/start` 提交任务后立即返回 taskId，前端每 2 秒轮询 `GET /api/reading/result/:taskId`，最多 90 秒
+- **taskId 持久化**：通过 `uni.setStorageSync` 缓存 taskId，用户重进页面后可继续轮询，解读完成后自动清理
+- **轮询状态可视化**：Store 新增 `isPolling` 状态，供 UI 展示"AI 正在解读"加载动画
+
 ## [2.6.2] - 2026-07-02
 
 ### Fixed

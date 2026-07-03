@@ -26,40 +26,121 @@ export interface ReadingResult {
 }
 
 /**
- * 调用接口获取个性化解读
+ * 提交异步解读任务
+ * @returns taskId
+ */
+async function startReading(question: string, cards: DrawnCard[]): Promise<string> {
+  const data = await apiPost<{ taskId: string; status: string }>(
+    '/api/reading/start',
+    {
+      question,
+      cards: cards.map((c) => ({
+        position: c.position,
+        name: c.card.name,
+        isUpright: c.orientation === 'upright',
+        uprightMeaning: c.card.uprightMeaning,
+        reversedMeaning: c.card.reversedMeaning,
+        keywords: c.card.keywords,
+      })),
+    },
+    { timeout: 10000, skipAuthRefresh: true },
+  )
+  // 持久化 taskId，支持重进页面后继续轮询
+  uni.setStorageSync('pending_reading_taskId', data.taskId)
+  return data.taskId
+}
+
+/**
+ * 轮询解读任务结果
+ */
+async function pollReadingResult(taskId: string): Promise<{
+  status: 'pending' | 'completed' | 'failed'
+  reading?: string
+  model?: string
+  incomplete?: boolean
+  warning?: string
+  error?: string
+}> {
+  return apiGet(`/api/reading/result/${taskId}`, undefined, { skipAuthRefresh: true })
+}
+
+/** 等待 */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * 主入口：异步提交 + 轮询等待结果
+ * @param question - 用户问题
+ * @param cards - 抽到的卡牌
+ * @returns 解读结果（在线成功 / 降级为本地）
  */
 export async function fetchReading(question: string, cards: DrawnCard[]): Promise<ReadingResult> {
   try {
-    const data = await apiPost<{ reading?: string; incomplete?: boolean }>(
-      '/api/reading',
-      {
-        question,
-        cards: cards.map((c) => ({
-          position: c.position,
-          name: c.card.name,
-          isUpright: c.orientation === 'upright',
-          uprightMeaning: c.card.uprightMeaning,
-          reversedMeaning: c.card.reversedMeaning,
-          keywords: c.card.keywords,
-        })),
-      },
-      { timeout: 20000, skipAuthRefresh: true }
-    )
+    // 检查是否有缓存的 pending taskId（重进页面恢复）
+    let taskId = uni.getStorageSync('pending_reading_taskId')
 
-    if (data.reading) {
-      if (data.incomplete && !/✨\s*\*{0,2}综合解读/.test(data.reading)) {
-        // 解读不完整且缺少综合解读，用本地补偿
-        const summary = generateSummaryOnly(question, cards)
-        const compensated = data.reading + summary
-        const localSummary = generateSummaryOnlyText(question, cards)
-        return { reading: compensated, isOnline: true, isPartialOnline: true, comprehensiveInterpretation: localSummary }
-      }
-      // 解读完整或包含综合解读，提取综合解读
-      const summary = extractComprehensive(data.reading)
-      return { reading: data.reading, isOnline: true, isPartialOnline: false, comprehensiveInterpretation: summary || undefined }
+    if (!taskId) {
+      // 1. 提交异步任务
+      taskId = await startReading(question, cards)
     }
-    throw new Error('Empty reading')
+
+    // 2. 轮询等待结果（最多 90 秒）
+    const maxWaitMs = 90000
+    const pollInterval = 2000
+    const startTime = Date.now()
+
+    while (Date.now() - startTime < maxWaitMs) {
+      await sleep(pollInterval)
+
+      try {
+        const result = await pollReadingResult(taskId)
+
+        if (result.status === 'completed' && result.reading) {
+          // 解读完成，清理 taskId 缓存
+          uni.removeStorageSync('pending_reading_taskId')
+
+          if (result.incomplete && !/✨\s*\*{0,2}综合解读/.test(result.reading)) {
+            // 不完整解读，补全综合解读
+            const summary = generateSummaryOnly(question, cards)
+            const compensated = result.reading + summary
+            return {
+              reading: compensated,
+              isOnline: true,
+              isPartialOnline: true,
+              comprehensiveInterpretation: generateSummaryOnlyText(question, cards),
+            }
+          }
+          const summary = extractComprehensive(result.reading)
+          return {
+            reading: result.reading,
+            isOnline: true,
+            isPartialOnline: false,
+            comprehensiveInterpretation: summary || undefined,
+          }
+        }
+
+        if (result.status === 'failed') {
+          uni.removeStorageSync('pending_reading_taskId')
+          throw new Error(result.error || 'AI reading failed')
+        }
+
+        // status === 'pending' → 继续轮询
+      } catch (pollErr) {
+        // 网络错误不中断轮询，继续等待
+        if (pollErr instanceof Error && pollErr.message === 'AI reading failed') {
+          throw pollErr
+        }
+      }
+    }
+
+    // 超时
+    uni.removeStorageSync('pending_reading_taskId')
+    throw new Error('Reading timed out after 90s')
   } catch (e) {
+    uni.removeStorageSync('pending_reading_taskId')
+    console.warn('[fetchReading] 在线解读失败，降级为本地:',
+      e instanceof Error ? e.message : String(e))
     const localReading = generateLocalReading(question, cards)
     const localSummary = generateSummaryOnlyText(question, cards)
     const isQuota = e instanceof Error && (
