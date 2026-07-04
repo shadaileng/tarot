@@ -34,6 +34,8 @@ export interface ReadingContext {
   // ===== 输出（写入 record & currentReading） =====
   interpretation: string
   isOnlineInterpretation: boolean
+  /** true 表示 isOnlineInterpretation 由 record 显式赋值（新数据），false 表示旧数据回退推导 */
+  hasExplicitOnlineFlag: boolean
   isPartialOnlineInterpretation: boolean
   comprehensiveInterpretation: string
 

@@ -23,6 +23,13 @@ export function createReadingContext(
   useOnlineReading: boolean,
   record?: ReadingRecord,
 ): ReadingContext {
+  // 新数据：record.isOnlineInterpretation 已显式赋值（true/false）
+  // 旧数据：record.isOnlineInterpretation 为 undefined，需回退推导
+  const hasExplicitOnlineFlag = record?.isOnlineInterpretation !== undefined
+  const isOnlineInterpretation = hasExplicitOnlineFlag
+    ? record!.isOnlineInterpretation!
+    : !!(record?.interpretation && !record?.fallbackReason)
+
   return {
     source,
     recordId,
@@ -32,11 +39,12 @@ export function createReadingContext(
     useOnlineReading,
     route: (source === 'viewHistory' || source === 'upgrade') ? 'online' : 'online',
     isLoggedIn: false,
-    fallbackReason: null,
+    fallbackReason: record?.fallbackReason ?? null,
     taskId: record?.taskId,
     isOnlineProcessing: record?.isOnlineProcessing ?? false,
     interpretation: record?.interpretation || '',
-    isOnlineInterpretation: record?.isOnlineInterpretation ?? !!(record?.interpretation && !record?.fallbackReason),
+    isOnlineInterpretation,
+    hasExplicitOnlineFlag,
     isPartialOnlineInterpretation: record?.isPartialOnlineInterpretation ?? false,
     comprehensiveInterpretation: record?.comprehensiveInterpretation || '',
     uiState: 'idle',

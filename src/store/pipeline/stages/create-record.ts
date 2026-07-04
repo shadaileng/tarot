@@ -28,8 +28,9 @@ export class CreateRecordStage implements PipelineStage {
       }
     }
 
-    // 兼容旧数据推理
-    if (ctx.source !== 'draw' && ctx.interpretation && !ctx.isOnlineInterpretation) {
+    // 兼容旧数据推理：仅对缺少显式标记的旧记录，
+    // 通过 fallbackReason 推导解读来源（新数据直接信任 isOnlineInterpretation 字段值）
+    if (ctx.source !== 'draw' && ctx.interpretation && !ctx.hasExplicitOnlineFlag) {
       // 若有解读但未标记来源，通过 fallbackReason 推导
       ctx.isOnlineInterpretation = !ctx.fallbackReason
     }
