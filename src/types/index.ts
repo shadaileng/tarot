@@ -87,6 +87,10 @@ export interface ReadingRecord {
   synced?: boolean
   /** 解读文本 */
   interpretation?: string
+  /** 异步解读 taskId（有值 = AI 解读中/已完成但未刷新） */
+  taskId?: string
+  /** 后台 AI 解读进行中（前端已降级展示本地） */
+  isOnlineProcessing?: boolean
 }
 
 // ========== 积分等级体系 ==========

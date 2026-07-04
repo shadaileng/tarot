@@ -21,8 +21,10 @@ export interface ReadingResult {
   isPartialOnline: boolean
   /** 综合解读文本（优先在线生成的，没有则本地生成） */
   comprehensiveInterpretation?: string
-  /** 降级原因：quota=额度用完，error=其他错误 */
-  fallbackReason?: 'quota' | 'error'
+  /** 降级原因：quota=额度用完，error=其他错误，timeout=后台仍在生成 */
+  fallbackReason?: 'quota' | 'error' | 'timeout'
+  /** 异步任务 taskId（降级时携带，供 record 保存以支持后续升级） */
+  taskId?: string
 }
 
 /**
@@ -51,10 +53,10 @@ async function startReading(question: string, cards: DrawnCard[]): Promise<strin
 }
 
 /**
- * 轮询解读任务结果
+ * 轮询解读任务结果（单次，供外部调用）
  */
-async function pollReadingResult(taskId: string): Promise<{
-  status: 'pending' | 'completed' | 'failed'
+export async function pollTaskOnce(taskId: string): Promise<{
+  status: 'pending' | 'completed' | 'failed' | 'cancelled'
   reading?: string
   model?: string
   incomplete?: boolean
@@ -62,6 +64,32 @@ async function pollReadingResult(taskId: string): Promise<{
   error?: string
 }> {
   return apiGet(`/api/reading/result/${taskId}`, undefined, { skipAuthRefresh: true })
+}
+
+/**
+ * 轮询解读任务结果（内部使用）
+ */
+async function pollReadingResult(taskId: string): Promise<{
+  status: 'pending' | 'completed' | 'failed' | 'cancelled'
+  reading?: string
+  model?: string
+  incomplete?: boolean
+  warning?: string
+  error?: string
+}> {
+  return pollTaskOnce(taskId)
+}
+
+/**
+ * 取消解读任务
+ * @param taskId - 任务 ID
+ */
+export async function cancelReading(taskId: string): Promise<{
+  status: string
+  quotaRefunded: boolean
+  message?: string
+}> {
+  return apiPost(`/api/reading/cancel/${taskId}`, {}, { skipAuthRefresh: true })
 }
 
 /** 等待 */
@@ -120,23 +148,33 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
           }
         }
 
-        if (result.status === 'failed') {
+        if (result.status === 'failed' || result.status === 'cancelled') {
           uni.removeStorageSync('pending_reading_taskId')
-          throw new Error(result.error || 'AI reading failed')
+          throw new Error(result.error || (result.status === 'cancelled' ? 'AI reading cancelled' : 'AI reading failed'))
         }
 
         // status === 'pending' → 继续轮询
       } catch (pollErr) {
         // 网络错误不中断轮询，继续等待
-        if (pollErr instanceof Error && pollErr.message === 'AI reading failed') {
+        if (pollErr instanceof Error &&
+            (pollErr.message === 'AI reading failed' || pollErr.message === 'AI reading cancelled')) {
           throw pollErr
         }
       }
     }
 
-    // 超时
-    uni.removeStorageSync('pending_reading_taskId')
-    throw new Error('Reading timed out after 90s')
+    // 3. 软超时：不清除 Storage，不取消后台任务
+    //    将 taskId 随降级结果返回，由 store 保存到 record 供后续升级
+    const localReading = generateLocalReading(question, cards)
+    const localSummary = generateSummaryOnlyText(question, cards)
+    return {
+      reading: localReading,
+      isOnline: false,
+      isPartialOnline: false,
+      comprehensiveInterpretation: localSummary,
+      fallbackReason: 'timeout',
+      taskId,  // ← 保留 taskId
+    }
   } catch (e) {
     uni.removeStorageSync('pending_reading_taskId')
     console.warn('[fetchReading] 在线解读失败，降级为本地:',

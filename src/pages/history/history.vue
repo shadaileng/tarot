@@ -54,6 +54,20 @@ function handleViewDetail(id: string) {
 function getOrientationLabel(ori: string): string {
   return ori === 'upright' ? '正位' : '逆位'
 }
+
+function handleCancelAi(recordId: string) {
+  uni.showModal({
+    title: '取消 AI 解读',
+    content: '取消后将保留当前本地解读，并退还一次额度。确定取消吗？',
+    confirmText: '确定取消',
+    cancelText: '再等等',
+    success: (res) => {
+      if (res.confirm) {
+        store.cancelRecordTask(recordId)
+      }
+    },
+  })
+}
 </script>
 
 <template>
@@ -96,6 +110,17 @@ function getOrientationLabel(ori: string): string {
             >
               {{ getOrientationLabel(dc.orientation) }}
             </text>
+          </view>
+        </view>
+
+        <!-- AI 解读后台生成中 横幅 -->
+        <view v-if="record.isOnlineProcessing && record.taskId" class="ai-status-banner">
+          <view class="ai-status-text">
+            <text class="ai-status-icon">⏳</text>
+            <text>AI 解读正在后台生成中...</text>
+          </view>
+          <view class="ai-cancel-btn" @click.stop="handleCancelAi(record.id)">
+            取消
           </view>
         </view>
 
@@ -241,6 +266,35 @@ function getOrientationLabel(ori: string): string {
     color: $danger;
     opacity: 0.6;
   }
+}
+
+// AI 解读后台生成横幅
+.ai-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 20rpx;
+  background: linear-gradient(135deg, #f0f4ff, #e8eeff);
+  border: 1px dashed #6b7db3;
+  border-radius: 12rpx;
+  margin-top: 16rpx;
+}
+.ai-status-text {
+  display: flex;
+  align-items: center;
+  font-size: 26rpx;
+  color: #4a5568;
+}
+.ai-status-icon {
+  margin-right: 8rpx;
+}
+.ai-cancel-btn {
+  padding: 8rpx 20rpx;
+  font-size: 24rpx;
+  color: #e53e3e;
+  border: 1px solid #e53e3e;
+  border-radius: 8rpx;
+  transition: all 0.2s;
 }
 
 // 空状态

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import type { Card, DrawnCard, SpreadType, ReadingRecord, CardOrientation } from '@/types'
 import { drawRandomCards } from '@/data/cards'
 import { getSpread } from '@/data/spreads'
-import { fetchReading, generateLocalReading, type BackendStatus } from '@/services/reading'
+import { fetchReading, generateLocalReading, pollTaskOnce, cancelReading, type BackendStatus } from '@/services/reading'
 import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
 
@@ -139,10 +139,25 @@ export const useCardStore = defineStore('cards', () => {
       isPolling.value = false
 
       if (!result.isOnline) {
-        const msg = result.fallbackReason === 'quota'
-          ? '今日分析额度已用完，已切换为本地分析'
-          : '卡牌分析暂时不可用，已切换为本地分析'
-        uni.showToast({ title: msg, icon: 'none', duration: 2000 })
+        if (result.taskId) {
+          // 软超时降级：保存 taskId 到 record，提示后台继续生成
+          const currentRecord = records.value[0]  // 最新一条
+          if (currentRecord) {
+            currentRecord.taskId = result.taskId
+            currentRecord.isOnlineProcessing = true
+            saveRecords()
+          }
+          uni.showToast({
+            title: 'AI解读正在后台生成中，稍后可在历史记录中查看完整结果',
+            icon: 'none',
+            duration: 3000,
+          })
+        } else {
+          const msg = result.fallbackReason === 'quota'
+            ? '今日分析额度已用完，已切换为本地分析'
+            : '卡牌分析暂时不可用，已切换为本地分析'
+          uni.showToast({ title: msg, icon: 'none', duration: 2000 })
+        }
       }
       if (currentReading.value) {
         currentReading.value.interpretation = result.reading
@@ -152,21 +167,6 @@ export const useCardStore = defineStore('cards', () => {
       }
     } catch (e) {
       isPolling.value = false
-      console.error('获取解读失败:', e)
-    } finally {
-      if (!result.isOnline) {
-        const msg = result.fallbackReason === 'quota'
-          ? '今日分析额度已用完，已切换为本地分析'
-          : '卡牌分析暂时不可用，已切换为本地分析'
-        uni.showToast({ title: msg, icon: 'none', duration: 2000 })
-      }
-      if (currentReading.value) {
-        currentReading.value.interpretation = result.reading
-        currentReading.value.isOnlineInterpretation = result.isOnline
-        currentReading.value.isPartialOnlineInterpretation = result.isPartialOnline
-        currentReading.value.comprehensiveInterpretation = result.comprehensiveInterpretation
-      }
-    } catch (e) {
       console.error('获取解读失败:', e)
     } finally {
       isLoadingInterpretation.value = false
@@ -199,7 +199,28 @@ export const useCardStore = defineStore('cards', () => {
     if (record) {
       isViewingHistory.value = true
 
-      // 如果已有解读，直接使用（历史数据默认为在线解读）
+      // 如果该记录有 pending taskId，检查后台是否已完成
+      if (record.taskId) {
+        pollTaskOnce(record.taskId).then(result => {
+          if (result.status === 'completed' && result.reading) {
+            // 升级为 AI 解读
+            record.interpretation = result.reading
+            record.isOnlineProcessing = false
+            record.taskId = undefined
+            saveRecords()
+          } else if (result.status === 'failed' || result.status === 'cancelled') {
+            // 任务已结束但未成功，清理 taskId
+            record.isOnlineProcessing = false
+            record.taskId = undefined
+            saveRecords()
+          }
+          // status === 'pending': 继续等待，不做处理
+        }).catch(() => {
+          // 网络错误，静默处理，下次进入再试
+        })
+      }
+
+      // 如果已有解读，直接使用
       if (record.interpretation) {
         currentReading.value = {
           cards: record.cards,
@@ -207,7 +228,7 @@ export const useCardStore = defineStore('cards', () => {
           question: record.question,
           useOnlineReading: true,
           interpretation: record.interpretation,
-          isOnlineInterpretation: true,
+          isOnlineInterpretation: !record.isOnlineProcessing,
           isPartialOnlineInterpretation: false,
           comprehensiveInterpretation: '',
         }
@@ -225,6 +246,34 @@ export const useCardStore = defineStore('cards', () => {
           comprehensiveInterpretation: '',
         }
       }
+    }
+  }
+
+  /** 取消后台 AI 解读任务 */
+  async function cancelRecordTask(recordId: string) {
+    const record = records.value.find(r => r.id === recordId)
+    if (!record?.taskId) return
+
+    try {
+      const result = await cancelReading(record.taskId)
+
+      if (result.quotaRefunded) {
+        uni.showToast({
+          title: '已取消AI解读，额度已退还',
+          icon: 'none',
+          duration: 2000,
+        })
+      }
+
+      // 清理 record
+      record.taskId = undefined
+      record.isOnlineProcessing = false
+      saveRecords()
+    } catch (e) {
+      uni.showToast({
+        title: '取消失败，请稍后重试',
+        icon: 'none',
+      })
     }
   }
 
@@ -329,5 +378,6 @@ export const useCardStore = defineStore('cards', () => {
     loadRecords,
     deleteRecord,
     clearAllRecords,
+    cancelRecordTask,
   }
 })
