@@ -27,7 +27,7 @@ export class FetchOnlineStage implements PipelineStage {
           ctx.taskId = result.taskId
           ctx.isOnlineProcessing = true
           ctx.fallbackReason = 'timeout'
-          ctx.toastMessage = 'AI解读正在后台生成中，稍后可在历史记录中查看完整结果'
+          ctx.toastMessage = '卡牌解读正在后台生成中，稍后可在历史记录中查看完整结果'
           ctx.uiState = 'polling'
         } else {
           // 配额/错误降级

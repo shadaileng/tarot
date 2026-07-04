@@ -57,7 +57,7 @@ function getOrientationLabel(ori: string): string {
 
 function handleCancelAi(recordId: string) {
   uni.showModal({
-    title: '取消 AI 解读',
+    title: '取消卡牌解读',
     content: '取消后将保留当前本地解读，并退还一次额度。确定取消吗？',
     confirmText: '确定取消',
     cancelText: '再等等',
@@ -113,11 +113,11 @@ function handleCancelAi(recordId: string) {
           </view>
         </view>
 
-        <!-- AI 解读后台生成中 横幅 -->
+        <!-- 卡牌解读后台生成中 横幅 -->
         <view v-if="record.isOnlineProcessing && record.taskId" class="ai-status-banner">
           <view class="ai-status-text">
             <text class="ai-status-icon">⏳</text>
-            <text>AI 解读正在后台生成中...</text>
+            <text>卡牌解读正在后台生成中...</text>
           </view>
           <view class="ai-cancel-btn" @click.stop="handleCancelAi(record.id)">
             取消

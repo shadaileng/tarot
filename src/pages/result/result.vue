@@ -37,7 +37,7 @@ const badgeText = computed(() => {
   }
   if (reading.value?.isOnlineInterpretation && reading.value?.interpretation) {
     return reading.value.isPartialOnlineInterpretation
-      ? '📖 AI分析（综合部分本地补充）'
+      ? '📖 卡牌分析（综合部分本地补充）'
       : '✨ 个性化分析'
   }
   return '📖 本地分析'
@@ -54,12 +54,12 @@ const showUpgradeButton = computed(() => {
 
 /** 引导文案 */
 const guideMessage = computed(() => {
-  if (store.isPolling) return 'AI 解读正在后台生成，稍后刷新查看'
-  if (!isLoggedIn()) return '登录后可获得个性化 AI 解读'
+  if (store.isPolling) return '卡牌解读正在后台生成，稍后刷新查看'
+  if (!isLoggedIn()) return '登录后可获得个性化卡牌解读'
   if (currentFallbackReason.value === 'quota') return '每日免费次数已用完，明天再来'
-  if (currentFallbackReason.value === 'timeout') return 'AI 解读生成超时，可稍后重试'
-  if (currentFallbackReason.value === 'error') return 'AI 解读生成失败，可稍后重试'
-  if (currentFallbackReason.value === 'local') return '点击下方按钮升级为个性化 AI 解读'
+  if (currentFallbackReason.value === 'timeout') return '卡牌解读生成超时，可稍后重试'
+  if (currentFallbackReason.value === 'error') return '卡牌解读生成失败，可稍后重试'
+  if (currentFallbackReason.value === 'local') return '点击下方按钮升级为个性化卡牌解读'
   return ''
 })
 
@@ -467,7 +467,7 @@ function handleUpgradeReading() {
         <!-- 后台生成中横幅（场景 13） -->
         <view v-if="store.isPolling && store.isViewingHistory" class="generating-banner">
           <text class="banner-icon">⏳</text>
-          <text>AI 解读正在后台生成，稍后刷新即可查看</text>
+          <text>卡牌解读正在后台生成，稍后刷新即可查看</text>
         </view>
 
         <!-- 个性化解读 -->

@@ -210,7 +210,7 @@ export const useCardStore = defineStore('cards', () => {
 
       if (result.quotaRefunded) {
         uni.showToast({
-          title: '已取消AI解读，额度已退还',
+          title: '已取消卡牌解读，额度已退还',
           icon: 'none',
           duration: 2000,
         })
