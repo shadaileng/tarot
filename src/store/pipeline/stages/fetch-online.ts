@@ -1,0 +1,54 @@
+import type { PipelineStage, ReadingContext, StageResult, PipelineServices } from '../types'
+
+/** Stage 4: 获取 AI 在线解读 */
+export class FetchOnlineStage implements PipelineStage {
+  name = 'FetchOnline'
+
+  constructor(private services: PipelineServices) {}
+
+  shouldRun(ctx: ReadingContext): boolean {
+    return ctx.route === 'online'
+  }
+
+  async execute(ctx: ReadingContext): Promise<StageResult> {
+    ctx.uiState = 'loading'
+
+    try {
+      const result = await this.services.fetchReading(ctx.question, ctx.cards)
+
+      ctx.interpretation = result.reading
+      ctx.isOnlineInterpretation = result.isOnline
+      ctx.isPartialOnlineInterpretation = result.isPartialOnline
+      ctx.comprehensiveInterpretation = result.comprehensiveInterpretation || ''
+
+      if (!result.isOnline) {
+        if (result.taskId) {
+          // 软超时降级
+          ctx.taskId = result.taskId
+          ctx.isOnlineProcessing = true
+          ctx.fallbackReason = 'timeout'
+          ctx.toastMessage = 'AI解读正在后台生成中，稍后可在历史记录中查看完整结果'
+          ctx.uiState = 'polling'
+        } else {
+          // 配额/错误降级
+          const reason = (result.fallbackReason === 'quota' ? 'quota' : 'error') as 'quota' | 'error'
+          ctx.fallbackReason = result.fallbackReason as 'quota' | 'error' || 'error'
+          void reason // 已赋值
+          ctx.toastMessage = result.fallbackReason === 'quota'
+            ? '今日分析额度已用完，已切换为本地分析'
+            : '卡牌分析暂时不可用，已切换为本地分析'
+          ctx.uiState = 'done'
+        }
+      } else {
+        ctx.uiState = 'done'
+      }
+    } catch (e) {
+      console.error('[FetchOnlineStage] 获取解读失败:', e)
+      ctx.fallbackReason = 'error'
+      ctx.toastMessage = '卡牌分析暂时不可用，已切换为本地分析'
+      ctx.uiState = 'done'
+    }
+
+    return { continue: true }
+  }
+}

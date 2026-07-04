@@ -6,6 +6,7 @@ import { getSpread } from '@/data/spreads'
 import { fetchReading, generateLocalReading, pollTaskOnce, cancelReading, type BackendStatus } from '@/services/reading'
 import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
+import { createReadingContext, createPipeline } from './pipeline'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -61,6 +62,34 @@ export const useCardStore = defineStore('cards', () => {
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
 
+  // ========== Pipeline ==========
+  const pipeline = createPipeline({
+    isLoggedIn,
+    generateLocalReading,
+    fetchReading,
+    pollTaskOnce,
+    saveRecords,
+    updateCloudRecordInterpretation,
+    showToast: (title, icon, duration) => {
+      uni.showToast({ title, icon: icon as any, duration })
+    },
+    getRecords: () => records.value,
+    setCurrentReading: (ctx) => {
+      currentReading.value = {
+        cards: ctx.cards,
+        spreadType: ctx.spreadType,
+        question: ctx.question,
+        useOnlineReading: ctx.useOnlineReading,
+        interpretation: ctx.interpretation,
+        isOnlineInterpretation: ctx.isOnlineInterpretation,
+        isPartialOnlineInterpretation: ctx.isPartialOnlineInterpretation,
+        comprehensiveInterpretation: ctx.comprehensiveInterpretation,
+      }
+    },
+    setLoading: (v) => { isLoadingInterpretation.value = v },
+    setPolling: (v) => { isPolling.value = v },
+  })
+
   // ========== Actions ==========
 
   /** 执行抽牌 */
@@ -107,103 +136,24 @@ export const useCardStore = defineStore('cards', () => {
     syncToCloudIfLoggedIn(records.value[0])
   }
 
-  /** 获取个性化解读 */
+  /** 获取个性化解读（通过管线） */
   async function fetchInterpretation() {
     if (!currentReading.value || currentReading.value.interpretation) return
 
-    isLoadingInterpretation.value = true
-    try {
-      // 用户关闭在线解读开关，直接使用本地规则解读
-      if (!currentReading.value.useOnlineReading) {
-        const localReading = generateLocalReading(currentReading.value.question, currentReading.value.cards)
-        if (currentReading.value) {
-          currentReading.value.interpretation = localReading
-          currentReading.value.isOnlineInterpretation = false
-          currentReading.value.isPartialOnlineInterpretation = false
-          currentReading.value.comprehensiveInterpretation = ''
-        }
-        return
-      }
+    const record = records.value[0]
+    if (!record) return
 
-      // 未登录用户开启了深度解读开关：跳过 API 等待，直接生成本地解读
-      if (!isLoggedIn()) {
-        const localReading = generateLocalReading(currentReading.value.question, currentReading.value.cards)
-        if (currentReading.value) {
-          currentReading.value.interpretation = localReading
-          currentReading.value.isOnlineInterpretation = false
-          currentReading.value.isPartialOnlineInterpretation = false
-          currentReading.value.comprehensiveInterpretation = ''
-        }
-        uni.showToast({ title: '未登录，已为你生成本地分析', icon: 'none', duration: 2000 })
-        return
-      }
+    const ctx = createReadingContext(
+      'draw',
+      record.id,
+      currentReading.value.cards,
+      currentReading.value.spreadType,
+      currentReading.value.question,
+      currentReading.value.useOnlineReading,
+      record,
+    )
 
-      // 异步解读（内部自动轮询）
-      isPolling.value = true
-      const result = await fetchReading(currentReading.value.question, currentReading.value.cards)
-      isPolling.value = false
-
-      if (!result.isOnline) {
-        if (result.taskId) {
-          // 软超时降级：保存 taskId 到 record，提示后台继续生成
-          const currentRecord = records.value[0]  // 最新一条
-          if (currentRecord) {
-            currentRecord.taskId = result.taskId
-            currentRecord.isOnlineProcessing = true
-            currentRecord.isOnlineInterpretation = false
-            currentRecord.fallbackReason = 'timeout'
-            saveRecords()
-          }
-          uni.showToast({
-            title: 'AI解读正在后台生成中，稍后可在历史记录中查看完整结果',
-            icon: 'none',
-            duration: 3000,
-          })
-        } else {
-          const fallbackReason = result.fallbackReason || 'error'
-          const currentRecord = records.value[0]
-          if (currentRecord) {
-            currentRecord.isOnlineInterpretation = false
-            currentRecord.fallbackReason = fallbackReason
-            saveRecords()
-          }
-          const msg = fallbackReason === 'quota'
-            ? '今日分析额度已用完，已切换为本地分析'
-            : '卡牌分析暂时不可用，已切换为本地分析'
-          uni.showToast({ title: msg, icon: 'none', duration: 2000 })
-        }
-      }
-      if (currentReading.value) {
-        currentReading.value.interpretation = result.reading
-        currentReading.value.isOnlineInterpretation = result.isOnline
-        currentReading.value.isPartialOnlineInterpretation = result.isPartialOnline
-        currentReading.value.comprehensiveInterpretation = result.comprehensiveInterpretation
-      }
-    } catch (e) {
-      isPolling.value = false
-      console.error('获取解读失败:', e)
-    } finally {
-      isLoadingInterpretation.value = false
-      // 将解读保存到对应的 record 中（含元信息）
-      if (currentReading.value?.interpretation) {
-        const currentRecord = records.value[0]
-        if (currentRecord && currentRecord.cards === currentReading.value.cards) {
-          currentRecord.interpretation = currentReading.value.interpretation
-          currentRecord.isOnlineInterpretation = currentReading.value.isOnlineInterpretation
-          currentRecord.isPartialOnlineInterpretation = currentReading.value.isPartialOnlineInterpretation
-          currentRecord.comprehensiveInterpretation = currentReading.value.comprehensiveInterpretation
-          // 保留 fallbackReason（各分支已设置），AI 成功时清空
-          if (currentReading.value.isOnlineInterpretation && !currentRecord.isOnlineProcessing) {
-            currentRecord.fallbackReason = null
-          }
-          saveRecords()
-          // 同步到云端
-          if (currentRecord.backendId) {
-            updateCloudRecordInterpretation(currentRecord.backendId, currentReading.value.interpretation)
-          }
-        }
-      }
-    }
+    await pipeline.run(ctx)
   }
 
   /** 清除当前抽牌结果 */
@@ -214,67 +164,17 @@ export const useCardStore = defineStore('cards', () => {
     isViewingHistory.value = false
   }
 
-  /** 根据 ID 加载历史记录到 currentReading */
+  /** 根据 ID 加载历史记录到 currentReading（通过管线） */
   function viewRecord(id: string) {
     const record = records.value.find(r => r.id === id)
     if (!record) return
 
     isViewingHistory.value = true
 
-    // 如果该记录有 pending taskId 且处于后台生成中，检查后台是否已完成
-    if (record.isOnlineProcessing && record.taskId) {
-      // 恢复当前解读内容（含本地降级文本或空）
-      currentReading.value = {
-        cards: record.cards,
-        spreadType: record.spreadType,
-        question: record.question,
-        useOnlineReading: true,
-        interpretation: record.interpretation || '',
-        isOnlineInterpretation: false,
-        isPartialOnlineInterpretation: record.isPartialOnlineInterpretation ?? false,
-        comprehensiveInterpretation: record.comprehensiveInterpretation || '',
-      }
-
-      isPolling.value = true
-      pollTaskOnce(record.taskId).then(result => {
-        if (result.status === 'completed' && result.reading) {
-          // 升级为 AI 解读
-          record.interpretation = result.reading
-          record.isOnlineProcessing = false
-          record.isOnlineInterpretation = true
-          record.fallbackReason = null
-          record.taskId = undefined
-          saveRecords()
-
-          // 同步更新 currentReading 触发 UI 响应
-          if (currentReading.value) {
-            currentReading.value.interpretation = result.reading
-            currentReading.value.isOnlineInterpretation = true
-            currentReading.value.isPartialOnlineInterpretation = false
-          }
-        } else if (result.status === 'failed' || result.status === 'cancelled') {
-          // 任务已结束但未成功，清理标记
-          record.isOnlineProcessing = false
-          record.isOnlineInterpretation = false
-          record.fallbackReason = 'error'
-          record.taskId = undefined
-          saveRecords()
-        }
-        // status === 'pending': 继续等待，currentReading 保持本地降级状态
-        isPolling.value = false
-      }).catch(() => {
-        isPolling.value = false
-        // 网络错误，静默处理，下次进入再试
-      })
-      return
-    }
-
-    // 正常恢复：使用显式字段判断解读来源
+    // 先设置临时状态让 UI 立即可用
     const isOnlineInterp = record.isOnlineInterpretation ?? (
-      // 兼容旧数据：有解读且没有降级标记视为 AI 解读
       !!(record.interpretation && !record.fallbackReason)
     )
-
     currentReading.value = {
       cards: record.cards,
       spreadType: record.spreadType,
@@ -285,6 +185,19 @@ export const useCardStore = defineStore('cards', () => {
       isPartialOnlineInterpretation: record.isPartialOnlineInterpretation ?? false,
       comprehensiveInterpretation: record.comprehensiveInterpretation || '',
     }
+
+    // 触发管线（fire-and-forget，管线完成后 NotifyUIStage 自动刷新 currentReading）
+    const ctx = createReadingContext(
+      'viewHistory',
+      record.id,
+      record.cards,
+      record.spreadType,
+      record.question,
+      true,
+      record,
+    )
+
+    pipeline.run(ctx) // fire-and-forget: 不阻塞 UI，管线完成自动刷新
   }
 
   /** 取消后台 AI 解读任务 */
@@ -375,12 +288,28 @@ export const useCardStore = defineStore('cards', () => {
     backendStatus.value = status
   }
 
-  /** 手动触发深度解读（从本地解读升级） */
+  /** 手动触发深度解读（从本地解读升级，通过管线） */
   async function upgradeToOnlineReading() {
     if (!currentReading.value) return
+
+    const record = records.value[0]
+    if (!record) return
+
+    // 清空当前解读，重新走管线
     currentReading.value.interpretation = ''
     currentReading.value.useOnlineReading = true
-    await fetchInterpretation()
+
+    const ctx = createReadingContext(
+      'upgrade',
+      record.id,
+      currentReading.value.cards,
+      currentReading.value.spreadType,
+      currentReading.value.question,
+      true,
+      record,
+    )
+
+    await pipeline.run(ctx)
   }
 
   /** 静默同步单条记录到云端（内部使用） */
