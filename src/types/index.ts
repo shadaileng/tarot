@@ -72,6 +72,9 @@ export interface Reading {
   isOnlineInterpretation?: boolean
 }
 
+/** 降级原因（非 AI 解读时记录） */
+export type FallbackReason = 'quota' | 'timeout' | 'error' | 'local';
+
 /** 抽牌记录（持久化） */
 export interface ReadingRecord {
   id: string
@@ -87,6 +90,14 @@ export interface ReadingRecord {
   synced?: boolean
   /** 解读文本 */
   interpretation?: string
+  /** 是否在线生成（false 表示本地降级）。旧记录无此字段时通过 fallbackReason 推导 */
+  isOnlineInterpretation?: boolean
+  /** 解读格式不完整，综合解读由本地补偿 */
+  isPartialOnlineInterpretation?: boolean
+  /** 综合解读文本 */
+  comprehensiveInterpretation?: string
+  /** 降级原因（非 AI 解读时记录，存量记录可能为 null/undefined） */
+  fallbackReason?: FallbackReason | null
   /** 异步解读 taskId（有值 = AI 解读中/已完成但未刷新） */
   taskId?: string
   /** 后台 AI 解读进行中（前端已降级展示本地） */

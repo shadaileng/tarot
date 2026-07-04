@@ -11,12 +11,56 @@ import type { Card, CardOrientation } from '@/types'
 const store = useCardStore()
 const reading = computed(() => store.currentReading)
 
+/** 当前记录的降级原因（查 record 获取，currentReading 不存此字段） */
+const currentFallbackReason = computed(() => {
+  if (!reading.value) return null
+  const record = store.records.find(r => 
+    r.cards === reading.value?.cards && r.spreadType === reading.value?.spreadType
+  )
+  return record?.fallbackReason ?? null
+})
+
 // 从 URL 参数加载历史记录
 onLoad((options) => {
   const id = options?.id
   if (id) {
     store.viewRecord(id)
   }
+})
+
+// ===== 场景驱动计算属性 =====
+
+/** 徽章文案 */
+const badgeText = computed(() => {
+  if (store.isLoadingInterpretation || store.isPolling) {
+    return store.isViewingHistory ? '后台生成中…' : '正在生成…'
+  }
+  if (reading.value?.isOnlineInterpretation && reading.value?.interpretation) {
+    return reading.value.isPartialOnlineInterpretation
+      ? '📖 AI分析（综合部分本地补充）'
+      : '✨ 个性化分析'
+  }
+  return '📖 本地分析'
+})
+
+/** 升级按钮是否显示 */
+const showUpgradeButton = computed(() => {
+  if (!reading.value?.interpretation) return false          // 无解读内容
+  if (reading.value.isOnlineInterpretation) return false    // 已是 AI 解读
+  if (store.isLoadingInterpretation) return false           // 正在生成中
+  if (store.isPolling) return false                         // 后台轮询中
+  return true
+})
+
+/** 引导文案 */
+const guideMessage = computed(() => {
+  if (store.isPolling) return 'AI 解读正在后台生成，稍后刷新查看'
+  if (!isLoggedIn()) return '登录后可获得个性化 AI 解读'
+  if (currentFallbackReason.value === 'quota') return '每日免费次数已用完，明天再来'
+  if (currentFallbackReason.value === 'timeout') return 'AI 解读生成超时，可稍后重试'
+  if (currentFallbackReason.value === 'error') return 'AI 解读生成失败，可稍后重试'
+  if (currentFallbackReason.value === 'local') return '点击下方按钮升级为个性化 AI 解读'
+  return ''
 })
 
 const flippedCards = ref<Set<number>>(new Set())
@@ -420,39 +464,43 @@ function handleUpgradeReading() {
       <view v-if="allFlipped" class="reading-summary">
         <text class="summary-title">✨ 牌型分析</text>
 
+        <!-- 后台生成中横幅（场景 13） -->
+        <view v-if="store.isPolling && store.isViewingHistory" class="generating-banner">
+          <text class="banner-icon">⏳</text>
+          <text>AI 解读正在后台生成，稍后刷新即可查看</text>
+        </view>
+
         <!-- 个性化解读 -->
         <view v-if="reading.interpretation" class="reading-section">
           <view class="reading-badge" :class="{ 'reading-badge-local': !reading.isOnlineInterpretation, 'reading-badge-partial': reading.isPartialOnlineInterpretation }">
-            <text>{{ reading.isOnlineInterpretation ? (reading.isPartialOnlineInterpretation ? '📖 AI分析（综合部分本地补充）' : '✨ 个性化分析') : '📖 本地分析' }}</text>
+            <text>{{ badgeText }}</text>
           </view>
-          <view v-if="!reading.isOnlineInterpretation && !isLoggedIn()" class="login-guide">
-            <text class="login-guide-text">登录后可获得更专业的卡牌分析</text>
+          <!-- 引导文案 -->
+          <view v-if="guideMessage" class="login-guide">
+            <text class="login-guide-text">{{ guideMessage }}</text>
           </view>
           <view class="reading-content">
             <text class="reading-text">{{ reading.interpretation }}</text>
           </view>
           <!-- 升级为深度解读按钮 -->
           <view 
-            v-if="store.isViewingHistory && !reading.isOnlineInterpretation && isLoggedIn() && !store.isLoadingInterpretation" 
+            v-if="showUpgradeButton && isLoggedIn()" 
             class="upgrade-section"
           >
-            <view class="login-guide">
-              <text class="login-guide-text">当前为本地分析，点击升级获取 AI 卡牌分析</text>
-            </view>
             <view class="btn-secondary" @click="handleUpgradeReading">
               <text>✨ 升级为卡牌分析</text>
             </view>
           </view>
         </view>
 
-        <!-- 解读加载中 -->
-        <view v-else-if="store.isLoadingInterpretation" class="reading-loading">
+        <!-- 解读加载中（新抽牌）/ 后台轮询中（历史记录） -->
+        <view v-else-if="store.isLoadingInterpretation || store.isPolling" class="reading-loading">
           <view class="loading-dots">
             <view class="dot"></view>
             <view class="dot"></view>
             <view class="dot"></view>
           </view>
-          <text class="loading-text">正在为你分析牌面...</text>
+          <text class="loading-text">{{ store.isViewingHistory ? '正在检查后台解读状态…' : '正在为你分析牌面...' }}</text>
         </view>
 
         <!-- 通用含义（始终展示，作为补充参考） -->
@@ -1037,6 +1085,27 @@ function handleUpgradeReading() {
 
   .btn-secondary {
     margin-top: 16rpx;
+  }
+}
+
+// 后台生成中横幅（场景 13）
+.generating-banner {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 20rpx;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(139, 92, 246, 0.2);
+
+  .banner-icon {
+    font-size: 32rpx;
+  }
+
+  text {
+    font-size: 26rpx;
+    color: rgba(255, 255, 255, 0.7);
   }
 }
 

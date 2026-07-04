@@ -88,6 +88,11 @@ export const useCardStore = defineStore('cards', () => {
       timestamp,
       date: formatDate(timestamp),
       interpretation: '',
+      isOnlineInterpretation: useOnlineReading,
+      isPartialOnlineInterpretation: false,
+      comprehensiveInterpretation: '',
+      fallbackReason: useOnlineReading ? null : 'local',
+      isOnlineProcessing: useOnlineReading,
     })
 
     // 最多保留 100 条记录
@@ -145,6 +150,8 @@ export const useCardStore = defineStore('cards', () => {
           if (currentRecord) {
             currentRecord.taskId = result.taskId
             currentRecord.isOnlineProcessing = true
+            currentRecord.isOnlineInterpretation = false
+            currentRecord.fallbackReason = 'timeout'
             saveRecords()
           }
           uni.showToast({
@@ -153,7 +160,14 @@ export const useCardStore = defineStore('cards', () => {
             duration: 3000,
           })
         } else {
-          const msg = result.fallbackReason === 'quota'
+          const fallbackReason = result.fallbackReason || 'error'
+          const currentRecord = records.value[0]
+          if (currentRecord) {
+            currentRecord.isOnlineInterpretation = false
+            currentRecord.fallbackReason = fallbackReason
+            saveRecords()
+          }
+          const msg = fallbackReason === 'quota'
             ? '今日分析额度已用完，已切换为本地分析'
             : '卡牌分析暂时不可用，已切换为本地分析'
           uni.showToast({ title: msg, icon: 'none', duration: 2000 })
@@ -170,11 +184,18 @@ export const useCardStore = defineStore('cards', () => {
       console.error('获取解读失败:', e)
     } finally {
       isLoadingInterpretation.value = false
-      // 将解读保存到对应的 record 中
+      // 将解读保存到对应的 record 中（含元信息）
       if (currentReading.value?.interpretation) {
         const currentRecord = records.value[0]
         if (currentRecord && currentRecord.cards === currentReading.value.cards) {
           currentRecord.interpretation = currentReading.value.interpretation
+          currentRecord.isOnlineInterpretation = currentReading.value.isOnlineInterpretation
+          currentRecord.isPartialOnlineInterpretation = currentReading.value.isPartialOnlineInterpretation
+          currentRecord.comprehensiveInterpretation = currentReading.value.comprehensiveInterpretation
+          // 保留 fallbackReason（各分支已设置），AI 成功时清空
+          if (currentReading.value.isOnlineInterpretation && !currentRecord.isOnlineProcessing) {
+            currentRecord.fallbackReason = null
+          }
           saveRecords()
           // 同步到云端
           if (currentRecord.backendId) {
@@ -196,56 +217,73 @@ export const useCardStore = defineStore('cards', () => {
   /** 根据 ID 加载历史记录到 currentReading */
   function viewRecord(id: string) {
     const record = records.value.find(r => r.id === id)
-    if (record) {
-      isViewingHistory.value = true
+    if (!record) return
 
-      // 如果该记录有 pending taskId，检查后台是否已完成
-      if (record.taskId) {
-        pollTaskOnce(record.taskId).then(result => {
-          if (result.status === 'completed' && result.reading) {
-            // 升级为 AI 解读
-            record.interpretation = result.reading
-            record.isOnlineProcessing = false
-            record.taskId = undefined
-            saveRecords()
-          } else if (result.status === 'failed' || result.status === 'cancelled') {
-            // 任务已结束但未成功，清理 taskId
-            record.isOnlineProcessing = false
-            record.taskId = undefined
-            saveRecords()
+    isViewingHistory.value = true
+
+    // 如果该记录有 pending taskId 且处于后台生成中，检查后台是否已完成
+    if (record.isOnlineProcessing && record.taskId) {
+      // 恢复当前解读内容（含本地降级文本或空）
+      currentReading.value = {
+        cards: record.cards,
+        spreadType: record.spreadType,
+        question: record.question,
+        useOnlineReading: true,
+        interpretation: record.interpretation || '',
+        isOnlineInterpretation: false,
+        isPartialOnlineInterpretation: record.isPartialOnlineInterpretation ?? false,
+        comprehensiveInterpretation: record.comprehensiveInterpretation || '',
+      }
+
+      isPolling.value = true
+      pollTaskOnce(record.taskId).then(result => {
+        if (result.status === 'completed' && result.reading) {
+          // 升级为 AI 解读
+          record.interpretation = result.reading
+          record.isOnlineProcessing = false
+          record.isOnlineInterpretation = true
+          record.fallbackReason = null
+          record.taskId = undefined
+          saveRecords()
+
+          // 同步更新 currentReading 触发 UI 响应
+          if (currentReading.value) {
+            currentReading.value.interpretation = result.reading
+            currentReading.value.isOnlineInterpretation = true
+            currentReading.value.isPartialOnlineInterpretation = false
           }
-          // status === 'pending': 继续等待，不做处理
-        }).catch(() => {
-          // 网络错误，静默处理，下次进入再试
-        })
-      }
+        } else if (result.status === 'failed' || result.status === 'cancelled') {
+          // 任务已结束但未成功，清理标记
+          record.isOnlineProcessing = false
+          record.isOnlineInterpretation = false
+          record.fallbackReason = 'error'
+          record.taskId = undefined
+          saveRecords()
+        }
+        // status === 'pending': 继续等待，currentReading 保持本地降级状态
+        isPolling.value = false
+      }).catch(() => {
+        isPolling.value = false
+        // 网络错误，静默处理，下次进入再试
+      })
+      return
+    }
 
-      // 如果已有解读，直接使用
-      if (record.interpretation) {
-        currentReading.value = {
-          cards: record.cards,
-          spreadType: record.spreadType,
-          question: record.question,
-          useOnlineReading: true,
-          interpretation: record.interpretation,
-          isOnlineInterpretation: !record.isOnlineProcessing,
-          isPartialOnlineInterpretation: false,
-          comprehensiveInterpretation: '',
-        }
-      } else {
-        // 没有解读，先生成本地解读
-        const localReading = generateLocalReading(record.question, record.cards)
-        currentReading.value = {
-          cards: record.cards,
-          spreadType: record.spreadType,
-          question: record.question,
-          useOnlineReading: true,
-          interpretation: localReading,
-          isOnlineInterpretation: false,
-          isPartialOnlineInterpretation: false,
-          comprehensiveInterpretation: '',
-        }
-      }
+    // 正常恢复：使用显式字段判断解读来源
+    const isOnlineInterp = record.isOnlineInterpretation ?? (
+      // 兼容旧数据：有解读且没有降级标记视为 AI 解读
+      !!(record.interpretation && !record.fallbackReason)
+    )
+
+    currentReading.value = {
+      cards: record.cards,
+      spreadType: record.spreadType,
+      question: record.question,
+      useOnlineReading: true,
+      interpretation: record.interpretation || '',
+      isOnlineInterpretation: isOnlineInterp,
+      isPartialOnlineInterpretation: record.isPartialOnlineInterpretation ?? false,
+      comprehensiveInterpretation: record.comprehensiveInterpretation || '',
     }
   }
 
