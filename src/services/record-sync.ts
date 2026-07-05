@@ -4,7 +4,7 @@
 import type { ReadingRecord } from '@/types'
 import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'
 import { isLoggedIn } from '@/services/auth'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, logWarn } from '@/services/client-logger'
 
 // ========== 类型 ==========
 
@@ -160,7 +160,7 @@ export async function pullAndMerge(localRecords: ReadingRecord[]): Promise<Merge
     logInfo('sync', 'record_pull_merge', { addedCount: newFromCloud.length })
     return { records: merged, addedCount: newFromCloud.length }
   } catch (err) {
-    console.warn('从云端拉取记录失败:', err)
+    logWarn('sync', 'record_pull_merge_fail', err instanceof Error ? err.message : '未知错误')
     return { records: localRecords, addedCount: 0 }
   }
 }
@@ -179,7 +179,6 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
     return true
   } catch (err) {
     logError('sync', 'record_delete_sync', err instanceof Error ? err.message : '未知错误')
-    console.warn('删除云端记录失败:', err)
     return false
   }
 }
@@ -197,9 +196,10 @@ export async function updateCloudRecordInterpretation(
 
   try {
     await apiPatch(`/api/user/records/${backendId}`, { interpretation }, { timeout: 10000 })
+    logInfo('sync', 'update_cloud_interpretation', { result: 'success', backendId })
     return true
   } catch (err) {
-    console.warn('更新云端记录解读失败:', err)
+    logWarn('sync', 'update_cloud_interpretation', err instanceof Error ? err.message : '未知错误', { backendId })
     return false
   }
 }
@@ -214,6 +214,8 @@ export async function uploadUnsyncedRecords(records: ReadingRecord[]): Promise<R
 
   const updated = [...records]
   let changed = false
+  let successCount = 0
+  let failCount = 0
 
   for (const record of updated) {
     if (!record.backendId && !record.synced) {
@@ -222,8 +224,15 @@ export async function uploadUnsyncedRecords(records: ReadingRecord[]): Promise<R
         record.backendId = backendId
         record.synced = true
         changed = true
+        successCount++
+      } else {
+        failCount++
       }
     }
+  }
+
+  if (successCount > 0 || failCount > 0) {
+    logInfo('sync', 'upload_unsynced_batch', { total: successCount + failCount, successCount, failCount })
   }
 
   return changed ? updated : records

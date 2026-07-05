@@ -81,10 +81,16 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
     })
   })
   if (keyRes.statusCode === 401) throw new Error('UNAUTHORIZED')
-  if (keyRes.statusCode !== 200) throw new Error(`海报生成失败 (${keyRes.statusCode})`)
+  if (keyRes.statusCode !== 200) {
+    logError('poster', 'poster_generate_step_fail', `获取海报key失败 (${keyRes.statusCode})`, { step: 'get_key', statusCode: keyRes.statusCode })
+    throw new Error(`海报生成失败 (${keyRes.statusCode})`)
+  }
 
   const cacheKey = keyRes.data?.cacheKey
-  if (!cacheKey) throw new Error('海报缓存不可用')
+  if (!cacheKey) {
+    logError('poster', 'poster_generate_step_fail', '海报缓存不可用', { step: 'get_key' })
+    throw new Error('海报缓存不可用')
+  }
 
   // Step 2: 通过 GET 下载缓存海报 → tempFilePath（展示用）
   const dlRes = await new Promise<any>((resolve, reject) => {
@@ -95,7 +101,10 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
       fail: (err) => reject(new Error(err.errMsg)),
     })
   })
-  if (dlRes.statusCode !== 200) throw new Error(`海报下载失败 (${dlRes.statusCode})`)
+  if (dlRes.statusCode !== 200) {
+    logError('poster', 'poster_generate_step_fail', `海报下载失败 (${dlRes.statusCode})`, { step: 'download', statusCode: dlRes.statusCode })
+    throw new Error(`海报下载失败 (${dlRes.statusCode})`)
+  }
 
   // Step 3: 将临时文件写入 USER_DATA_PATH（真实文件路径，供保存到相册用）
   let savePath: string | undefined
@@ -105,6 +114,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
     savePath = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
     fs.writeFileSync(savePath, data)
   } catch (e) {
+    logError('poster', 'poster_generate_step_fail', String(e), { step: 'write_persist_file' })
     console.error('[poster] 写入持久文件失败:', e)
   }
 

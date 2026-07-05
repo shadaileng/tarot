@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { navBack } from '@/utils'
 import { submitFeedback, uploadFeedbackImage } from '@/services/feedback'
 import { showToast } from '@/utils'
-import { logInfo } from '@/services/client-logger'
+import { logInfo, logError } from '@/services/client-logger'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -39,7 +39,9 @@ function chooseImage() {
           const urls = await uploadFeedbackImage(tempPath)
           images.value.push(...urls)
         }
-      } catch {
+        logInfo('user_action', 'feedback_image_upload', { result: 'success', imageCount: res.tempFilePaths.length })
+      } catch (e) {
+        logError('user_action', 'feedback_image_upload', e instanceof Error ? e.message : '未知错误')
         showToast('图片上传失败')
       } finally {
         uploading.value = false
@@ -76,6 +78,7 @@ async function handleSubmit() {
     showToast('提交成功')
     setTimeout(() => navBack(), 1500)
   } catch (err: any) {
+    logError('user_action', 'feedback_submit', err.message || '提交失败')
     showToast(err.message || '提交失败')
   } finally {
     submitting.value = false

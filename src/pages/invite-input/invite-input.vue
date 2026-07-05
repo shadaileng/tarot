@@ -15,7 +15,10 @@ onShow(async () => {
   try {
     const data = await fetchInviteRecords()
     inviter.value = data.inviter
-  } catch {}
+    logInfo('user_action', 'invite_records_load', { result: 'success' })
+  } catch (e) {
+    logError('user_action', 'invite_records_load', e instanceof Error ? e.message : '未知错误')
+  }
 })
 
 async function doBind() {

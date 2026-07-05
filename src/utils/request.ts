@@ -111,6 +111,9 @@ function request<T>(
         if (res.statusCode && res.statusCode >= 400) {
           const errData = res.data as any
           const message = errData?.message || errData?.error || `请求失败 (${res.statusCode})`
+          if (res.statusCode !== 401) {
+            logWarn('error', 'api_client_error', message, { url: fullUrl, statusCode: res.statusCode })
+          }
           reject(new Error(message))
           return
         }

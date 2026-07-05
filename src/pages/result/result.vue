@@ -4,6 +4,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { useCardStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
+import { logInfo, logWarn } from '@/services/client-logger'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
 import type { Card, CardOrientation } from '@/types'
@@ -79,6 +80,8 @@ function onImgLoad(index: number) {
 
 function onImgError(index: number) {
   imgLoaded[index] = false
+  const cardName = reading.value?.cards[index]?.card?.name || 'unknown'
+  logWarn('error', 'image_load_fail', undefined, { cardName, index })
 }
 
 // 牌面详情弹窗
@@ -182,6 +185,7 @@ function handleSharePoster() {
     uni.showToast({ title: '请先登录后再生成海报', icon: 'none' })
     return
   }
+  logInfo('poster', 'poster_modal_open', { isLoggedIn: isLoggedIn() })
   posterVisible.value = true
 }
 

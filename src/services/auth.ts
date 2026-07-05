@@ -164,22 +164,32 @@ async function wechatLogin(): Promise<LoginResult> {
  * H5 邮箱登录
  */
 export async function emailLogin(email: string, password: string): Promise<LoginResult> {
-  const result = await apiPost<LoginResult>('/api/auth/email-login', { email, password }, { auth: false })
-  setStoredToken(result.token)
-  setUserInfo(result.user)
-  logInfo('auth', 'email_login_success')
-  return result
+  try {
+    const result = await apiPost<LoginResult>('/api/auth/email-login', { email, password }, { auth: false })
+    setStoredToken(result.token)
+    setUserInfo(result.user)
+    logInfo('auth', 'email_login_success')
+    return result
+  } catch (err) {
+    logError('auth', 'email_login_fail', err instanceof Error ? err.message : '未知错误')
+    throw err
+  }
 }
 
 /**
  * H5 邮箱注册
  */
 export async function emailRegister(email: string, password: string): Promise<LoginResult> {
-  const result = await apiPost<LoginResult>('/api/auth/email-register', { email, password }, { auth: false })
-  setStoredToken(result.token)
-  setUserInfo(result.user)
-  logInfo('auth', 'email_register_success', { isNewUser: result.isNewUser })
-  return result
+  try {
+    const result = await apiPost<LoginResult>('/api/auth/email-register', { email, password }, { auth: false })
+    setStoredToken(result.token)
+    setUserInfo(result.user)
+    logInfo('auth', 'email_register_success', { isNewUser: result.isNewUser })
+    return result
+  } catch (err) {
+    logError('auth', 'email_register_fail', err instanceof Error ? err.message : '未知错误')
+    throw err
+  }
 }
 
 // ========== 账号绑定（需已登录）==========
@@ -188,7 +198,14 @@ export async function emailRegister(email: string, password: string): Promise<Lo
  * 绑定邮箱（小程序端）
  */
 export async function bindEmail(email: string, password: string): Promise<{ message: string; email: string }> {
-  return apiPost('/api/auth/bind-email', { email, password })
+  try {
+    const result = await apiPost('/api/auth/bind-email', { email, password })
+    logInfo('auth', 'bind_email', { result: 'success' })
+    return result
+  } catch (err) {
+    logError('auth', 'bind_email', err instanceof Error ? err.message : '未知错误')
+    throw err
+  }
 }
 
 // ========== 用户资料（需已登录）==========
@@ -202,13 +219,18 @@ export async function updateProfile(data: {
   gender?: number
   birthday?: string
 }): Promise<{ user: UserInfo }> {
-  const result = await apiPut<{ user: UserInfo }>('/api/user/profile', data)
-  // 同步更新本地缓存
-  if (result.user) {
-    setUserInfo(result.user)
+  try {
+    const result = await apiPut<{ user: UserInfo }>('/api/user/profile', data)
+    // 同步更新本地缓存
+    if (result.user) {
+      setUserInfo(result.user)
+    }
+    logInfo('auth', 'profile_update', { fields: Object.keys(data) })
+    return result
+  } catch (err) {
+    logError('auth', 'profile_update_fail', err instanceof Error ? err.message : '未知错误')
+    throw err
   }
-  logInfo('auth', 'profile_update', { fields: Object.keys(data) })
-  return result
 }
 
 /**
@@ -219,10 +241,12 @@ export async function refreshUserInfo(): Promise<UserInfo | null> {
     const result = await apiGet<{ user: UserInfo }>('/api/user/profile')
     if (result.user) {
       setUserInfo(result.user)
+      logInfo('auth', 'refresh_user_info', { result: 'success' })
       return result.user
     }
     return null
-  } catch {
+  } catch (err) {
+    logError('auth', 'refresh_user_info', err instanceof Error ? err.message : '未知错误')
     return null
   }
 }

@@ -5,6 +5,20 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-07-05
+
+### Added
+
+- 补全全量客户端埋点（20+ 新增事件），覆盖审计发现的 44 个缺口：
+  - 海报类：`poster_save_click`/`poster_save_success`/`poster_save_fail`（海报保存全链路）、`poster_generate_step_fail`（MP-WeChat 三步生成各环节）
+  - 解读类：`cancel_reading`（取消解读）、`delete_record`（删除记录）、`view_record`/`view_record_not_found`（查看历史）
+  - 认证类：`email_login_fail`/`email_register_fail`/`profile_update_fail`（失败路径补全）、`bind_email`（邮箱绑定）、`refresh_user_info`（用户信息刷新）
+  - 同步类：`update_cloud_interpretation`（云端解读更新）、`upload_unsynced_batch`（批量上传）
+  - 个人中心：`nickname_save`/`avatar_upload`/`gender_save`/`birthday_save`/`bind_email_submit`
+  - 用户行为：`checkin_status_load`/`task_list_load`/`feedback_image_upload`/`invite_records_load`
+  - 基础设施：`api_client_error`（4xx 请求）、`image_load_fail`（牌面图片加载）、`poster_modal_open`（海报弹窗）
+  - 修正 `pullAndMerge`/`deleteCloudRecord`/`updateCloudRecordInterpretation` 中 `console.warn` → logger
+
 ## [2.9.2] - 2026-07-05
 
 ### Fixed

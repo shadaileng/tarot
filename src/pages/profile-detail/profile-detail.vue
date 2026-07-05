@@ -8,6 +8,7 @@ import {
   refreshUserInfo,
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
+import { logInfo, logError } from '@/services/client-logger'
 
 const userInfo = ref<UserInfo | null>(null)
 
@@ -46,7 +47,9 @@ async function saveNickname() {
   try {
     const result = await updateProfile({ nickname: name })
     userInfo.value = result.user
+    logInfo('user_action', 'nickname_save', { result: 'success' })
   } catch (err: any) {
+    logError('user_action', 'nickname_save', err.message || '保存失败')
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
     editingNickname.value = false
@@ -82,9 +85,11 @@ async function handleAvatarChange() {
 
     const result = await updateProfile({ avatarUrl })
     userInfo.value = result.user
+    logInfo('user_action', 'avatar_upload', { result: 'success', platform: 'mp-weixin' })
     uni.showToast({ title: '头像已更新', icon: 'success' })
   } catch (err: any) {
     if (err.errMsg?.includes('cancel')) return
+    logError('user_action', 'avatar_upload', err.message || '更换失败')
     uni.showToast({ title: err.message || '更换失败', icon: 'none' })
   } finally {
     saving.value = false
@@ -104,7 +109,9 @@ async function handleGenderChange(e: any) {
     const result = await updateProfile({ gender: idx })
     userInfo.value = result.user
     genderIndex.value = result.user.gender ?? 0
+    logInfo('user_action', 'gender_save', { result: 'success', gender: idx })
   } catch (err: any) {
+    logError('user_action', 'gender_save', err.message || '保存失败')
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
@@ -118,7 +125,9 @@ async function handleBirthdayChange(e: any) {
   try {
     const result = await updateProfile({ birthday: date })
     userInfo.value = result.user
+    logInfo('user_action', 'birthday_save', { result: 'success', birthday: date })
   } catch (err: any) {
+    logError('user_action', 'birthday_save', err.message || '保存失败')
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
@@ -144,8 +153,10 @@ async function handleBindEmail() {
     const updated = await refreshUserInfo()
     if (updated) userInfo.value = updated
     bindEmailOpen.value = false
+    logInfo('user_action', 'bind_email_submit', { result: 'success' })
     uni.showToast({ title: '邮箱绑定成功', icon: 'success' })
   } catch (err: any) {
+    logError('user_action', 'bind_email_submit', err.message || '绑定失败')
     uni.showToast({ title: err.message || '绑定失败', icon: 'none' })
   } finally {
     bindEmailLoading.value = false

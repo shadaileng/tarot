@@ -4,7 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navBack } from '@/utils'
 import { submitCheckin, fetchCheckinStatus } from '@/services/user-stats'
 import type { CheckinResult, CheckinStatus } from '@/types'
-import { logInfo } from '@/services/client-logger'
+import { logInfo, logError } from '@/services/client-logger'
 
 const status = ref<CheckinStatus | null>(null)
 const result = ref<CheckinResult | null>(null)
@@ -14,7 +14,10 @@ const error = ref('')
 async function loadStatus() {
   try {
     status.value = await fetchCheckinStatus()
-  } catch {}
+    logInfo('user_action', 'checkin_status_load', { result: 'success' })
+  } catch (e) {
+    logError('user_action', 'checkin_status_load', e instanceof Error ? e.message : '未知错误')
+  }
 }
 
 async function doCheckin() {
@@ -29,6 +32,7 @@ async function doCheckin() {
     if (e.message?.includes('ALREADY_CHECKED_IN')) {
       status.value = await fetchCheckinStatus()
     } else {
+      logError('user_action', 'checkin', e.message || '签到失败')
       error.value = e.message || '签到失败'
     }
   } finally {

@@ -4,7 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navTo, showToast } from '@/utils'
 import { fetchTasks, claimTask } from '@/services/user-stats'
 import type { UserTaskItem } from '@/types'
-import { logInfo } from '@/services/client-logger'
+import { logInfo, logError } from '@/services/client-logger'
 
 const tasks = ref<UserTaskItem[]>([])
 const loading = ref(false)
@@ -15,7 +15,9 @@ async function loadTasks() {
   try {
     const data = await fetchTasks()
     tasks.value = data.tasks
-  } catch {
+    logInfo('user_action', 'task_list_load', { result: 'success', count: data.tasks.length })
+  } catch (e) {
+    logError('user_action', 'task_list_load', e instanceof Error ? e.message : '未知错误')
     showToast('加载任务失败')
   } finally {
     loading.value = false
@@ -33,6 +35,7 @@ async function doClaim(taskId: string) {
       await loadTasks()
     }
   } catch (e: any) {
+    logError('user_action', 'task_claim', e.message || '领取失败', { taskId })
     showToast(e.message || '领取失败')
   } finally {
     claiming.value.delete(taskId)

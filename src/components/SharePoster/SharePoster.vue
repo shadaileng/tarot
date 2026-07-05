@@ -4,7 +4,7 @@ import type { DrawnCard } from '@/types'
 import { generatePoster } from '@/services/poster'
 import { isLoggedIn } from '@/services/auth'
 import type { PosterData } from '@/utils/poster/types'
-import { logInfo } from '@/services/client-logger'
+import { logInfo, logError } from '@/services/client-logger'
 
 const props = defineProps<{
   visible: boolean
@@ -84,6 +84,7 @@ async function generatePosterImage() {
     posterSavePath.value = result.savePath || ''
     posterReady.value = true
   } catch (e: any) {
+    logError('poster', 'poster_generate_fail', e?.message || '未知错误')
     console.error('[SharePoster] 海报生成失败:', e)
     if (isAuthError(e)) {
       posterError.value = '登录已过期，请关闭后重新登录再试'
@@ -99,17 +100,20 @@ async function generatePosterImage() {
 async function savePoster() {
   if (isSaving.value || !posterUrl.value) return
   isSaving.value = true
+  logInfo('poster', 'poster_save_click')
   try {
     // #ifdef MP-WEIXIN
     await new Promise<void>((resolve) => {
       uni.saveImageToPhotosAlbum({
         filePath: posterSavePath.value || posterUrl.value,
         success: () => {
+          logInfo('poster', 'poster_save_success', { platform: 'mp-weixin' })
           uni.showToast({ title: '已保存到相册', icon: 'success' })
           resolve()
         },
         fail: (err: any) => {
           if (err.errMsg.includes('auth deny')) {
+            logError('poster', 'poster_save_fail', 'auth_deny', { platform: 'mp-weixin' })
             uni.showModal({
               title: '提示',
               content: '需要相册权限才能保存海报，请在设置中开启',
@@ -119,6 +123,7 @@ async function savePoster() {
               },
             })
           } else {
+            logError('poster', 'poster_save_fail', 'save_error', { platform: 'mp-weixin', errMsg: err.errMsg })
             uni.showToast({ title: '保存失败', icon: 'error' })
           }
           resolve()
@@ -134,9 +139,11 @@ async function savePoster() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    logInfo('poster', 'poster_save_success', { platform: 'h5' })
     uni.showToast({ title: '已开始下载', icon: 'success' })
     // #endif
   } catch (e) {
+    logError('poster', 'poster_save_fail', 'exception', { platform: 'unknown', errMsg: String(e) })
     console.error('保存海报失败:', e)
     uni.showToast({ title: '保存失败', icon: 'error' })
   } finally {

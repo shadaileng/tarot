@@ -193,8 +193,12 @@ export const useCardStore = defineStore('cards', () => {
   /** 根据 ID 加载历史记录到 currentReading（通过管线） */
   function viewRecord(id: string) {
     const record = records.value.find(r => r.id === id)
-    if (!record) return
+    if (!record) {
+      log('reading', 'view_record_not_found', 'warn', { data: { recordId: id } })
+      return
+    }
 
+    log('reading', 'view_record', 'info', { data: { recordId: id } })
     isViewingHistory.value = true
 
     // 先设置临时状态让 UI 立即可用
@@ -235,11 +239,14 @@ export const useCardStore = defineStore('cards', () => {
       const result = await cancelReading(record.taskId)
 
       if (result.quotaRefunded) {
+        log('reading', 'cancel_reading', 'info', { result: 'success', data: { taskId: record.taskId, quotaRefunded: true } })
         uni.showToast({
           title: '已取消卡牌解读，额度已退还',
           icon: 'none',
           duration: 2000,
         })
+      } else {
+        log('reading', 'cancel_reading', 'info', { result: 'success', data: { taskId: record.taskId } })
       }
 
       // 清理 record
@@ -247,6 +254,7 @@ export const useCardStore = defineStore('cards', () => {
       record.isOnlineProcessing = false
       saveRecords()
     } catch (e) {
+      logError('reading', 'cancel_reading', String(e), { taskId: record.taskId })
       uni.showToast({
         title: '取消失败，请稍后重试',
         icon: 'none',
@@ -302,6 +310,7 @@ export const useCardStore = defineStore('cards', () => {
       deleteCloudRecord(target.backendId)
     }
     records.value = records.value.filter((r) => r.id !== id)
+    log('reading', 'delete_record', 'info', { data: { recordId: id } })
     saveRecords()
   }
 
