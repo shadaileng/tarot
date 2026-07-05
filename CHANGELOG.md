@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 异常类（G1-G6）：请求失败/超时/storage 失败/图片加载/网络不可用
 - `App.vue` 初始化日志服务，区分冷/热启动，切后台触发 flush
 
+### Fixed
+
+- 修复客户端事件日志上报失败时静默丢失问题
+  - `flush()` catch 块添加错误输出，不再吞掉异常
+  - `destroyClientLogger()` 改用动态 import 替代 require()，避免 ESM 环境崩溃
+  - 新增失败事件持久化到 uni.storage，下次启动自动补发
+
 ## [2.8.6] - 2026-07-05
 
 ### Fixed

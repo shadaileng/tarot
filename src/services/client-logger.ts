@@ -111,6 +111,8 @@ const MAX_BUFFER_SIZE = 20
 const MAX_BODY_SIZE_BYTES = 64 * 1024     // 64KB
 const FLUSH_INTERVAL_MS = 30000
 const API_TIMEOUT = 5000
+const PENDING_EVENTS_KEY = '_client_pending_events'
+const MAX_PENDING_PERSIST = 100  // 本地持久化上限
 
 interface BufferedEvent extends ClientEvent {
   _userId?: string
@@ -187,10 +189,39 @@ function estimateBodySize(events: BufferedEvent[]): number {
   return JSON.stringify({ events }).length
 }
 
+// ========== 持久化失败事件到本地 storage ==========
+function persistPendingEvents(events: BufferedEvent[]): void {
+  try {
+    const existing = loadPendingEvents()
+    const merged = [...existing, ...events].slice(-MAX_PENDING_PERSIST)
+    uni.setStorageSync(PENDING_EVENTS_KEY, JSON.stringify(merged))
+  } catch (_) {
+    // storage 写入失败，放弃持久化
+  }
+}
+
+function loadPendingEvents(): BufferedEvent[] {
+  try {
+    const raw = uni.getStorageSync(PENDING_EVENTS_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as BufferedEvent[]
+  } catch (_) {
+    return []
+  }
+}
+
+function clearPendingEvents(): void {
+  try {
+    uni.removeStorageSync(PENDING_EVENTS_KEY)
+  } catch (_) {}
+}
+
 function enqueue(event: BufferedEvent): void {
   buffer.push(event)
   if (buffer.length >= MAX_BUFFER_SIZE && !isFlushing) {
-    flush().catch(() => {})  // 防止 unhandledRejection
+    flush().catch((err: any) => {
+      console.error('[CLIENT-LOG] enqueue auto-flush failed:', err?.message || err)
+    })
   }
 }
 
@@ -223,20 +254,39 @@ async function flush(): Promise<void> {
       pendingLaunchEvents = []
     }
 
+    // 合并上次持久化失败的事件
+    const pending = loadPendingEvents()
+    if (pending.length > 0) {
+      clearPendingEvents()
+      buffer.unshift(...pending)
+    }
+
     // 限制批次大小：逐条截断直到 body 不超过 64KB
     while (buffer.length > 0 && estimateBodySize(buffer) > MAX_BODY_SIZE_BYTES) {
       buffer.pop()
     }
 
     const batch = buffer.splice(0)
-    const { apiPost } = await import('@/utils/request')
+    const requestMod = await import('@/utils/request')
+    const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
+    if (!apiPost) {
+      console.error('[CLIENT-LOG] apiPost not found in request module')
+      persistPendingEvents(batch)
+      return
+    }
     await apiPost('/api/client-events', { events: batch }, {
       auth: true,
       timeout: API_TIMEOUT,
       skipAuthRefresh: true,
     })
-  } catch (_) {
-    // 上报失败静默丢弃
+  } catch (err: any) {
+    // 上报失败：输出错误信息 + 持久化到本地 storage 下次补发
+    console.error('[CLIENT-LOG] flush failed:', err?.message || err)
+    if (buffer.length > 0) {
+      persistPendingEvents(buffer)
+      console.warn(`[CLIENT-LOG] ${buffer.length} events persisted to local storage`)
+      buffer = []
+    }
   } finally {
     isFlushing = false
     // flush 完成后若仍有积压，立即补刷
@@ -253,6 +303,9 @@ export function initClientLogger(): void {
   if (flushTimer) clearInterval(flushTimer)
   flushTimer = setInterval(flush, FLUSH_INTERVAL_MS)
   log('page', 'app_launch', 'info')
+
+  // 启动后立即尝试补发上次持久化的失败事件
+  setTimeout(() => flush(), 1000)
 }
 
 export function destroyClientLogger(): void {
@@ -266,15 +319,32 @@ export function destroyClientLogger(): void {
     pendingLaunchEvents = []
     if (batch.length > 0) {
       isFlushing = true  // 互斥：防止残留异步操作并发
-      const { apiPost } = require('@/utils/request')
-      apiPost('/api/client-events', {
-        events: batch.map(e => ({ ...e, _userId: lastUserId }))
-      }, { auth: true, timeout: API_TIMEOUT, skipAuthRefresh: true })
-        .catch(() => {})
-        .finally(() => { isFlushing = false })
+      import('@/utils/request').then((requestMod) => {
+        const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
+        if (!apiPost) {
+          console.error('[CLIENT-LOG] apiPost not found in request module')
+          persistPendingEvents(batch)
+          isFlushing = false
+          return
+        }
+        apiPost('/api/client-events', {
+          events: batch.map(e => ({ ...e, _userId: lastUserId }))
+        }, { auth: true, timeout: API_TIMEOUT, skipAuthRefresh: true })
+          .catch((err: any) => {
+            console.error('[CLIENT-LOG] destroyClientLogger flush failed:', err?.message || err)
+            persistPendingEvents(batch)
+          })
+          .finally(() => { isFlushing = false })
+      }).catch((err: any) => {
+        console.error('[CLIENT-LOG] destroyClientLogger dynamic import failed:', err?.message || err)
+        persistPendingEvents(batch)
+        isFlushing = false
+      })
     }
   } else {
-    flush().catch(() => {})
+    flush().catch((err: any) => {
+      console.error('[CLIENT-LOG] destroyClientLogger flush failed:', err?.message || err)
+    })
   }
 }
 
