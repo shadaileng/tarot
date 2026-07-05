@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2] - 2026-07-05
+
+### Fixed
+
+- 修复新抽牌时 pipeline 执行期间前端无等待动画的问题：`fetchInterpretation()` 在调用 pipeline 前设置 `isLoadingInterpretation = true`，确保 HTTP 请求期间 UI 显示 loading 动画
+
 ## [2.9.0] - 2026-07-05
 
 ### Added

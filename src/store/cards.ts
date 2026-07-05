@@ -163,6 +163,12 @@ export const useCardStore = defineStore('cards', () => {
     const record = records.value[0]
     if (!record) return
 
+    // pipeline 运行前设置 loading 状态，让 UI 显示等待动画
+    // Stage 8 (NotifyUI) 会在 pipeline 完成后根据 ctx.uiState 最终值更新此状态
+    if (currentReading.value.useOnlineReading) {
+      isLoadingInterpretation.value = true
+    }
+
     const ctx = createReadingContext(
       'draw',
       record.id,
