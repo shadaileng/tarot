@@ -150,6 +150,7 @@ const MAX_PENDING_PERSIST = 100  // 本地持久化上限
 
 interface BufferedEvent extends ClientEvent {
   _userId?: string
+  traceId?: string
   schemaVersion: number
 }
 
@@ -172,6 +173,25 @@ function generateId(): string {
     const r = (Math.random() * 16) | 0
     return (c === 'x' ? hex[r] : hex[(r & 0x3) | 0x8])
   })
+}
+
+// ========== 操作链路追踪（traceId）==========
+let currentTraceId: string | null = null
+
+/** 开始新的追踪链路，返回 traceId */
+export function startTrace(): string {
+  currentTraceId = generateId()
+  return currentTraceId
+}
+
+/** 结束当前追踪链路 */
+export function endTrace(): void {
+  currentTraceId = null
+}
+
+/** 获取当前 traceId（只读） */
+export function getTraceId(): string | null {
+  return currentTraceId
 }
 
 // ========== 敏感字段脱敏 ==========
@@ -381,6 +401,7 @@ export function log(
       schemaVersion: 1,
       data: sanitize(opts?.data),
       device: getDeviceInfo(),
+      traceId: currentTraceId || undefined,
     }
 
     if (level === 'error') {

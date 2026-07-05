@@ -4,7 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navBack } from '@/utils'
 import { submitCheckin, fetchCheckinStatus } from '@/services/user-stats'
 import type { CheckinResult, CheckinStatus } from '@/types'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
 const status = ref<CheckinStatus | null>(null)
 const result = ref<CheckinResult | null>(null)
@@ -22,6 +22,7 @@ async function loadStatus() {
 
 async function doCheckin() {
   if (loading.value || status.value?.isCheckedIn) return
+  startTrace()
   loading.value = true
   error.value = ''
   try {
@@ -37,6 +38,7 @@ async function doCheckin() {
     }
   } finally {
     loading.value = false
+    endTrace()
   }
 }
 

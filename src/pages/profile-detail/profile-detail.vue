@@ -8,7 +8,7 @@ import {
   refreshUserInfo,
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
 const userInfo = ref<UserInfo | null>(null)
 
@@ -43,6 +43,7 @@ function startEditNickname() {
 async function saveNickname() {
   const name = nicknameInput.value.trim()
   if (!name) return
+  startTrace()
   saving.value = true
   try {
     const result = await updateProfile({ nickname: name })
@@ -54,11 +55,13 @@ async function saveNickname() {
   } finally {
     editingNickname.value = false
     saving.value = false
+    endTrace()
   }
 }
 
 async function handleAvatarChange() {
   // #ifdef MP-WEIXIN
+  startTrace()
   try {
     const res = await uni.chooseImage({
       count: 1,
@@ -93,6 +96,7 @@ async function handleAvatarChange() {
     uni.showToast({ title: err.message || '更换失败', icon: 'none' })
   } finally {
     saving.value = false
+    endTrace()
   }
   // #endif
 
@@ -104,6 +108,7 @@ async function handleAvatarChange() {
 async function handleGenderChange(e: any) {
   const idx = Number(e.detail?.value)
   if (isNaN(idx)) return
+  startTrace()
   saving.value = true
   try {
     const result = await updateProfile({ gender: idx })
@@ -115,12 +120,14 @@ async function handleGenderChange(e: any) {
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
+    endTrace()
   }
 }
 
 async function handleBirthdayChange(e: any) {
   const date = e.detail?.value
   if (!date) return
+  startTrace()
   saving.value = true
   try {
     const result = await updateProfile({ birthday: date })
@@ -131,6 +138,7 @@ async function handleBirthdayChange(e: any) {
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
+    endTrace()
   }
 }
 
@@ -147,6 +155,7 @@ async function handleBindEmail() {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
+  startTrace()
   bindEmailLoading.value = true
   try {
     await bindEmailApi(email, pwd)
@@ -160,6 +169,7 @@ async function handleBindEmail() {
     uni.showToast({ title: err.message || '绑定失败', icon: 'none' })
   } finally {
     bindEmailLoading.value = false
+    endTrace()
   }
 }
 

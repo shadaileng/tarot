@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { navBack } from '@/utils'
 import { submitFeedback, uploadFeedbackImage } from '@/services/feedback'
 import { showToast } from '@/utils'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -67,6 +67,7 @@ async function handleSubmit() {
     return
   }
 
+  startTrace()
   submitting.value = true
   try {
     await submitFeedback({
@@ -82,6 +83,7 @@ async function handleSubmit() {
     showToast(err.message || '提交失败')
   } finally {
     submitting.value = false
+    endTrace()
   }
 }
 </script>

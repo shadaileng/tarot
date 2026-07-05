@@ -4,7 +4,7 @@ import type { DrawnCard } from '@/types'
 import { generatePoster } from '@/services/poster'
 import { isLoggedIn } from '@/services/auth'
 import type { PosterData } from '@/utils/poster/types'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
 const props = defineProps<{
   visible: boolean
@@ -99,6 +99,7 @@ async function generatePosterImage() {
 /** 保存海报到相册 */
 async function savePoster() {
   if (isSaving.value || !posterUrl.value) return
+  startTrace()
   isSaving.value = true
   logInfo('poster', 'poster_save_click')
   try {
@@ -148,6 +149,7 @@ async function savePoster() {
     uni.showToast({ title: '保存失败', icon: 'error' })
   } finally {
     isSaving.value = false
+    endTrace()
   }
 }
 

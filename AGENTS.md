@@ -127,6 +127,13 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 - 401 响应 → 清除 token → 触发 `onUnauthorized` 回调（自动尝试重新登录）
 - 400+ 错误 → 抛出 `Error(message)`，`message` 来自 `/api/user/profile` 的 `message` 字段
 
+### 客户端日志服务（`src/services/client-logger.ts`）
+
+- 缓冲区 + 批量上报（每 20 条或 30 秒 flush 一次），不依赖 `request.ts`，直接用 `uni.request`
+- 内置脱敏（`SENSITIVE_KEYS`）、去重（G1/G2 异常 5 秒去重 + 1/5 采样）、设备指纹
+- **操作链路追踪**：`startTrace()` 生成 traceId，`log()` 自动附加，`endTrace()` 清除
+- 16 个用户操作入口已注入 `startTrace/endTrace`，覆盖 pipeline/store/page 三层
+
 ### LoginGuide 组件
 
 | 组件 | 平台 | UI |

@@ -5,6 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-07-05
+
+### Added
+
+- 新增 traceId 操作链路追踪：同一用户操作的所有事件通过 `traceId` 归组
+  - `client-logger.ts` 新增 `startTrace()`/`endTrace()`/`getTraceId()` API
+  - `log()` 自动附加 `currentTraceId` 到每个事件
+  - 16 个用户操作入口注入 `startTrace/endTrace`：
+    - Store：`drawCards`/`fetchInterpretation`/`viewRecord`/`cancelRecordTask`/`deleteRecord`/`upgradeToOnlineReading`
+    - 页面：签到/任务领取/反馈提交/邀请绑定/个人资料编辑（昵称/头像/性别/生日/邮箱）/海报保存
+
 ## [2.10.0] - 2026-07-05
 
 ### Added

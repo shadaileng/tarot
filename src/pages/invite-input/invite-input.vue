@@ -4,7 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navBack, showToast } from '@/utils'
 import { bindReferral, fetchInviteRecords } from '@/services/user-stats'
 import type { InviterInfo } from '@/types'
-import { logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
 const code = ref('')
 const loading = ref(false)
@@ -27,6 +27,7 @@ async function doBind() {
     error.value = '请输入 6 位邀请码'
     return
   }
+  startTrace()
   loading.value = true
   error.value = ''
   try {
@@ -39,6 +40,7 @@ async function doBind() {
     error.value = e.message || '绑定失败'
   } finally {
     loading.value = false
+    endTrace()
   }
 }
 </script>

@@ -7,7 +7,7 @@ import { fetchReading, generateLocalReading, pollTaskOnce, cancelReading, type B
 import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
 import { createReadingContext, createPipeline } from './pipeline'
-import { log, logError } from '@/services/client-logger'
+import { log, logError, startTrace, endTrace } from '@/services/client-logger'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -110,50 +110,55 @@ export const useCardStore = defineStore('cards', () => {
 
   /** 执行抽牌 */
   function drawCards(spreadType: SpreadType, question = '', useOnlineReading = true) {
-    isViewingHistory.value = false
-    const spread = getSpread(spreadType)
-    const drawn = drawRandomCards(spread.positions.length)
+    startTrace()
+    try {
+      isViewingHistory.value = false
+      const spread = getSpread(spreadType)
+      const drawn = drawRandomCards(spread.positions.length)
 
-    const cards: DrawnCard[] = drawn.map((card, i) => ({
-      card,
-      orientation: randomOrientation(),
-      position: spread.positions[i],
-    }))
+      const cards: DrawnCard[] = drawn.map((card, i) => ({
+        card,
+        orientation: randomOrientation(),
+        position: spread.positions[i],
+      }))
 
-    log('reading', 'draw_cards', 'info', {
-      data: { spreadType, cardCount: cards.length, useOnlineReading }
-    })
+      log('reading', 'draw_cards', 'info', {
+        data: { spreadType, cardCount: cards.length, useOnlineReading }
+      })
 
-    const timestamp = Date.now()
-    currentReading.value = { cards, spreadType, question, useOnlineReading, interpretation: '', isOnlineInterpretation: false, isPartialOnlineInterpretation: false, comprehensiveInterpretation: '' }
+      const timestamp = Date.now()
+      currentReading.value = { cards, spreadType, question, useOnlineReading, interpretation: '', isOnlineInterpretation: false, isPartialOnlineInterpretation: false, comprehensiveInterpretation: '' }
 
-    // 保存到记录
-    records.value.unshift({
-      id: generateId(),
-      spreadType,
-      spreadName: spread.name,
-      cards,
-      question,
-      timestamp,
-      date: formatDate(timestamp),
-      interpretation: '',
-      isOnlineInterpretation: useOnlineReading,
-      isPartialOnlineInterpretation: false,
-      comprehensiveInterpretation: '',
-      fallbackReason: useOnlineReading ? null : 'local',
-      isOnlineProcessing: useOnlineReading,
-    })
+      // 保存到记录
+      records.value.unshift({
+        id: generateId(),
+        spreadType,
+        spreadName: spread.name,
+        cards,
+        question,
+        timestamp,
+        date: formatDate(timestamp),
+        interpretation: '',
+        isOnlineInterpretation: useOnlineReading,
+        isPartialOnlineInterpretation: false,
+        comprehensiveInterpretation: '',
+        fallbackReason: useOnlineReading ? null : 'local',
+        isOnlineProcessing: useOnlineReading,
+      })
 
-    // 最多保留 100 条记录
-    if (records.value.length > 100) {
-      records.value = records.value.slice(0, 100)
+      // 最多保留 100 条记录
+      if (records.value.length > 100) {
+        records.value = records.value.slice(0, 100)
+      }
+
+      // 持久化到本地存储
+      saveRecords()
+
+      // 同步到云端（静默，不阻塞 UI）
+      syncToCloudIfLoggedIn(records.value[0])
+    } finally {
+      endTrace()
     }
-
-    // 持久化到本地存储
-    saveRecords()
-
-    // 同步到云端（静默，不阻塞 UI）
-    syncToCloudIfLoggedIn(records.value[0])
   }
 
   /** 获取个性化解读（通过管线） */
@@ -163,23 +168,28 @@ export const useCardStore = defineStore('cards', () => {
     const record = records.value[0]
     if (!record) return
 
-    // pipeline 运行前设置 loading 状态，让 UI 显示等待动画
-    // Stage 8 (NotifyUI) 会在 pipeline 完成后根据 ctx.uiState 最终值更新此状态
-    if (currentReading.value.useOnlineReading) {
-      isLoadingInterpretation.value = true
+    startTrace()
+    try {
+      // pipeline 运行前设置 loading 状态，让 UI 显示等待动画
+      // Stage 8 (NotifyUI) 会在 pipeline 完成后根据 ctx.uiState 最终值更新此状态
+      if (currentReading.value.useOnlineReading) {
+        isLoadingInterpretation.value = true
+      }
+
+      const ctx = createReadingContext(
+        'draw',
+        record.id,
+        currentReading.value.cards,
+        currentReading.value.spreadType,
+        currentReading.value.question,
+        currentReading.value.useOnlineReading,
+        record,
+      )
+
+      await pipeline.run(ctx)
+    } finally {
+      endTrace()
     }
-
-    const ctx = createReadingContext(
-      'draw',
-      record.id,
-      currentReading.value.cards,
-      currentReading.value.spreadType,
-      currentReading.value.question,
-      currentReading.value.useOnlineReading,
-      record,
-    )
-
-    await pipeline.run(ctx)
   }
 
   /** 清除当前抽牌结果 */
@@ -198,6 +208,7 @@ export const useCardStore = defineStore('cards', () => {
       return
     }
 
+    startTrace()
     log('reading', 'view_record', 'info', { data: { recordId: id } })
     isViewingHistory.value = true
 
@@ -227,7 +238,7 @@ export const useCardStore = defineStore('cards', () => {
       record,
     )
 
-    pipeline.run(ctx) // fire-and-forget: 不阻塞 UI，管线完成自动刷新
+    pipeline.run(ctx).finally(() => endTrace()) // fire-and-forget: 管线完成自动结束 trace
   }
 
   /** 取消后台 AI 解读任务 */
@@ -235,6 +246,7 @@ export const useCardStore = defineStore('cards', () => {
     const record = records.value.find(r => r.id === recordId)
     if (!record?.taskId) return
 
+    startTrace()
     try {
       const result = await cancelReading(record.taskId)
 
@@ -259,6 +271,8 @@ export const useCardStore = defineStore('cards', () => {
         title: '取消失败，请稍后重试',
         icon: 'none',
       })
+    } finally {
+      endTrace()
     }
   }
 
@@ -305,13 +319,18 @@ export const useCardStore = defineStore('cards', () => {
 
   /** 删除记录 */
   function deleteRecord(id: string) {
-    const target = records.value.find(r => r.id === id)
-    if (target?.backendId) {
-      deleteCloudRecord(target.backendId)
+    startTrace()
+    try {
+      const target = records.value.find(r => r.id === id)
+      if (target?.backendId) {
+        deleteCloudRecord(target.backendId)
+      }
+      records.value = records.value.filter((r) => r.id !== id)
+      log('reading', 'delete_record', 'info', { data: { recordId: id } })
+      saveRecords()
+    } finally {
+      endTrace()
     }
-    records.value = records.value.filter((r) => r.id !== id)
-    log('reading', 'delete_record', 'info', { data: { recordId: id } })
-    saveRecords()
   }
 
   /** 清空所有记录 */
@@ -332,6 +351,7 @@ export const useCardStore = defineStore('cards', () => {
     const record = records.value[0]
     if (!record) return
 
+    startTrace()
     log('reading', 'upgrade_to_online', 'info')
 
     // 立即设置 loading 状态，让 UI 显示等待动画
@@ -354,6 +374,7 @@ export const useCardStore = defineStore('cards', () => {
       await pipeline.run(ctx)
     } finally {
       isUpgrading.value = false
+      endTrace()
     }
   }
 
