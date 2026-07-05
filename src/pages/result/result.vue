@@ -32,6 +32,7 @@ onLoad((options) => {
 
 /** 徽章文案 */
 const badgeText = computed(() => {
+  if (store.isUpgrading) return '✨ 正在升级为个性化解读…'
   if (store.isLoadingInterpretation || store.isPolling) {
     return store.isViewingHistory ? '后台生成中…' : '正在生成…'
   }
@@ -49,6 +50,7 @@ const showUpgradeButton = computed(() => {
   if (reading.value.isOnlineInterpretation) return false    // 已是 AI 解读
   if (store.isLoadingInterpretation) return false           // 正在生成中
   if (store.isPolling) return false                         // 后台轮询中
+  if (store.isUpgrading) return false                       // 升级进行中
   return true
 })
 
@@ -479,7 +481,16 @@ function handleUpgradeReading() {
           <view v-if="guideMessage" class="login-guide">
             <text class="login-guide-text">{{ guideMessage }}</text>
           </view>
-          <view class="reading-content">
+          <!-- 升级加载中动画 -->
+          <view v-if="store.isUpgrading" class="reading-loading upgrade-loading">
+            <view class="loading-dots">
+              <view class="dot"></view>
+              <view class="dot"></view>
+              <view class="dot"></view>
+            </view>
+            <text class="loading-text">✨ 正在为你生成个性化卡牌解读…</text>
+          </view>
+          <view class="reading-content" :class="{ 'reading-content-upgrading': store.isUpgrading }">
             <text class="reading-text">{{ reading.interpretation }}</text>
           </view>
           <!-- 升级为深度解读按钮 -->
@@ -1070,6 +1081,12 @@ function handleUpgradeReading() {
   border: 1rpx solid rgba(139, 92, 246, 0.15);
 }
 
+// 升级中时旧解读内容半透明
+.reading-content-upgrading {
+  opacity: 0.45;
+  transition: opacity 0.3s ease;
+}
+
 .reading-text {
   font-size: 26rpx;
   color: $text-secondary;
@@ -1116,6 +1133,12 @@ function handleUpgradeReading() {
   align-items: center;
   padding: 48rpx 0;
   margin-bottom: 28rpx;
+}
+
+// 升级中的 loading 紧凑版（在 reading-section 内）
+.upgrade-loading {
+  padding: 28rpx 0 20rpx;
+  margin-bottom: 0;
 }
 
 .loading-dots {

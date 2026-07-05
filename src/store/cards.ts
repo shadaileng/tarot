@@ -59,6 +59,9 @@ export const useCardStore = defineStore('cards', () => {
   /** 是否正在查看历史记录 */
   const isViewingHistory = ref(false)
 
+  /** 是否正在升级本地解读为 AI 解读 */
+  const isUpgrading = ref(false)
+
   // ========== Getters ==========
   const recordCount = computed(() => records.value.length)
 
@@ -295,8 +298,10 @@ export const useCardStore = defineStore('cards', () => {
     const record = records.value[0]
     if (!record) return
 
-    // 清空当前解读，重新走管线
-    currentReading.value.interpretation = ''
+    // 立即设置 loading 状态，让 UI 显示等待动画
+    // 保留旧的本地解读不清空，升级完成后由管线 NotifyUIStage 整体替换
+    isUpgrading.value = true
+    isLoadingInterpretation.value = true
     currentReading.value.useOnlineReading = true
 
     const ctx = createReadingContext(
@@ -309,7 +314,11 @@ export const useCardStore = defineStore('cards', () => {
       record,
     )
 
-    await pipeline.run(ctx)
+    try {
+      await pipeline.run(ctx)
+    } finally {
+      isUpgrading.value = false
+    }
   }
 
   /** 静默同步单条记录到云端（内部使用） */
@@ -336,6 +345,7 @@ export const useCardStore = defineStore('cards', () => {
     isSyncing,
     backendStatus,
     isViewingHistory,
+    isUpgrading,
     setBackendStatus,
     drawCards,
     fetchInterpretation,
