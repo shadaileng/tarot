@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.6] - 2026-07-05
+
+### Fixed
+
+- 修复升级 AI 解读成功后横幅仍显示"点击下方按钮升级为个性化卡牌解读"：`FetchOnlineStage` 成功路径显式清空 `ctx.fallbackReason`，避免 `PersistStage` 将旧值 `'local'` 写回 record
+
 ## [2.8.5] - 2026-07-05
 
 ### Fixed

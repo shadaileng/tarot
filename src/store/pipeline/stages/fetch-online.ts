@@ -40,6 +40,9 @@ export class FetchOnlineStage implements PipelineStage {
           ctx.uiState = 'done'
         }
       } else {
+        // 在线解读成功：清空降级原因，避免升级成功后 record.fallbackReason 仍保留旧值
+        // 导致 result.vue 的 currentFallbackReason 仍读到 'local'，横幅显示"点击下方按钮升级..."
+        ctx.fallbackReason = null
         ctx.uiState = 'done'
       }
     } catch (e) {
