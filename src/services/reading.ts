@@ -2,6 +2,7 @@
 
 import type { DrawnCard } from '@/types'
 import { apiPost, apiGet } from '@/utils/request'
+import { log } from '@/services/client-logger'
 
 /** 从解读文本中提取综合解读部分 */
 function extractComprehensive(text: string): string | null {
@@ -104,6 +105,7 @@ function sleep(ms: number): Promise<void> {
  * @returns 解读结果（在线成功 / 降级为本地）
  */
 export async function fetchReading(question: string, cards: DrawnCard[]): Promise<ReadingResult> {
+  log('reading', 'fetch_reading_start', 'info', { data: { mode: 'online', cardCount: cards.length } })
   try {
     // 检查是否有缓存的 pending taskId（重进页面恢复）
     let taskId = uni.getStorageSync('pending_reading_taskId')
@@ -127,6 +129,7 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
         if (result.status === 'completed' && result.reading) {
           // 解读完成，清理 taskId 缓存
           uni.removeStorageSync('pending_reading_taskId')
+          log('reading', 'fetch_reading_success', 'info', { data: { model: result.model } })
 
           if (result.incomplete && !/✨\s*\*{0,2}综合解读/.test(result.reading)) {
             // 不完整解读，补全综合解读
@@ -167,6 +170,11 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
     //    将 taskId 随降级结果返回，由 store 保存到 record 供后续升级
     const localReading = generateLocalReading(question, cards)
     const localSummary = generateSummaryOnlyText(question, cards)
+    log('reading', 'fetch_reading_fallback_local', 'warn', {
+      result: 'fallback',
+      action: '软超时，降级本地解读',
+      data: { reason: 'timeout' }
+    })
     return {
       reading: localReading,
       isOnline: false,
@@ -186,6 +194,11 @@ export async function fetchReading(question: string, cards: DrawnCard[]): Promis
       e.message.includes('DAILY_QUOTA_EXCEEDED') ||
       e.message.includes('GUEST_DAILY_LIMIT')
     )
+    log('reading', 'fetch_reading_fallback_local', isQuota ? 'warn' : 'error', {
+      result: 'fallback',
+      action: isQuota ? '额度用完，降级本地解读' : 'API异常，降级本地解读',
+      data: { reason: isQuota ? 'quota' : 'error' }
+    })
     return {
       reading: localReading,
       isOnline: false,

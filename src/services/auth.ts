@@ -2,6 +2,7 @@
 // 微信登录 / token 管理 / 用户信息存储 / 邮箱绑定 / 资料更新
 
 import { apiPost, apiGet, apiPut, getStoredToken, setStoredToken, removeStoredToken, setUnauthorizedHandler } from '@/utils/request'
+import { log, logInfo, logError } from '@/services/client-logger'
 
 // ========== 类型 ==========
 
@@ -91,6 +92,7 @@ function isTokenExpired(token: string): boolean {
 
 /** 登出 */
 export function logout(): void {
+  logInfo('auth', 'logout')
   removeStoredToken()
   uni.removeStorageSync(USER_KEY)
 }
@@ -127,9 +129,11 @@ export async function login(): Promise<LoginResult> {
 async function wechatLogin(): Promise<LoginResult> {
   return new Promise((resolve, reject) => {
     // #ifdef MP-WEIXIN
+    logInfo('auth', 'wechat_login_start')
     wx.login({
       success: async (res) => {
         if (!res.code) {
+          logError('auth', 'wechat_login_fail', '微信登录凭证获取失败')
           reject(new Error('获取微信登录凭证失败'))
           return
         }
@@ -137,12 +141,15 @@ async function wechatLogin(): Promise<LoginResult> {
           const result = await apiPost<LoginResult>('/api/auth/wechat-login', { code: res.code }, { auth: false })
           setStoredToken(result.token)
           setUserInfo(result.user)
+          logInfo('auth', 'wechat_login_success', { isNewUser: result.isNewUser })
           resolve(result)
         } catch (err) {
+          logError('auth', 'wechat_login_fail', err instanceof Error ? err.message : '未知错误')
           reject(err)
         }
       },
       fail: (err) => {
+        logError('auth', 'wechat_login_fail', err.errMsg)
         reject(new Error(err.errMsg || '微信登录失败'))
       },
     })
@@ -160,6 +167,7 @@ export async function emailLogin(email: string, password: string): Promise<Login
   const result = await apiPost<LoginResult>('/api/auth/email-login', { email, password }, { auth: false })
   setStoredToken(result.token)
   setUserInfo(result.user)
+  logInfo('auth', 'email_login_success')
   return result
 }
 
@@ -170,6 +178,7 @@ export async function emailRegister(email: string, password: string): Promise<Lo
   const result = await apiPost<LoginResult>('/api/auth/email-register', { email, password }, { auth: false })
   setStoredToken(result.token)
   setUserInfo(result.user)
+  logInfo('auth', 'email_register_success', { isNewUser: result.isNewUser })
   return result
 }
 
@@ -198,6 +207,7 @@ export async function updateProfile(data: {
   if (result.user) {
     setUserInfo(result.user)
   }
+  logInfo('auth', 'profile_update', { fields: Object.keys(data) })
   return result
 }
 

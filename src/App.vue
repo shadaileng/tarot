@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useCardStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
 import { checkBackendHealth } from '@/services/reading'
 import { loadPageSections } from '@/services/page-sections'
 import { resetAuthRefreshLock } from '@/utils/request'
+import { initClientLogger, destroyClientLogger, log } from '@/services/client-logger'
+
+// 标记是否为冷启动（onLaunch 首次触发）
+let isColdLaunch = true
 
 onLaunch(() => {
   const store = useCardStore()
@@ -12,6 +16,9 @@ onLaunch(() => {
   // 异步初始化（延迟到框架页面栈初始化完成后执行，避免自定义 tabBar + async onLaunch
   // 触发微信 SDK 3.x "appLaunch with non-empty page stack" 内部错误）
   setTimeout(async () => {
+    // 最早初始化日志服务
+    initClientLogger()
+
     // ========== 注册 401 回调（必须在任何可能触发 401 的操作之前）==========
     // 当业务接口返回 401 时自动触发（token 过期或无效）
     initAuth(async () => {
@@ -55,6 +62,12 @@ onLaunch(() => {
 
 // 微信分享配置（appid 审核通过后启用）
 onShow(() => {
+  // 热启动时（非首次 onShow）上报 app_show 事件
+  if (!isColdLaunch) {
+    log('page', 'app_show', 'info')
+  }
+  isColdLaunch = false
+
   // #ifdef MP-WEIXIN
   try {
     uni.showShareMenu({
@@ -63,6 +76,12 @@ onShow(() => {
     })
   } catch (_) {}
   // #endif
+})
+
+// 切后台：清除定时器并 flush
+onHide(() => {
+  log('page', 'app_hide', 'info')
+  destroyClientLogger()
 })
 </script>
 

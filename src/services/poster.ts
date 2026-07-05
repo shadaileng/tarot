@@ -6,6 +6,7 @@ import type { PosterData } from '@/utils/poster/types'
 import type { DrawnCard } from '@/types'
 import { apiPost } from '@/utils/request'
 import { getStoredToken } from '@/utils/request'
+import { log, logInfo, logError } from '@/services/client-logger'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -46,13 +47,16 @@ function toPosterPayload(data: PosterData) {
  * @returns url（展示用）和 savePath（可选，保存到相册用）
  */
 export async function generatePoster(data: PosterData): Promise<{ url: string; savePath?: string }> {
+  logInfo('poster', 'poster_generate_start', { template: data.template, cardCount: data.cards.length })
   const payload = toPosterPayload(data)
 
   // #ifdef H5
   let arrayBuffer: ArrayBuffer
   try {
     arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: 60000 })
+    logInfo('poster', 'poster_generate_success')
   } catch (err: any) {
+    logError('poster', 'poster_generate_fail', err.message || '未知错误')
     throw new Error(`海报生成失败: ${err.message || err}`)
   }
   const blob = new Blob([arrayBuffer], { type: 'image/png' })
@@ -104,6 +108,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
     console.error('[poster] 写入持久文件失败:', e)
   }
 
+  logInfo('poster', 'poster_generate_success')
   return { url: dlRes.tempFilePath, savePath }
   // #endif
 }

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { navBack } from '@/utils'
 import { submitFeedback, uploadFeedbackImage } from '@/services/feedback'
 import { showToast } from '@/utils'
+import { logInfo } from '@/services/client-logger'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -71,6 +72,7 @@ async function handleSubmit() {
       content: content.value.trim(),
       images: images.value,
     })
+    logInfo('user_action', 'feedback_submit', { category: category.value })
     showToast('提交成功')
     setTimeout(() => navBack(), 1500)
   } catch (err: any) {

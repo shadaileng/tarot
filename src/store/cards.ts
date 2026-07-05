@@ -7,6 +7,7 @@ import { fetchReading, generateLocalReading, pollTaskOnce, cancelReading, type B
 import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
 import { createReadingContext, createPipeline } from './pipeline'
+import { log, logError } from '@/services/client-logger'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -118,6 +119,10 @@ export const useCardStore = defineStore('cards', () => {
       orientation: randomOrientation(),
       position: spread.positions[i],
     }))
+
+    log('reading', 'draw_cards', 'info', {
+      data: { spreadType, cardCount: cards.length, useOnlineReading }
+    })
 
     const timestamp = Date.now()
     currentReading.value = { cards, spreadType, question, useOnlineReading, interpretation: '', isOnlineInterpretation: false, isPartialOnlineInterpretation: false, comprehensiveInterpretation: '' }
@@ -248,6 +253,7 @@ export const useCardStore = defineStore('cards', () => {
     try {
       uni.setStorageSync('tarot-records', JSON.stringify(records.value))
     } catch (e) {
+      logError('error', 'storage_write_fail', '保存记录失败', { key: 'tarot-records' })
       console.error('保存记录失败:', e)
     }
   }
@@ -261,6 +267,7 @@ export const useCardStore = defineStore('cards', () => {
         records.value = JSON.parse(data)
       }
     } catch (e) {
+      logError('error', 'storage_read_fail', '加载本地记录失败', { key: 'tarot-records' })
       console.error('加载本地记录失败:', e)
     }
 
@@ -309,6 +316,8 @@ export const useCardStore = defineStore('cards', () => {
 
     const record = records.value[0]
     if (!record) return
+
+    log('reading', 'upgrade_to_online', 'info')
 
     // 立即设置 loading 状态，让 UI 显示等待动画
     // 保留旧的本地解读不清空，升级完成后由管线 NotifyUIStage 整体替换

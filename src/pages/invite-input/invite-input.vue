@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navBack, showToast } from '@/utils'
 import { bindReferral, fetchInviteRecords } from '@/services/user-stats'
 import type { InviterInfo } from '@/types'
+import { logInfo, logError } from '@/services/client-logger'
 
 const code = ref('')
 const loading = ref(false)
@@ -27,9 +28,11 @@ async function doBind() {
   error.value = ''
   try {
     await bindReferral(trimmed)
+    logInfo('user_action', 'invite_bind', { result: 'success' })
     showToast('邀请码绑定成功！', 'success')
     setTimeout(() => navBack(), 1500)
   } catch (e: any) {
+    logError('user_action', 'invite_bind', e.message || '绑定失败')
     error.value = e.message || '绑定失败'
   } finally {
     loading.value = false

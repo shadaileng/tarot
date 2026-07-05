@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navBack } from '@/utils'
 import { submitCheckin, fetchCheckinStatus } from '@/services/user-stats'
 import type { CheckinResult, CheckinStatus } from '@/types'
+import { logInfo } from '@/services/client-logger'
 
 const status = ref<CheckinStatus | null>(null)
 const result = ref<CheckinResult | null>(null)
@@ -23,6 +24,7 @@ async function doCheckin() {
   try {
     result.value = await submitCheckin()
     status.value = await fetchCheckinStatus()
+    logInfo('user_action', 'checkin', { streak: status.value?.streak })
   } catch (e: any) {
     if (e.message?.includes('ALREADY_CHECKED_IN')) {
       status.value = await fetchCheckinStatus()

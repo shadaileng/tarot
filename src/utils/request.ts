@@ -1,6 +1,8 @@
 // ========== 统一请求封装 ==========
 // 基于 uni.request，自动注入 JWT token，处理 401 重新登录
 
+import { logWarn, logError, logInfo } from '@/services/client-logger'
+
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 const TOKEN_KEY = 'auth_token'
 
@@ -93,11 +95,13 @@ function request<T>(
       success: (res) => {
         if (res.statusCode === 401) {
           console.error('[REQ] 401 received for URL:', fullUrl)
+          logWarn('error', 'token_expired', '清除token并触发重新登录', { url: fullUrl })
           // Token 过期或无效：同步清除 token + userInfo，保持状态一致
           removeStoredToken()
           uni.removeStorageSync('user_info')
           if (!skipAuthRefresh && onUnauthorized && !isRefreshing) {
             isRefreshing = true
+            logInfo('auth', 'auto_login_recovery_success')
             onUnauthorized()
           }
           reject(new Error('UNAUTHORIZED'))
@@ -114,7 +118,13 @@ function request<T>(
         resolve(res.data as T)
       },
       fail: (err) => {
-        reject(new Error(err.errMsg || '网络请求失败'))
+        const errMsg = err.errMsg || '网络请求失败'
+        if (errMsg.includes('timeout')) {
+          logWarn('error', 'api_request_timeout', '请求超时', { url: fullUrl, timeout: timeout ?? 15000 })
+        } else {
+          logError('error', 'api_request_fail', errMsg, { url: fullUrl })
+        }
+        reject(new Error(errMsg))
       },
     })
   })

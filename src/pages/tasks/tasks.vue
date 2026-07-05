@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { navTo, showToast } from '@/utils'
 import { fetchTasks, claimTask } from '@/services/user-stats'
 import type { UserTaskItem } from '@/types'
+import { logInfo } from '@/services/client-logger'
 
 const tasks = ref<UserTaskItem[]>([])
 const loading = ref(false)
@@ -27,6 +28,7 @@ async function doClaim(taskId: string) {
   try {
     const result = await claimTask(taskId)
     if (result.success) {
+      logInfo('user_action', 'task_claim', { taskId, reward: result.pointsReward })
       showToast(`领取成功！+${result.pointsReward} 积分`, 'success')
       await loadTasks()
     }

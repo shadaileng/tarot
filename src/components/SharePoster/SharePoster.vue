@@ -4,6 +4,7 @@ import type { DrawnCard } from '@/types'
 import { generatePoster } from '@/services/poster'
 import { isLoggedIn } from '@/services/auth'
 import type { PosterData } from '@/utils/poster/types'
+import { logInfo } from '@/services/client-logger'
 
 const props = defineProps<{
   visible: boolean
@@ -160,11 +161,13 @@ function handleOverlayClick(e: any) {
 function sharePoster() {
   if (!posterUrl.value) return
   // #ifdef MP-WEIXIN
+  logInfo('poster', 'poster_share_success')
   uni.showToast({ title: '请点击右上角菜单分享', icon: 'none' })
   emit('close')
   // #endif
 
   // #ifdef H5
+  logInfo('poster', 'poster_share_success')
   emit('share', posterUrl.value)
   // #endif
 }

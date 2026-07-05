@@ -5,6 +5,26 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-07-05
+
+### Added
+
+- 新增客户端日志埋点系统（`src/services/client-logger.ts`）
+  - 缓冲区批量上报：20 条或 30 秒定时 flush，64KB body size 限制
+  - 数据脱敏：`log()` 入口自动 strip 密码/手机号/身份证/邮箱等敏感字段
+  - 异常事件去重采样：同 url 5 秒去重，首条必报，后续 1/5 采样
+  - 设备指纹：首次启动生成 UUID 缓存，用于未登录事件关联
+  - 登录前暂存：`app_launch` 事件暂存上限 50 条，登录后补发
+- 新增 45 个埋点事件覆盖全链路：
+  - 认证类（A1-A9）：微信登录/邮箱登录/登出/资料更新
+  - 解读类（B1-B6、H7）：抽牌/解读/降级/升级
+  - 同步类（C1-C3）：上传/拉取/删除
+  - 海报类（D1-D4b）：生成/分享
+  - 页面生命周期（E1-E4、H1-H2）：启动/切后台/回前台
+  - 用户行为（F1-F4）：签到/任务/邀请/反馈
+  - 异常类（G1-G6）：请求失败/超时/storage 失败/图片加载/网络不可用
+- `App.vue` 初始化日志服务，区分冷/热启动，切后台触发 flush
+
 ## [2.8.6] - 2026-07-05
 
 ### Fixed

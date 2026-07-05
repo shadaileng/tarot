@@ -4,6 +4,7 @@
 import type { ReadingRecord } from '@/types'
 import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'
 import { isLoggedIn } from '@/services/auth'
+import { logInfo, logError } from '@/services/client-logger'
 
 // ========== 类型 ==========
 
@@ -47,8 +48,10 @@ export async function syncRecordToCloud(record: ReadingRecord): Promise<string |
       isLocal: true,
     }, { timeout: 10000 })
 
+    logInfo('sync', 'record_sync_upload', { result: 'success' })
     return result.id
   } catch (err) {
+    logError('sync', 'record_sync_upload', err instanceof Error ? err.message : '未知错误')
     console.warn('同步记录到云端失败:', err)
     return null
   }
@@ -154,6 +157,7 @@ export async function pullAndMerge(localRecords: ReadingRecord[]): Promise<Merge
       }
     }
 
+    logInfo('sync', 'record_pull_merge', { addedCount: newFromCloud.length })
     return { records: merged, addedCount: newFromCloud.length }
   } catch (err) {
     console.warn('从云端拉取记录失败:', err)
@@ -171,8 +175,10 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
 
   try {
     await apiDelete(`/api/user/records/${backendId}`, { timeout: 10000 })
+    logInfo('sync', 'record_delete_sync', { result: 'success' })
     return true
   } catch (err) {
+    logError('sync', 'record_delete_sync', err instanceof Error ? err.message : '未知错误')
     console.warn('删除云端记录失败:', err)
     return false
   }
