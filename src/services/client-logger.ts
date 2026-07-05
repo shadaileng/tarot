@@ -1,5 +1,6 @@
 // ========== 客户端日志服务 ==========
 // 缓冲区 + 批量上报 + 脱敏 + 去重 + 设备指纹
+// 不依赖 request.ts，直接用 uni.request 发送，避免循环依赖
 
 import { isLoggedIn, getToken } from '@/services/auth'
 
@@ -28,6 +29,9 @@ interface DeviceInfo {
   appVersion?: string
 }
 
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
+const TOKEN_KEY = 'auth_token'
+
 /** 从 JWT token 中解析 userId */
 function parseUserIdFromToken(token: string): string | undefined {
   try {
@@ -50,6 +54,36 @@ function parseUserIdFromToken(token: string): string | undefined {
   } catch {
     return undefined
   }
+}
+
+// ========== 直接用 uni.request 发送（零依赖）==========
+function postClientEvents(events: BufferedEvent[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const token = getToken() || uni.getStorageSync(TOKEN_KEY) || ''
+    uni.request({
+      url: `${BACKEND_API}/api/client-events`,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      data: { events },
+      timeout: API_TIMEOUT,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          resolve()
+        } else if (res.statusCode === 401) {
+          reject(new Error('UNAUTHORIZED'))
+        } else {
+          const msg = (res.data as any)?.message || `HTTP ${res.statusCode}`
+          reject(new Error(msg))
+        }
+      },
+      fail: (err) => {
+        reject(new Error(err.errMsg || '网络请求失败'))
+      },
+    })
+  })
 }
 
 // ========== 设备信息（懒初始化）==========
@@ -267,18 +301,7 @@ async function flush(): Promise<void> {
     }
 
     const batch = buffer.splice(0)
-    const requestMod = await import('@/utils/request')
-    const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
-    if (!apiPost) {
-      console.error('[CLIENT-LOG] apiPost not found in request module')
-      persistPendingEvents(batch)
-      return
-    }
-    await apiPost('/api/client-events', { events: batch }, {
-      auth: true,
-      timeout: API_TIMEOUT,
-      skipAuthRefresh: true,
-    })
+    await postClientEvents(batch)
   } catch (err: any) {
     // 上报失败：输出错误信息 + 持久化到本地 storage 下次补发
     console.error('[CLIENT-LOG] flush failed:', err?.message || err)
@@ -319,27 +342,12 @@ export function destroyClientLogger(): void {
     pendingLaunchEvents = []
     if (batch.length > 0) {
       isFlushing = true  // 互斥：防止残留异步操作并发
-      import('@/utils/request').then((requestMod) => {
-        const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
-        if (!apiPost) {
-          console.error('[CLIENT-LOG] apiPost not found in request module')
+      postClientEvents(batch.map(e => ({ ...e, _userId: lastUserId })))
+        .catch((err: any) => {
+          console.error('[CLIENT-LOG] destroyClientLogger flush failed:', err?.message || err)
           persistPendingEvents(batch)
-          isFlushing = false
-          return
-        }
-        apiPost('/api/client-events', {
-          events: batch.map(e => ({ ...e, _userId: lastUserId }))
-        }, { auth: true, timeout: API_TIMEOUT, skipAuthRefresh: true })
-          .catch((err: any) => {
-            console.error('[CLIENT-LOG] destroyClientLogger flush failed:', err?.message || err)
-            persistPendingEvents(batch)
-          })
-          .finally(() => { isFlushing = false })
-      }).catch((err: any) => {
-        console.error('[CLIENT-LOG] destroyClientLogger dynamic import failed:', err?.message || err)
-        persistPendingEvents(batch)
-        isFlushing = false
-      })
+        })
+        .finally(() => { isFlushing = false })
     }
   } else {
     flush().catch((err: any) => {
