@@ -78,6 +78,18 @@ export const useCardStore = defineStore('cards', () => {
     },
     getRecords: () => records.value,
     setCurrentReading: (ctx) => {
+      const cur = currentReading.value
+      if (cur && cur.cards === ctx.cards) {
+        // cards 引用未变：原地修改字段，保持 currentReading 引用稳定
+        // 避免触发 reading computed 变化 → watch 重复翻牌 / DOM 闪烁
+        cur.interpretation = ctx.interpretation
+        cur.isOnlineInterpretation = ctx.isOnlineInterpretation
+        cur.isPartialOnlineInterpretation = ctx.isPartialOnlineInterpretation
+        cur.comprehensiveInterpretation = ctx.comprehensiveInterpretation
+        cur.useOnlineReading = ctx.useOnlineReading
+        return
+      }
+      // cards 变化（如 drawCards 新抽牌、切换到不同历史记录）
       currentReading.value = {
         cards: ctx.cards,
         spreadType: ctx.spreadType,

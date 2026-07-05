@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.5] - 2026-07-05
+
+### Fixed
+
+- 修复管线完成后重复翻牌的 bug：`setCurrentReading` 在 cards 引用未变时原地修改字段，避免 reading computed 变化触发 watch 重新翻牌
+
 ## [2.7.0] - 2026-07-03
 
 ### Changed
