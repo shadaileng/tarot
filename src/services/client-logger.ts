@@ -267,7 +267,13 @@ async function flush(): Promise<void> {
     }
 
     const batch = buffer.splice(0)
-    const { apiPost } = await import('@/utils/request')
+    const requestMod = await import('@/utils/request')
+    const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
+    if (!apiPost) {
+      console.error('[CLIENT-LOG] apiPost not found in request module')
+      persistPendingEvents(batch)
+      return
+    }
     await apiPost('/api/client-events', { events: batch }, {
       auth: true,
       timeout: API_TIMEOUT,
@@ -313,7 +319,14 @@ export function destroyClientLogger(): void {
     pendingLaunchEvents = []
     if (batch.length > 0) {
       isFlushing = true  // 互斥：防止残留异步操作并发
-      import('@/utils/request').then(({ apiPost }) => {
+      import('@/utils/request').then((requestMod) => {
+        const apiPost = requestMod.apiPost || (requestMod as any).default?.apiPost
+        if (!apiPost) {
+          console.error('[CLIENT-LOG] apiPost not found in request module')
+          persistPendingEvents(batch)
+          isFlushing = false
+          return
+        }
         apiPost('/api/client-events', {
           events: batch.map(e => ({ ...e, _userId: lastUserId }))
         }, { auth: true, timeout: API_TIMEOUT, skipAuthRefresh: true })
