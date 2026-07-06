@@ -11,6 +11,7 @@ const loading = ref(false)
 const claiming = ref<Set<string>>(new Set())
 
 async function loadTasks() {
+  startTrace()
   loading.value = true
   try {
     const data = await fetchTasks()
@@ -21,6 +22,7 @@ async function loadTasks() {
     showToast('加载任务失败')
   } finally {
     loading.value = false
+    endTrace()
   }
 }
 

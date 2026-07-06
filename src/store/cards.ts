@@ -202,13 +202,14 @@ export const useCardStore = defineStore('cards', () => {
 
   /** 根据 ID 加载历史记录到 currentReading（通过管线） */
   function viewRecord(id: string) {
+    startTrace()
     const record = records.value.find(r => r.id === id)
     if (!record) {
       log('reading', 'view_record_not_found', 'warn', { data: { recordId: id } })
+      endTrace()
       return
     }
 
-    startTrace()
     log('reading', 'view_record', 'info', { data: { recordId: id } })
     isViewingHistory.value = true
 

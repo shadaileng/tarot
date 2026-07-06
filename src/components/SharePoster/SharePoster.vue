@@ -59,6 +59,7 @@ function isAuthError(err: any): boolean {
 async function generatePosterImage() {
   if (posterReady.value) return
 
+  startTrace()
   posterError.value = ''
   try {
     // #ifdef H5
@@ -93,6 +94,8 @@ async function generatePosterImage() {
     } else {
       posterError.value = '生成失败，请重试'
     }
+  } finally {
+    endTrace()
   }
 }
 
@@ -169,6 +172,7 @@ function handleOverlayClick(e: any) {
 /** 分享海报 */
 function sharePoster() {
   if (!posterUrl.value) return
+  startTrace()
   // #ifdef MP-WEIXIN
   logInfo('poster', 'poster_share_success')
   uni.showToast({ title: '请点击右上角菜单分享', icon: 'none' })
@@ -179,6 +183,7 @@ function sharePoster() {
   logInfo('poster', 'poster_share_success')
   emit('share', posterUrl.value)
   // #endif
+  endTrace()
 }
 
 // 监听 visible 变化，自动生成

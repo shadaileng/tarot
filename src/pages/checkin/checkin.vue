@@ -12,11 +12,14 @@ const loading = ref(false)
 const error = ref('')
 
 async function loadStatus() {
+  startTrace()
   try {
     status.value = await fetchCheckinStatus()
     logInfo('user_action', 'checkin_status_load', { result: 'success' })
   } catch (e) {
     logError('user_action', 'checkin_status_load', e instanceof Error ? e.message : '未知错误')
+  } finally {
+    endTrace()
   }
 }
 

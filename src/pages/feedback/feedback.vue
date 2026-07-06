@@ -28,6 +28,7 @@ function chooseImage() {
     showToast('最多上传 3 张图片')
     return
   }
+  startTrace()
   uni.chooseImage({
     count: 3 - images.value.length,
     sizeType: ['compressed'],
@@ -45,6 +46,7 @@ function chooseImage() {
         showToast('图片上传失败')
       } finally {
         uploading.value = false
+        endTrace()
       }
     },
   })

@@ -4,7 +4,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { useCardStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
-import { logInfo, logWarn } from '@/services/client-logger'
+import { logInfo, logWarn, startTrace, endTrace } from '@/services/client-logger'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
 import type { Card, CardOrientation } from '@/types'
@@ -185,8 +185,10 @@ function handleSharePoster() {
     uni.showToast({ title: '请先登录后再生成海报', icon: 'none' })
     return
   }
+  startTrace()
   logInfo('poster', 'poster_modal_open', { isLoggedIn: isLoggedIn() })
   posterVisible.value = true
+  endTrace()
 }
 
 // 页面进入时自动翻牌
