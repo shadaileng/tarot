@@ -4,6 +4,7 @@ import { navBack } from '@/utils'
 import { submitFeedback, uploadFeedbackImage } from '@/services/feedback'
 import { showToast } from '@/utils'
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -113,7 +114,7 @@ async function handleSubmit() {
         v-model="content"
         class="content-input"
         placeholder="请详细描述您的问题或建议..."
-        maxlength="500"
+        :maxlength="appConfig.FEEDBACK_MAX_LENGTH"
         :disabled="submitting"
       />
       <text class="char-count">{{ content.length }}/500</text>

@@ -7,6 +7,7 @@ import { navTo } from '@/utils'
 import { onShow } from '@dcloudio/uni-app'
 import { isLoggedIn } from '@/services/auth'
 import { sectionConfig } from '@/services/page-sections'
+import { appConfig } from '@/services/app-config'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 const store = useCardStore()
@@ -259,7 +260,7 @@ function handleTabChange(path: string) {
           class="question-textarea"
           placeholder="点指兵兵，谁人做大兵..."
           placeholder-style="color: #6b5e53"
-          maxlength="200"
+          :maxlength="appConfig.QUESTION_MAX_LENGTH"
           :auto-height="true"
         />
       </view>

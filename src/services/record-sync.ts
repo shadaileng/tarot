@@ -5,6 +5,7 @@ import type { ReadingRecord } from '@/types'
 import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'
 import { isLoggedIn } from '@/services/auth'
 import { logInfo, logError, logWarn } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 // ========== 类型 ==========
 
@@ -46,7 +47,7 @@ export async function syncRecordToCloud(record: ReadingRecord): Promise<string |
       reading: '',
       interpretation: record.interpretation || '',
       isLocal: true,
-    }, { timeout: 10000 })
+    }, { timeout: appConfig.SYNC_TIMEOUT })
 
     logInfo('sync', 'record_sync_upload', { result: 'success' })
     return result.id
@@ -67,7 +68,7 @@ async function fetchAllCloudRecords(): Promise<BackendRecord[]> {
   let page = 1
 
   while (true) {
-    const result = await apiGet<BackendRecordList>('/api/user/records', { page, limit: 100 }, { timeout: 10000 })
+    const result = await apiGet<BackendRecordList>('/api/user/records', { page, limit: appConfig.RECORD_PAGE_SIZE }, { timeout: appConfig.SYNC_TIMEOUT })
 
     allRecords.push(...result.records)
 
@@ -174,7 +175,7 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
   if (!isLoggedIn()) return false
 
   try {
-    await apiDelete(`/api/user/records/${backendId}`, { timeout: 10000 })
+    await apiDelete(`/api/user/records/${backendId}`, { timeout: appConfig.SYNC_TIMEOUT })
     logInfo('sync', 'record_delete_sync', { result: 'success' })
     return true
   } catch (err) {
@@ -195,7 +196,7 @@ export async function updateCloudRecordInterpretation(
   if (!isLoggedIn()) return false
 
   try {
-    await apiPatch(`/api/user/records/${backendId}`, { interpretation }, { timeout: 10000 })
+    await apiPatch(`/api/user/records/${backendId}`, { interpretation }, { timeout: appConfig.SYNC_TIMEOUT })
     logInfo('sync', 'update_cloud_interpretation', { result: 'success', backendId })
     return true
   } catch (err) {

@@ -5,6 +5,7 @@ import { useCardStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
 import { logInfo, logWarn, startTrace, endTrace } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 import CardDetail from '@/components/CardDetail/CardDetail.vue'
 import SharePoster from '@/components/SharePoster/SharePoster.vue'
 import type { Card, CardOrientation } from '@/types'
@@ -145,7 +146,7 @@ function flipSequentially() {
     flipQueue.value.push(i)
     flippedCards.value = new Set([...flippedCards.value, i])
     i++
-  }, 400)
+  }, appConfig.CARD_FLIP_INTERVAL)
 }
 
 function toggleFlip(index: number) {
@@ -448,7 +449,7 @@ function handleUpgradeReading() {
                 <view class="card-front-footer">
                   <view class="card-keywords-mini">
                     <text
-                      v-for="kw in item.card.keywords.slice(0, 3)"
+                      v-for="kw in item.card.keywords.slice(0, appConfig.KEYWORD_DISPLAY_LIMIT)"
                       :key="kw"
                       class="keyword-dot"
                     >{{ kw }}</text>

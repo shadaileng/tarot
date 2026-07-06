@@ -4,6 +4,7 @@ import { useCardStore } from '@/store'
 import { isLoggedIn, getUserInfo, initAuth, login } from '@/services/auth'
 import { checkBackendHealth } from '@/services/reading'
 import { loadPageSections } from '@/services/page-sections'
+import { loadAppConfig, appConfig } from '@/services/app-config'
 import { resetAuthRefreshLock } from '@/utils/request'
 import { initClientLogger, destroyClientLogger, log } from '@/services/client-logger'
 
@@ -26,7 +27,7 @@ onLaunch(() => {
       try {
         const result = await login()
         console.log('✅ 自动登录成功', result.user.nickname)
-        uni.showToast({ title: '登录已恢复', icon: 'success', duration: 1500 })
+        uni.showToast({ title: '登录已恢复', icon: 'success', duration: appConfig.TOAST_DURATION_SHORT })
       } catch (err) {
         console.warn('⚠️ 自动登录失败', err)
       } finally {
@@ -47,6 +48,9 @@ onLaunch(() => {
 
     // 全局健康检查：尽早检测后端服务状态
     store.setBackendStatus(await checkBackendHealth())
+
+    // 加载小程序远程配置（与 pageSections 并行）
+    loadAppConfig()
 
     // 加载页面区域可见性配置
     loadPageSections()

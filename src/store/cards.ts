@@ -8,6 +8,7 @@ import { isLoggedIn } from '@/services/auth'
 import { syncRecordToCloud, pullAndMerge, deleteCloudRecord, updateCloudRecordInterpretation } from '@/services/record-sync'
 import { createReadingContext, createPipeline } from './pipeline'
 import { log, logError, startTrace, endTrace } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 /** 生成唯一 ID */
 function generateId(): string {
@@ -147,8 +148,8 @@ export const useCardStore = defineStore('cards', () => {
       })
 
       // 最多保留 100 条记录
-      if (records.value.length > 100) {
-        records.value = records.value.slice(0, 100)
+      if (records.value.length > appConfig.MAX_LOCAL_RECORDS) {
+        records.value = records.value.slice(0, appConfig.MAX_LOCAL_RECORDS)
       }
 
       // 持久化到本地存储
@@ -256,7 +257,7 @@ export const useCardStore = defineStore('cards', () => {
         uni.showToast({
           title: '已取消卡牌解读，额度已退还',
           icon: 'none',
-          duration: 2000,
+          duration: appConfig.TOAST_DURATION_DEFAULT,
         })
       } else {
         log('reading', 'cancel_reading', 'info', { result: 'success', data: { taskId: record.taskId } })

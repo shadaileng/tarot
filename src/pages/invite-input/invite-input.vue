@@ -5,6 +5,7 @@ import { navBack, showToast } from '@/utils'
 import { bindReferral, fetchInviteRecords } from '@/services/user-stats'
 import type { InviterInfo } from '@/types'
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 const code = ref('')
 const loading = ref(false)
@@ -26,8 +27,8 @@ onShow(async () => {
 
 async function doBind() {
   const trimmed = code.value.trim()
-  if (!trimmed || trimmed.length !== 6) {
-    error.value = '请输入 6 位邀请码'
+  if (!trimmed || trimmed.length !== appConfig.INVITE_CODE_LENGTH) {
+    error.value = `请输入 ${appConfig.INVITE_CODE_LENGTH} 位邀请码`
     return
   }
   startTrace()
@@ -69,7 +70,7 @@ async function doBind() {
             v-model="code"
             class="code-input"
             placeholder="请输入 6 位邀请码（区分大小写）"
-            maxlength="6"
+            :maxlength="appConfig.INVITE_CODE_LENGTH"
             auto-focus
             @input="error = ''"
           />
@@ -79,7 +80,7 @@ async function doBind() {
 
         <button
           class="submit-btn"
-          :disabled="loading || code.trim().length !== 6"
+          :disabled="loading || code.trim().length !== appConfig.INVITE_CODE_LENGTH"
           @click="doBind"
         >
           {{ loading ? '提交中...' : '确认绑定' }}

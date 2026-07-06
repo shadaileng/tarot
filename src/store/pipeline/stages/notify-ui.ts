@@ -1,4 +1,5 @@
 import type { PipelineStage, ReadingContext, StageResult, PipelineServices } from '../types'
+import { appConfig } from '@/services/app-config'
 
 /** Stage 8: 通知 UI 层 — 更新 currentReading、弹出 toast */
 export class NotifyUIStage implements PipelineStage {
@@ -21,7 +22,7 @@ export class NotifyUIStage implements PipelineStage {
 
     // 2. Toast 通知
     if (ctx.toastMessage) {
-      this.services.showToast(ctx.toastMessage, 'none', 2000)
+      this.services.showToast(ctx.toastMessage, 'none', appConfig.TOAST_DURATION_DEFAULT)
     }
 
     // 3. 更新全局加载/轮询状态

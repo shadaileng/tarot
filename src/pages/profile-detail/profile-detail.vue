@@ -9,6 +9,7 @@ import {
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 const userInfo = ref<UserInfo | null>(null)
 
@@ -216,7 +217,7 @@ function handleLogout() {
           v-else
           v-model="nicknameInput"
           class="form-input"
-          maxlength="30"
+          :maxlength="appConfig.NICKNAME_MAX_LENGTH"
           :focus="true"
           @blur="saveNickname"
           @confirm="saveNickname"

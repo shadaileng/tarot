@@ -7,12 +7,13 @@ import { navTo } from '@/utils'
 
 import { isLoggedIn } from '@/services/auth'
 import { sectionConfig } from '@/services/page-sections'
+import { appConfig } from '@/services/app-config'
 import TabBar from '@/components/TabBar/TabBar.vue'
 
 const store = useCardStore()
 const selectedSpread = ref<SpreadType>('single')
 const question = ref('')
-const useOnlineReading = ref(isLoggedIn())
+const useOnlineReading = ref(isLoggedIn() && appConfig.USE_ONLINE_READING_DEFAULT === 1)
 
 // 后台分层健康状态（从 store 读取，在 App.vue onLaunch 中检测）
 const backendStatus = computed(() => store.backendStatus)
@@ -32,7 +33,7 @@ const backendText = computed(() => {
 // 星空粒子
 const stars = ref<{ x: number; y: number; size: number; delay: number; duration: number; opacity: number }[]>([])
 onMounted(() => {
-  stars.value = Array.from({ length: 40 }, () => ({
+  stars.value = Array.from({ length: appConfig.STARFIELD_PARTICLE_COUNT }, () => ({
     x: Math.random() * 100,
     y: Math.random() * 100,
     size: 1 + Math.random() * 3,
@@ -145,7 +146,7 @@ function handleTabChange(path: string) {
           class="question-input"
           placeholder="点指兵兵，谁人做大兵..."
           placeholder-style="color: #6b5e53"
-          maxlength="200"
+          :maxlength="appConfig.QUESTION_MAX_LENGTH"
           :auto-height="true"
         />
         <text class="input-count">{{ question.length }}/200</text>

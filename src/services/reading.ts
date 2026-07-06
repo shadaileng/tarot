@@ -3,6 +3,7 @@
 import type { DrawnCard } from '@/types'
 import { apiPost, apiGet } from '@/utils/request'
 import { log } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 /** 从解读文本中提取综合解读部分 */
 function extractComprehensive(text: string): string | null {
@@ -46,7 +47,7 @@ async function startReading(question: string, cards: DrawnCard[]): Promise<strin
         keywords: c.card.keywords,
       })),
     },
-    { timeout: 10000, skipAuthRefresh: true },
+    { timeout: appConfig.READING_TIMEOUT, skipAuthRefresh: true },
   )
   // 持久化 taskId，支持重进页面后继续轮询
   uni.setStorageSync('pending_reading_taskId', data.taskId)
@@ -388,7 +389,7 @@ export async function checkBackendHealth(): Promise<BackendStatus> {
     const data = await apiGet<{ status?: string; worker?: string; gemini?: string }>(
       '/api/health',
       undefined,
-      { auth: false, timeout: 5000 }
+      { auth: false, timeout: appConfig.HEALTH_CHECK_TIMEOUT }
     )
     return {
       status: data.status || 'error',

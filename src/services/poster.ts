@@ -7,6 +7,7 @@ import type { DrawnCard } from '@/types'
 import { apiPost } from '@/utils/request'
 import { getStoredToken } from '@/utils/request'
 import { log, logInfo, logError } from '@/services/client-logger'
+import { appConfig } from '@/services/app-config'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -53,7 +54,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   // #ifdef H5
   let arrayBuffer: ArrayBuffer
   try {
-    arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: 60000 })
+    arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: appConfig.POSTER_TIMEOUT })
     logInfo('poster', 'poster_generate_success')
   } catch (err: any) {
     logError('poster', 'poster_generate_fail', err.message || '未知错误')
@@ -76,6 +77,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
       data: payload,
+      timeout: appConfig.POSTER_TIMEOUT,
       success: (res) => resolve(res),
       fail: (err) => reject(new Error(err.errMsg)),
     })

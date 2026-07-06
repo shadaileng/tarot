@@ -1,3 +1,5 @@
+import { appConfig } from '@/services/app-config'
+
 /** 格式化时间戳为日期字符串 */
 export function formatDate(ts: number): string {
   const d = new Date(ts)
@@ -47,5 +49,5 @@ export function switchTab(url: string) {
 
 /** 显示 Toast */
 export function showToast(title: string, icon: 'success' | 'error' | 'none' = 'none') {
-  uni.showToast({ title, icon, duration: 2000 })
+  uni.showToast({ title, icon, duration: appConfig.TOAST_DURATION_DEFAULT })
 }
