@@ -14,6 +14,33 @@ async function handleWechatLogin() {
   errorMsg.value = ''
   try {
     const result = await login()
+
+    // 新用户且未完成资料设置 → 跳转引导页
+    if (result.isNewUser) {
+      uni.reLaunch({ url: '/pages/profile-setup/profile-setup' })
+      return
+    }
+
+    // 老用户：检查是否之前跳过且未完成设置
+    const skipped = uni.getStorageSync('profile_setup_skipped')
+    const done = uni.getStorageSync('profile_setup_done')
+    if (skipped && !done && !result.user.avatarUrl) {
+      uni.showModal({
+        title: '完善资料',
+        content: '设置头像和昵称，让别人认识你',
+        confirmText: '去设置',
+        cancelText: '跳过',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({ url: '/pages/profile-setup/profile-setup' })
+          } else {
+            emit('loginSuccess')
+          }
+        },
+      })
+      return
+    }
+
     console.log('[LOGIN] login success, user:', result.user.nickname)
     uni.showToast({ title: `欢迎，${result.user.nickname}`, icon: 'success' })
     emit('loginSuccess')

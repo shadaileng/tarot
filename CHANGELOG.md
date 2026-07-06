@@ -5,6 +5,18 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-07-06
+
+### Added
+
+- 新增 `pages/profile-setup` 首次登录引导页：微信 `<button open-type="chooseAvatar">` + `<input type="nickname">`，引导新用户设置头像和昵称
+- `LoginGuideWechat` 登录成功后检查 `isNewUser`，新用户自动跳转引导页
+- 老用户跳过设置后，下次登录仍会提示完善资料
+
+### Changed
+
+- 头像上传从 Canvas2D → Base64 方式改为 `uni.uploadFile` 文件上传（`POST /api/upload/avatar`），avatarUrl 存储文件路径而非 DataURL
+
 ## [2.11.0] - 2026-07-05
 
 ### Added

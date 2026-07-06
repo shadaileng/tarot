@@ -81,6 +81,7 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 | `pages/history/history` | 占卜记录（历史列表、删除） | ✅ |
 | `pages/profile/profile` | 我的（用户卡片 + 登录引导） | ✅ |
 | `pages/profile-detail/profile-detail` | 个人资料详情（编辑/邮箱绑定/退出） | - |
+| `pages/profile-setup/profile-setup` | 首次登录引导（设置头像+昵称） | - |
 
 > TabBar 为自定义组件（`src/components/TabBar/TabBar.vue`），`pages.json` 中 `"custom": true`。
 
@@ -92,12 +93,13 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 |------|------|------|
 | 我的 | `pages/profile/profile.vue` | TabBar「我的」，展示用户卡片（头像、昵称、脱敏 ID）或登录引导 |
 | 个人资料 | `pages/profile-detail/profile-detail.vue` | 资料编辑 + 邮箱绑定 + 退出登录 |
+| 首次引导 | `pages/profile-setup/profile-setup.vue` | 新用户首次登录引导设置头像和昵称（`chooseAvatar` + `type=nickname`） |
 
 ### 资料详情功能（`profile-detail.vue`）
 
 | 字段 | 交互方式 | 说明 |
 |------|----------|------|
-| 头像 | 点击 → 选择/拍摄 → Canvas2D → dataURL → 上传 | 微信端用 OffscreenCanvas 读取本地图片；H5 暂不支持 |
+| 头像 | 点击 → 选择/拍摄 → `uni.uploadFile` → 文件路径 | 通过 `POST /api/upload/avatar` 上传；H5 暂不支持 |
 | 昵称 | 内联编辑 → 失焦/确认保存 | 最长 30 字符 |
 | 性别 | Picker 选择器（保密/男/女） | 保存成功后同步显示 |
 | 生日 | Picker 日期选择器 | 范围 1900-01-01 至今天 |
@@ -118,6 +120,7 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 | `logout()` | — | 清除 token 和用户信息 |
 | `isLoggedIn()` | — | 检查本地 token 是否存在且未过期 |
 | `getUserInfo()` | — | 读取本地缓存的用户信息 |
+| `getToken()` | — | 获取本地 JWT token |
 | `initAuth(handler)` | — | 注册 401 全局回调 |
 
 ### 网络请求（`src/utils/request.ts`）

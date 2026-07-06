@@ -3,11 +3,13 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { navBack } from '@/utils'
 import {
-  isLoggedIn, getUserInfo, logout,
+  isLoggedIn, getUserInfo, logout, getToken,
   updateProfile, bindEmail as bindEmailApi,
   refreshUserInfo,
 } from '@/services/auth'
 import type { UserInfo } from '@/services/auth'
+
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 import { appConfig } from '@/services/app-config'
 
@@ -72,22 +74,25 @@ async function handleAvatarChange() {
     const tempPath = res.tempFilePaths[0]
     saving.value = true
 
-    // 使用 Canvas2D 读取图片，绕过 http://tmp/ 文件系统限制
-    const imgInfo = await uni.getImageInfo({ src: tempPath })
-    const canvas = wx.createOffscreenCanvas({ type: '2d', width: imgInfo.width, height: imgInfo.height })
-    const ctx = canvas.getContext('2d')!
-    const img = canvas.createImage()
-    const avatarUrl = await new Promise<string>((resolve, reject) => {
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, imgInfo.width, imgInfo.height)
-        const dataUrl = canvas.toDataURL('image/png')
-        resolve(dataUrl)
-      }
-      img.onerror = reject
-      img.src = tempPath
+    // 上传到后端（替代 Canvas2D → Base64）
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+      uni.uploadFile({
+        url: `${BACKEND_API}/api/upload/avatar`,
+        filePath: tempPath,
+        name: 'avatar',
+        header: { Authorization: `Bearer ${getToken()}` },
+        success: (res) => {
+          try {
+            resolve(JSON.parse(res.data as string))
+          } catch {
+            reject(new Error('上传响应解析失败'))
+          }
+        },
+        fail: (err) => reject(new Error(err.errMsg || '上传失败')),
+      })
     })
 
-    const result = await updateProfile({ avatarUrl })
+    const result = await updateProfile({ avatarUrl: uploadResult.url })
     userInfo.value = result.user
     logInfo('user_action', 'avatar_upload', { result: 'success', platform: 'mp-weixin' })
     uni.showToast({ title: '头像已更新', icon: 'success' })
