@@ -22,6 +22,7 @@ onShow(async () => {
     return
   }
   userInfo.value = await refreshUserInfo()
+  nicknameInput.value = userInfo.value?.nickname || ''
   syncGender()
 })
 
@@ -36,12 +37,6 @@ function syncGender() {
 }
 
 const nicknameInput = ref('')
-const editingNickname = ref(false)
-
-function startEditNickname() {
-  nicknameInput.value = userInfo.value?.nickname || ''
-  editingNickname.value = true
-}
 
 async function saveNickname() {
   const name = nicknameInput.value.trim()
@@ -56,15 +51,48 @@ async function saveNickname() {
     logError('user_action', 'nickname_save', err.message || '保存失败')
     uni.showToast({ title: err.message || '保存失败', icon: 'none' })
   } finally {
-    editingNickname.value = false
     saving.value = false
     endTrace()
   }
 }
 
-async function handleAvatarChange() {
-  // #ifdef MP-WEIXIN
+// ========== 头像（小程序：chooseAvatar） ==========
+function onChooseAvatar(e: any) {
+  const { avatarUrl: tempUrl } = e.detail
+  if (!tempUrl) return
   startTrace()
+  saving.value = true
+
+  const token = getToken()
+  new Promise<any>((resolve, reject) => {
+    uni.uploadFile({
+      url: `${BACKEND_API}/api/upload/avatar`,
+      filePath: tempUrl,
+      name: 'avatar',
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success: (res) => {
+        try { resolve(JSON.parse(res.data as string)) }
+        catch { reject(new Error('上传响应解析失败')) }
+      },
+      fail: (err) => reject(new Error(err.errMsg || '上传失败')),
+    })
+  }).then(async (uploadResult) => {
+    const result = await updateProfile({ avatarUrl: uploadResult.url })
+    userInfo.value = result.user
+    logInfo('user_action', 'avatar_upload', { result: 'success', platform: 'mp-weixin' })
+    uni.showToast({ title: '头像已更新', icon: 'success' })
+  }).catch((err: any) => {
+    if (err.errMsg?.includes('cancel')) return
+    logError('user_action', 'avatar_upload', err.message || '更换失败')
+    uni.showToast({ title: err.message || '更换失败', icon: 'none' })
+  }).finally(() => {
+    saving.value = false
+    endTrace()
+  })
+}
+
+// ========== 头像（H5：uni.chooseImage 降级） ==========
+async function handleAvatarChangeH5() {
   try {
     const res = await uni.chooseImage({
       count: 1,
@@ -73,8 +101,6 @@ async function handleAvatarChange() {
     })
     const tempPath = res.tempFilePaths[0]
     saving.value = true
-
-    // 上传到后端（替代 Canvas2D → Base64）
     const uploadResult = await new Promise<any>((resolve, reject) => {
       uni.uploadFile({
         url: `${BACKEND_API}/api/upload/avatar`,
@@ -82,33 +108,21 @@ async function handleAvatarChange() {
         name: 'avatar',
         header: { Authorization: `Bearer ${getToken()}` },
         success: (res) => {
-          try {
-            resolve(JSON.parse(res.data as string))
-          } catch {
-            reject(new Error('上传响应解析失败'))
-          }
+          try { resolve(JSON.parse(res.data as string)) }
+          catch { reject(new Error('上传响应解析失败')) }
         },
         fail: (err) => reject(new Error(err.errMsg || '上传失败')),
       })
     })
-
     const result = await updateProfile({ avatarUrl: uploadResult.url })
     userInfo.value = result.user
-    logInfo('user_action', 'avatar_upload', { result: 'success', platform: 'mp-weixin' })
     uni.showToast({ title: '头像已更新', icon: 'success' })
   } catch (err: any) {
     if (err.errMsg?.includes('cancel')) return
-    logError('user_action', 'avatar_upload', err.message || '更换失败')
     uni.showToast({ title: err.message || '更换失败', icon: 'none' })
   } finally {
     saving.value = false
-    endTrace()
   }
-  // #endif
-
-  // #ifdef H5
-  uni.showToast({ title: 'H5 端暂不支持头像上传', icon: 'none' })
-  // #endif
 }
 
 async function handleGenderChange(e: any) {
@@ -197,8 +211,27 @@ function handleLogout() {
 
 <template>
   <view v-if="userInfo" class="page-container detail-page">
-    <!-- 头像 -->
-    <view class="avatar-section" @click="handleAvatarChange">
+    <!-- 头像（小程序：chooseAvatar 按钮） -->
+    <!-- #ifdef MP-WEIXIN -->
+    <button
+      class="avatar-section"
+      open-type="chooseAvatar"
+      @chooseavatar="onChooseAvatar"
+    >
+      <image
+        v-if="userInfo.avatarUrl"
+        class="avatar-img"
+        :src="userInfo.avatarUrl"
+        mode="aspectFill"
+      />
+      <text v-else class="avatar-placeholder">🃏</text>
+      <text class="avatar-hint">点击更换头像</text>
+    </button>
+    <!-- #endif -->
+
+    <!-- 头像（H5：点击触发 uni.chooseImage） -->
+    <!-- #ifdef H5 -->
+    <view class="avatar-section" @click="handleAvatarChangeH5">
       <image
         v-if="userInfo.avatarUrl"
         class="avatar-img"
@@ -208,22 +241,19 @@ function handleLogout() {
       <text v-else class="avatar-placeholder">🃏</text>
       <text class="avatar-hint">点击更换头像</text>
     </view>
+    <!-- #endif -->
 
     <!-- 资料表单 -->
     <view class="form-section">
       <!-- 昵称 -->
       <view class="form-row">
         <text class="form-label">昵称</text>
-        <view v-if="!editingNickname" class="form-value-row" @click="startEditNickname">
-          <text class="form-value form-value-clickable">{{ userInfo.nickname }}</text>
-          <text class="form-edit-hint">✎</text>
-        </view>
         <input
-          v-else
           v-model="nicknameInput"
+          type="nickname"
           class="form-input"
           :maxlength="appConfig.NICKNAME_MAX_LENGTH"
-          :focus="true"
+          placeholder="设置昵称"
           @blur="saveNickname"
           @confirm="saveNickname"
         />
@@ -334,6 +364,14 @@ function handleLogout() {
   flex-direction: column;
   align-items: center;
   padding: 32rpx 0;
+  background: none;
+  border: none;
+  line-height: normal;
+  margin: 0;
+
+  &::after {
+    border: none;
+  }
 }
 
 .avatar-img {
@@ -393,11 +431,6 @@ function handleLogout() {
 
 .form-value-clickable {
   cursor: pointer;
-}
-
-.form-edit-hint {
-  font-size: 24rpx;
-  color: $text-muted;
 }
 
 .form-input {

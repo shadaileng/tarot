@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 头像上传从 Canvas2D → Base64 方式改为 `uni.uploadFile` 文件上传（`POST /api/upload/avatar`），avatarUrl 存储文件路径而非 DataURL
 
+### Fixed
+
+- `profile-detail` 头像更换改为微信原生 `<button open-type="chooseAvatar">`，替代 `uni.chooseImage`
+- `profile-detail` 昵称编辑改为 `<input type="nickname">`（微信键盘快填），替代手动 inline 编辑模式
+
 ## [2.11.0] - 2026-07-05
 
 ### Added
