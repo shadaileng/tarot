@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { showToast } from '@/utils'
+import { showToast, getFullUrl } from '@/utils'
 import { fetchInviteCode, fetchInviteRecords } from '@/services/user-stats'
 import type { InviteRecord } from '@/types'
 
@@ -73,7 +73,7 @@ onShow(() => {
       <view v-for="record in records" :key="record.id" class="record-card">
         <view class="record-avatar">
           <text v-if="!record.avatar_url">{{ record.nickname?.[0] || '?' }}</text>
-          <image v-else :src="record.avatar_url" mode="aspectFill" />
+          <image v-else :src="getFullUrl(record.avatar_url)" mode="aspectFill" />
         </view>
         <view class="record-info">
           <text class="record-name">{{ record.nickname || '匿名用户' }}</text>

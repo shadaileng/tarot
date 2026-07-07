@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { navBack } from '@/utils'
+import { navBack, getFullUrl } from '@/utils'
 import {
   isLoggedIn, getUserInfo, logout, getToken,
   updateProfile, bindEmail as bindEmailApi,
@@ -221,7 +221,7 @@ function handleLogout() {
       <image
         v-if="userInfo.avatarUrl"
         class="avatar-img"
-        :src="userInfo.avatarUrl"
+        :src="getFullUrl(userInfo.avatarUrl)"
         mode="aspectFill"
       />
       <text v-else class="avatar-placeholder">🃏</text>
@@ -235,7 +235,7 @@ function handleLogout() {
       <image
         v-if="userInfo.avatarUrl"
         class="avatar-img"
-        :src="userInfo.avatarUrl"
+        :src="getFullUrl(userInfo.avatarUrl)"
         mode="aspectFill"
       />
       <text v-else class="avatar-placeholder">🃏</text>

@@ -1,5 +1,18 @@
 import { appConfig } from '@/services/app-config'
 
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
+
+/**
+ * 将相对URL转换为完整URL
+ * 如果已经是完整URL（http/https开头），直接返回
+ * 否则拼接BACKEND_API前缀
+ */
+export function getFullUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `${BACKEND_API}${url}`
+}
+
 /** 格式化时间戳为日期字符串 */
 export function formatDate(ts: number): string {
   const d = new Date(ts)

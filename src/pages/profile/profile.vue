@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { navTo } from '@/utils'
+import { navTo, getFullUrl } from '@/utils'
 import TabBar from '@/components/TabBar/TabBar.vue'
 import LoginGuide from '@/components/LoginGuide/LoginGuide.vue'
 import {
@@ -86,7 +86,7 @@ function handleTabChange(path: string) {
         <image
           v-if="userInfo.avatarUrl"
           class="profile-avatar"
-          :src="userInfo.avatarUrl"
+          :src="getFullUrl(userInfo.avatarUrl)"
           mode="aspectFill"
         />
         <text v-else class="profile-avatar-placeholder">🃏</text>
