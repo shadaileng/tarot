@@ -5,6 +5,20 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-07-07
+
+### Added
+
+- 海报生成改为异步模式：提交任务后立即返回 taskId，前端轮询获取结果
+- 新增 `startPoster()`、`pollPosterResult()`、`cancelPoster()` 异步 API 调用函数
+- 新增 taskId 持久化到 `uni.storage`，支持页面重入恢复
+- 新增超时降级：90秒软超时后提示"任务仍在后台进行"
+- 新增取消功能：生成中可点击"取消生成"
+
+### Changed
+
+- `SharePoster.vue` 组件重构为异步轮询模式，替代原有同步阻塞模式
+
 ## [2.12.0] - 2026-07-06
 
 ### Added
