@@ -2,34 +2,12 @@
 // 基于 uni.request，自动注入 JWT token，处理 401 重新登录
 
 import { logWarn, logError, logInfo } from '@/services/client-logger'
+import { getStoredToken, removeStoredToken } from '@/utils/token'
+
+// 再导出 token 函数，兼容现有调用方（auth.ts、poster.ts 等）
+export { getStoredToken, setStoredToken, removeStoredToken } from '@/utils/token'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
-const TOKEN_KEY = 'auth_token'
-
-/**
- * 获取本地存储的 JWT token
- */
-export function getStoredToken(): string | null {
-  const raw = uni.getStorageSync(TOKEN_KEY)
-  return raw || null
-}
-
-/**
- * 保存 JWT token
- */
-export function setStoredToken(token: string): void {
-  uni.setStorageSync(TOKEN_KEY, token)
-  const verify = uni.getStorageSync(TOKEN_KEY)
-  console.log('[REQ] setStoredToken() verify:', verify ? 'OK' : 'FAILED')
-}
-
-/**
- * 清除 JWT token
- */
-export function removeStoredToken(): void {
-  console.warn('[REQ] removeStoredToken() called!')
-  uni.removeStorageSync(TOKEN_KEY)
-}
 
 interface RequestOptions {
   /** 是否携带 token（默认 true） */

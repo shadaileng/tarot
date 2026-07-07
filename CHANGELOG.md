@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `SharePoster.vue` 组件重构为异步轮询模式，替代原有同步阻塞模式
+- 提取 token 管理函数到 `utils/token.ts`，消除 `request ↔ auth ↔ client-logger` 循环依赖
 
 ## [2.12.0] - 2026-07-06
 

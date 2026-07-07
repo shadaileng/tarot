@@ -1,8 +1,12 @@
 // ========== 认证服务 ==========
 // 微信登录 / token 管理 / 用户信息存储 / 邮箱绑定 / 资料更新
 
-import { apiPost, apiGet, apiPut, getStoredToken, setStoredToken, removeStoredToken, setUnauthorizedHandler } from '@/utils/request'
+import { apiPost, apiGet, apiPut, setUnauthorizedHandler } from '@/utils/request'
+import { getStoredToken, setStoredToken, removeStoredToken, isLoggedIn as _isLoggedIn, getToken as _getToken } from '@/utils/token'
 import { log, logInfo, logError } from '@/services/client-logger'
+
+// 再导出 token 函数，兼容现有调用方（client-logger、record-sync、cards 等）
+export { isLoggedIn, getToken } from '@/utils/token'
 
 // ========== 类型 ==========
 
@@ -26,12 +30,7 @@ export interface LoginResult {
 
 const USER_KEY = 'user_info'
 
-// ========== Token 管理 ==========
-
-/** 获取本地 token */
-export function getToken(): string | null {
-  return getStoredToken()
-}
+// ========== 用户信息 ==========
 
 /** 获取本地用户信息 */
 export function getUserInfo(): UserInfo | null {
@@ -46,48 +45,6 @@ export function getUserInfo(): UserInfo | null {
 /** 保存用户信息 */
 function setUserInfo(user: UserInfo): void {
   uni.setStorageSync(USER_KEY, JSON.stringify(user))
-}
-
-/** 检查是否已登录 */
-export function isLoggedIn(): boolean {
-  const token = getToken()
-  if (!token) return false
-  const expired = isTokenExpired(token)
-  console.log('[AUTH] isLoggedIn() isTokenExpired:', expired, '→ result:', !expired)
-  return !expired
-}
-
-/** Base64 URL 解码（兼容微信小程序，不依赖 atob） */
-function base64UrlDecode(str: string): string {
-  let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
-  while (base64.length % 4) base64 += '='
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-  let result = ''
-  for (let i = 0; i < base64.length; i += 4) {
-    const a = chars.indexOf(base64[i])
-    const b = chars.indexOf(base64[i + 1])
-    const c = chars.indexOf(base64[i + 2])
-    const d = chars.indexOf(base64[i + 3])
-    result += String.fromCharCode((a << 2) | (b >> 4))
-    if (c !== 64) result += String.fromCharCode(((b & 15) << 4) | (c >> 2))
-    if (d !== 64) result += String.fromCharCode(((c & 3) << 6) | d)
-  }
-  // 处理 UTF-8 多字节字符（如中文昵称）
-  return decodeURIComponent(escape(result))
-}
-
-/** 简单 JWT 过期检测（不验证签名，仅检查 exp） */
-function isTokenExpired(token: string): boolean {
-  try {
-    const payloadBase64 = token.split('.')[1]
-    const payload = JSON.parse(base64UrlDecode(payloadBase64))
-    console.log('[AUTH] isTokenExpired() payload.exp:', payload.exp, 'Date.now():', Date.now())
-    if (!payload.exp) return false
-    return Date.now() >= payload.exp * 1000
-  } catch (err) {
-    console.error('[AUTH] isTokenExpired() PARSE FAILED:', err)
-    return true // 解析失败认为已过期
-  }
 }
 
 /** 登出 */

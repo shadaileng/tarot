@@ -15,7 +15,7 @@ tarot-miniprogram/
 │   ├── store/        # Pinia 状态管理
 │   ├── data/         # 静态数据（牌组数据 / 牌阵配置）
 │   ├── types/        # TypeScript 类型定义
-│   ├── utils/        # 工具函数
+│   ├── utils/        # 工具函数（token / request / poster）
 │   ├── styles/       # 全局样式 & 设计 Token
 │   ├── static/       # 静态资源（图片）
 │   ├── pages.json    # 路由 & TabBar 配置
@@ -122,6 +122,14 @@ ReadingRecord { id, spreadType, spreadName, cards: DrawnCard[], question, timest
 | `getUserInfo()` | — | 读取本地缓存的用户信息 |
 | `getToken()` | — | 获取本地 JWT token |
 | `initAuth(handler)` | — | 注册 401 全局回调 |
+
+### Token 管理（`src/utils/token.ts`）
+
+- JWT token 存储 / 读取 / 过期检测
+- `getStoredToken()` / `setStoredToken()` / `removeStoredToken()` — token 持久化
+- `isLoggedIn()` — 检查 token 存在且未过期（解析 JWT exp 字段）
+- `getToken()` — 获取本地 token（`getStoredToken` 别名）
+- 独立模块，打破 `request ↔ auth ↔ client-logger` 循环依赖
 
 ### 网络请求（`src/utils/request.ts`）
 

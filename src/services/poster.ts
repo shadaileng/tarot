@@ -5,7 +5,7 @@
 import type { PosterData } from '@/utils/poster/types'
 import type { DrawnCard } from '@/types'
 import { apiPost } from '@/utils/request'
-import { getStoredToken } from '@/utils/request'
+import { getStoredToken } from '@/utils/token'
 import { log, logInfo, logError } from '@/services/client-logger'
 import { appConfig } from '@/services/app-config'
 

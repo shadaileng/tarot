@@ -1,8 +1,9 @@
 // ========== 客户端日志服务 ==========
 // 缓冲区 + 批量上报 + 脱敏 + 去重 + 设备指纹
 // 不依赖 request.ts，直接用 uni.request 发送，避免循环依赖
+// 注意：从 utils/token.ts 导入而非 services/auth.ts，打破 request→client-logger→auth 循环
 
-import { isLoggedIn, getToken } from '@/services/auth'
+import { isLoggedIn, getToken } from '@/utils/token'
 
 // ========== 类型 ==========
 export type EventLevel = 'info' | 'warn' | 'error'
