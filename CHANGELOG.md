@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `profile-detail` 头像更换改为微信原生 `<button open-type="chooseAvatar">`，替代 `uni.chooseImage`
 - `profile-detail` 昵称编辑改为 `<input type="nickname">`（微信键盘快填），替代手动 inline 编辑模式
+- 修复更换头像后头像无法显示的问题：相对路径转完整URL（新增 `getFullUrl` 工具函数）
 
 ## [2.11.0] - 2026-07-05
 
