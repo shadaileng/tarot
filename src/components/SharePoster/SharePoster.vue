@@ -2,7 +2,7 @@
 import { ref, watch, nextTick, onMounted } from 'vue'
 import type { DrawnCard } from '@/types'
 import { generatePoster, startPoster, pollPosterResult, cancelPoster } from '@/services/poster'
-import { isLoggedIn } from '@/services/auth'
+
 import type { PosterData } from '@/utils/poster/types'
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
 
@@ -311,11 +311,6 @@ watch(
         return
       }
 
-      // 未登录给错误提示，不自动引导登录
-      if (!isLoggedIn()) {
-        posterError.value = '请先登录后再生成海报'
-        return
-      }
       nextTick(() => setTimeout(() => generatePosterImage(), 300))
     }
   },

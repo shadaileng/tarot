@@ -180,12 +180,8 @@ function handleNewReading() {
   navTo('/pages/draw/draw')
 }
 
-/** 生成分享海报 — 未登录时给 Toast 提示 */
+/** 生成分享海报 */
 function handleSharePoster() {
-  if (!isLoggedIn()) {
-    uni.showToast({ title: '请先登录后再生成海报', icon: 'none' })
-    return
-  }
   startTrace()
   logInfo('poster', 'poster_modal_open', { isLoggedIn: isLoggedIn() })
   posterVisible.value = true

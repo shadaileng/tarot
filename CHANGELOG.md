@@ -5,6 +5,12 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-07-07
+
+### Changed
+
+- 放开未登录用户生成海报的限制：移除 `result.vue` 和 `SharePoster.vue` 中的登录检查，未登录用户也可直接生成海报
+
 ## [2.13.0] - 2026-07-07
 
 ### Added
