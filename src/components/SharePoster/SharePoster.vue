@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue'
 import type { DrawnCard } from '@/types'
-import { generatePoster } from '@/services/poster'
+import { generatePoster, startPoster, pollPosterResult, cancelPoster } from '@/services/poster'
 import { isLoggedIn } from '@/services/auth'
 import type { PosterData } from '@/utils/poster/types'
 import { logInfo, logError, startTrace, endTrace } from '@/services/client-logger'
+
+const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
 const props = defineProps<{
   visible: boolean
@@ -25,6 +27,8 @@ const posterUrl = ref('')
 const posterSavePath = ref('')
 const isSaving = ref(false)
 const posterError = ref('')
+const currentTaskId = ref('')
+const polling = ref(false)
 
 const currentTheme = ref<'dark' | 'light'>('dark')
 
@@ -35,6 +39,8 @@ function toggleTheme() {
   posterUrl.value = ''
   posterSavePath.value = ''
   posterError.value = ''
+  currentTaskId.value = ''
+  uni.removeStorageSync('pending_poster_taskId')
   nextTick(() => generatePosterImage())
 }
 
@@ -55,7 +61,7 @@ function isAuthError(err: any): boolean {
   return msg === 'UNAUTHORIZED' || msg.includes('Unauthorized') || msg.includes('缺少认证')
 }
 
-/** 调用后端海报微服务生成海报 */
+/** 调用后端海报微服务生成海报（异步模式） */
 async function generatePosterImage() {
   if (posterReady.value) return
 
@@ -80,11 +86,31 @@ async function generatePosterImage() {
       template,
     }
 
-    const result = await generatePoster(data)
-    posterUrl.value = result.url
-    posterSavePath.value = result.savePath || ''
-    posterReady.value = true
+    // 1. 提交异步任务
+    const { taskId } = await startPoster(data)
+    currentTaskId.value = taskId
+
+    // 2. 持久化 taskId（支持页面重入）
+    uni.setStorageSync('pending_poster_taskId', taskId)
+
+    // 3. 轮询等待结果
+    const result = await pollPosterTask(taskId)
+
+    // 4. 清理持久化的 taskId
+    uni.removeStorageSync('pending_poster_taskId')
+
+    // 5. 处理结果
+    if (result.status === 'completed' && result.cacheKey) {
+      await downloadAndSavePoster(result.cacheKey)
+    } else if (result.status === 'failed') {
+      posterError.value = result.error || '生成失败，请重试'
+    } else if (result.status === 'pending' || result.status === 'rendering') {
+      posterError.value = '生成超时，任务仍在后台进行，稍后可重新打开查看'
+    }
   } catch (e: any) {
+    // 清理 taskId
+    uni.removeStorageSync('pending_poster_taskId')
+
     logError('poster', 'poster_generate_fail', e?.message || '未知错误')
     console.error('[SharePoster] 海报生成失败:', e)
     if (isAuthError(e)) {
@@ -96,6 +122,75 @@ async function generatePosterImage() {
     }
   } finally {
     endTrace()
+  }
+}
+
+/** 轮询海报任务 */
+async function pollPosterTask(taskId: string, maxWaitMs = 90000, pollInterval = 2000) {
+  const startTime = Date.now()
+  polling.value = true
+
+  try {
+    while (Date.now() - startTime < maxWaitMs) {
+      const result = await pollPosterResult(taskId)
+
+      if (result.status === 'completed' || result.status === 'failed') {
+        return result
+      }
+
+      // 等待后继续轮询
+      await new Promise(resolve => setTimeout(resolve, pollInterval))
+    }
+
+    // 软超时：返回当前状态，不清除 taskId
+    return { status: 'pending' as const }
+  } finally {
+    polling.value = false
+  }
+}
+
+/** 下载并保存海报 */
+async function downloadAndSavePoster(cacheKey: string) {
+  // #ifdef MP-WEIXIN
+  const token = uni.getStorageSync('auth_token')
+  const dlRes = await new Promise<any>((resolve, reject) => {
+    uni.downloadFile({
+      url: `${BACKEND_API}/api/poster/${cacheKey}`,
+      header: token ? { 'Authorization': `Bearer ${token}` } : {},
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (dlRes.statusCode !== 200) {
+    throw new Error(`海报下载失败 (${dlRes.statusCode})`)
+  }
+
+  const fs = uni.getFileSystemManager()
+  const data = fs.readFileSync(dlRes.tempFilePath)
+  const savePath = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
+  fs.writeFileSync(savePath, data)
+
+  posterUrl.value = dlRes.tempFilePath
+  posterSavePath.value = savePath
+  posterReady.value = true
+  // #endif
+
+  // #ifdef H5
+  posterUrl.value = `${BACKEND_API}/api/poster/${cacheKey}`
+  posterReady.value = true
+  // #endif
+}
+
+/** 取消海报生成 */
+async function handleCancel() {
+  if (!currentTaskId.value) return
+
+  try {
+    await cancelPoster(currentTaskId.value)
+    uni.removeStorageSync('pending_poster_taskId')
+    posterError.value = '已取消生成'
+  } catch (e) {
+    // 忽略错误
   }
 }
 
@@ -195,6 +290,27 @@ watch(
       posterUrl.value = ''
       posterSavePath.value = ''
       posterError.value = ''
+      currentTaskId.value = ''
+
+      // 检查是否有未完成的任务
+      const pendingTaskId = uni.getStorageSync('pending_poster_taskId')
+      if (pendingTaskId) {
+        // 恢复轮询
+        currentTaskId.value = pendingTaskId
+        pollPosterTask(pendingTaskId).then(result => {
+          uni.removeStorageSync('pending_poster_taskId')
+
+          if (result.status === 'completed' && result.cacheKey) {
+            downloadAndSavePoster(result.cacheKey)
+          } else if (result.status === 'failed') {
+            posterError.value = '生成失败，请重试'
+          } else {
+            posterError.value = '任务仍在进行中，请稍后重新打开'
+          }
+        })
+        return
+      }
+
       // 未登录给错误提示，不自动引导登录
       if (!isLoggedIn()) {
         posterError.value = '请先登录后再生成海报'
@@ -225,10 +341,13 @@ watch(
       <!-- 海报内容 -->
       <view class="poster-body">
         <view v-if="!posterReady" class="poster-loading">
-          <view v-if="!posterError" class="loading-spinner" />
+          <view v-if="!posterError && polling" class="loading-spinner" />
           <text class="loading-text">{{ posterError || '正在生成海报...' }}</text>
           <view v-if="posterError" class="poster-retry" @click="generatePosterImage">
             <text>点击重试</text>
+          </view>
+          <view v-if="!posterError && polling" class="poster-cancel" @click="handleCancel">
+            <text>取消生成</text>
           </view>
         </view>
 
@@ -383,6 +502,17 @@ watch(
   border-radius: $radius-md;
   font-size: 24rpx;
   color: $accent-gold;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.poster-cancel {
+  margin-top: 16rpx;
+  padding: 12rpx 32rpx;
+  font-size: 24rpx;
+  color: $text-muted;
 
   &:active {
     opacity: 0.7;

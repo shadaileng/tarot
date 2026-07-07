@@ -124,3 +124,53 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   return { url: dlRes.tempFilePath, savePath }
   // #endif
 }
+
+// ========== 异步模式 API ==========
+
+/** 提交异步海报任务 */
+export async function startPoster(data: PosterData): Promise<{ taskId: string }> {
+  const payload = toPosterPayload(data)
+  return apiPost('/api/poster/start', payload)
+}
+
+/** 轮询海报任务结果 */
+export async function pollPosterResult(taskId: string): Promise<{
+  taskId: string
+  status: 'pending' | 'rendering' | 'completed' | 'failed'
+  url?: string
+  cacheKey?: string
+  error?: string
+}> {
+  const token = getStoredToken()
+  const res = await new Promise<any>((resolve, reject) => {
+    uni.request({
+      url: `${BACKEND_API}/api/poster/result/${taskId}`,
+      method: 'GET',
+      header: token ? { 'Authorization': `Bearer ${token}` } : {},
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (res.statusCode === 401) throw new Error('UNAUTHORIZED')
+  if (res.statusCode !== 200) {
+    throw new Error(`查询海报任务失败 (${res.statusCode})`)
+  }
+  return res.data
+}
+
+/** 取消海报任务 */
+export async function cancelPoster(taskId: string): Promise<void> {
+  const token = getStoredToken()
+  const res = await new Promise<any>((resolve, reject) => {
+    uni.request({
+      url: `${BACKEND_API}/api/poster/cancel/${taskId}`,
+      method: 'POST',
+      header: token ? { 'Authorization': `Bearer ${token}` } : {},
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (res.statusCode !== 200) {
+    throw new Error(`取消海报任务失败 (${res.statusCode})`)
+  }
+}
