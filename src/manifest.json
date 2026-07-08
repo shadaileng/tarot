@@ -15,7 +15,8 @@
     },
     "usingComponents": true,
     "lazyCodeLoading": "requiredComponents",
-    "darkmode": false
+    "darkmode": false,
+    "__usePrivacyCheck__": true
   },
   "uniStatistics": {
     "enable": false

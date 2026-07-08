@@ -7,6 +7,8 @@ import { loadPageSections } from '@/services/page-sections'
 import { loadAppConfig, appConfig } from '@/services/app-config'
 import { resetAuthRefreshLock } from '@/utils/request'
 import { initClientLogger, destroyClientLogger, log } from '@/services/client-logger'
+import { registerPrivacyListener } from '@/utils/privacy'
+import PrivacyModal from '@/components/PrivacyModal/PrivacyModal.vue'
 
 // 标记是否为冷启动（onLaunch 首次触发）
 let isColdLaunch = true
@@ -54,6 +56,9 @@ onLaunch(() => {
 
     // 加载页面区域可见性配置
     loadPageSections()
+
+    // 注册隐私授权监听（必须在任何可能触发隐私API的操作之前）
+    registerPrivacyListener()
   }, 0)
 
   // 屏蔽框架内部 showShareMenu 权限报错（appId 审核通过后删除）
@@ -88,6 +93,11 @@ onHide(() => {
   destroyClientLogger()
 })
 </script>
+
+<template>
+  <!-- 隐私协议弹窗（全局唯一） -->
+  <PrivacyModal />
+</template>
 
 <style>
 @import '@/app.css';
