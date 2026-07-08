@@ -7,8 +7,6 @@ import { loadPageSections } from '@/services/page-sections'
 import { loadAppConfig, appConfig } from '@/services/app-config'
 import { resetAuthRefreshLock } from '@/utils/request'
 import { initClientLogger, destroyClientLogger, log } from '@/services/client-logger'
-import { registerPrivacyListener } from '@/utils/privacy'
-import PrivacyModal from '@/components/PrivacyModal/PrivacyModal.vue'
 
 // 标记是否为冷启动（onLaunch 首次触发）
 let isColdLaunch = true
@@ -19,10 +17,6 @@ onLaunch(() => {
   // 异步初始化（延迟到框架页面栈初始化完成后执行，避免自定义 tabBar + async onLaunch
   // 触发微信 SDK 3.x "appLaunch with non-empty page stack" 内部错误）
   setTimeout(async () => {
-    // 注册隐私授权监听（必须在任何 await 和可能触发隐私API的操作之前，
-    // 否则存在 1~4 秒空窗期，导致隐私弹窗不显示、保存按钮卡死）
-    registerPrivacyListener()
-
     // 最早初始化日志服务
     initClientLogger()
 
@@ -96,8 +90,6 @@ onHide(() => {
 </script>
 
 <template>
-  <!-- 隐私协议弹窗（全局唯一） -->
-  <PrivacyModal />
 </template>
 
 <style>
