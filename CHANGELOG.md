@@ -5,6 +5,13 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.3] - 2026-07-08
+
+### Fixed
+
+- 修复隐私监听注册时机导致弹窗不显示：`registerPrivacyListener()` 移到 `setTimeout(0)` 第一行
+- `savePoster()` 增加 10 秒超时保护，防止隐私API卡死导致按钮永久"保存中"
+
 ## [2.15.2] - 2026-07-08
 
 ### Fixed
