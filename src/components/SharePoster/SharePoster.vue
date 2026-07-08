@@ -200,17 +200,33 @@ async function savePoster() {
   startTrace()
   isSaving.value = true
   logInfo('poster', 'poster_save_click')
+
+  // 超时保护：10秒内无回调则重置 isSaving，防止隐私API卡死导致按钮永久"保存中"
+  let saveTimedOut = false
+  const saveTimeout = setTimeout(() => {
+    if (isSaving.value) {
+      saveTimedOut = true
+      isSaving.value = false
+      uni.showToast({ title: '保存超时，请重试', icon: 'none' })
+      endTrace()
+    }
+  }, 10000)
+
   try {
     // #ifdef MP-WEIXIN
     await new Promise<void>((resolve) => {
       uni.saveImageToPhotosAlbum({
         filePath: posterSavePath.value || posterUrl.value,
         success: () => {
+          if (saveTimedOut) return
+          clearTimeout(saveTimeout)
           logInfo('poster', 'poster_save_success', { platform: 'mp-weixin' })
           uni.showToast({ title: '已保存到相册', icon: 'success' })
           resolve()
         },
         fail: (err: any) => {
+          if (saveTimedOut) return
+          clearTimeout(saveTimeout)
           if (err.errMsg.includes('auth deny')) {
             logError('poster', 'poster_save_fail', 'auth_deny', { platform: 'mp-weixin' })
             uni.showModal({
@@ -232,6 +248,7 @@ async function savePoster() {
     // #endif
 
     // #ifdef H5
+    clearTimeout(saveTimeout)
     const link = document.createElement('a')
     link.download = 'tarot-poster.png'
     link.href = posterUrl.value
@@ -242,11 +259,15 @@ async function savePoster() {
     uni.showToast({ title: '已开始下载', icon: 'success' })
     // #endif
   } catch (e) {
+    clearTimeout(saveTimeout)
     logError('poster', 'poster_save_fail', 'exception', { platform: 'unknown', errMsg: String(e) })
     console.error('保存海报失败:', e)
     uni.showToast({ title: '保存失败', icon: 'error' })
   } finally {
-    isSaving.value = false
+    if (!saveTimedOut) {
+      clearTimeout(saveTimeout)
+      isSaving.value = false
+    }
     endTrace()
   }
 }

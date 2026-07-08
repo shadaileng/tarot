@@ -19,6 +19,10 @@ onLaunch(() => {
   // 异步初始化（延迟到框架页面栈初始化完成后执行，避免自定义 tabBar + async onLaunch
   // 触发微信 SDK 3.x "appLaunch with non-empty page stack" 内部错误）
   setTimeout(async () => {
+    // 注册隐私授权监听（必须在任何 await 和可能触发隐私API的操作之前，
+    // 否则存在 1~4 秒空窗期，导致隐私弹窗不显示、保存按钮卡死）
+    registerPrivacyListener()
+
     // 最早初始化日志服务
     initClientLogger()
 
@@ -56,9 +60,6 @@ onLaunch(() => {
 
     // 加载页面区域可见性配置
     loadPageSections()
-
-    // 注册隐私授权监听（必须在任何可能触发隐私API的操作之前）
-    registerPrivacyListener()
   }, 0)
 
   // 屏蔽框架内部 showShareMenu 权限报错（appId 审核通过后删除）
