@@ -43,7 +43,12 @@ export function agreePrivacy() {
  * 用户拒绝隐私授权
  */
 export function rejectPrivacy() {
-  privacyResolve = null
+  if (privacyResolve) {
+    // 调用 resolve({ event: 'disagree' }) 告知微信用户拒绝
+    // 这样 uni.saveImageToPhotosAlbum 等隐私API会返回错误，Promise才会正确结束
+    privacyResolve({ event: 'disagree' })
+    privacyResolve = null
+  }
   uni.$emit('hidePrivacyModal')
   // 给出提示，10秒后可再次触发
   uni.showToast({
