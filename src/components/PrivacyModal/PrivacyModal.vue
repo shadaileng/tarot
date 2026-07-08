@@ -48,8 +48,7 @@ function handleViewContract() {
       <view class="privacy-actions">
         <button
           class="privacy-btn agree-btn"
-          open-type="agreePrivacyAuthorization"
-          @agreeprivacyauthorization="handleAgree"
+          @click="handleAgree"
         >
           同意
         </button>
