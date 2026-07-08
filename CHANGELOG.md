@@ -5,6 +5,19 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-07-07
+
+### Added
+
+- 新增微信小程序隐私API适配，解决 `saveImageToPhotosAlbum:fail appid privacy api banned` 错误
+- 新增 `privacy.ts` 隐私授权工具函数，支持 `wx.onNeedPrivacyAuthorization` 监听
+- 新增 `PrivacyModal.vue` 隐私协议弹窗组件，采用业界最佳实践（调用前弹窗授权）
+
+### Changed
+
+- `App.vue` 注册隐私授权监听，引入 PrivacyModal 组件
+- `manifest.json` 启用隐私检查配置（`__usePrivacyCheck__: true`）
+
 ## [2.14.0] - 2026-07-07
 
 ### Changed
