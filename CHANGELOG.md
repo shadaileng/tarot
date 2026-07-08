@@ -5,6 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.4] - 2026-07-08
+
+### Changed
+
+- 隐私API适配改用微信官方弹窗：删除自定义隐私弹窗逻辑（`privacy.ts`、`PrivacyModal.vue`），不注册 `wx.onNeedPrivacyAuthorization`，由微信自动弹出官方隐私授权弹窗
+
+### Removed
+
+- 移除 `src/utils/privacy.ts`（隐私授权工具函数）
+- 移除 `src/components/PrivacyModal/PrivacyModal.vue`（自定义隐私弹窗组件）
+
 ## [2.15.3] - 2026-07-08
 
 ### Fixed
