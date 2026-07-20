@@ -5,6 +5,17 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-07-20
+
+### Added
+
+- 新增测试基础设施：安装 Vitest + @vue/test-utils + happy-dom，配置 vitest.config.ts
+- Pipeline 流水线测试：ReadingPipeline engine + 6 个 Stage 单元测试（38 个用例）
+- Services 模块测试：reading / record-sync / auth / user-stats / client-logger（45 个用例）
+- Utils 工具函数测试：token / request / index（34 个用例）
+- 新增 CardSpread 牌阵布局组件：支持 single / three / celtic 三种牌阵
+- 新增 `pnpm test` / `pnpm test:watch` / `pnpm test:coverage` 测试命令
+
 ## [2.15.4] - 2026-07-08
 
 ### Changed

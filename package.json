@@ -1,13 +1,16 @@
 {
   "name": "tarot-miniprogram",
-  "version": "2.15.4",
+  "version": "2.16.0",
   "description": "卡牌小程序 - UniApp (Vue3)",
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin --host 0.0.0.0",
     "build:mp-weixin": "uni build -p mp-weixin",
     "dev:h5": "uni --host 0.0.0.0",
     "build:h5": "uni build",
-    "deploy:cf": "pnpm build:h5 && wrangler deploy"
+    "deploy:cf": "pnpm build:h5 && wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-5010220260604001",
@@ -24,13 +27,16 @@
     "@dcloudio/uni-cli-shared": "3.0.0-alpha-5010220260604001",
     "@dcloudio/uni-stacktracey": "3.0.0-alpha-5010220260604001",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5010220260604001",
+    "@vue/test-utils": "2",
     "autoprefixer": "^10.5.0",
+    "happy-dom": "^16.8.1",
     "postcss": "^8.5.15",
     "sass": "^1.71.1",
     "sharp": "^0.35.2",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.4.2",
     "vite": "5.2.8",
+    "vitest": "^3.2.7",
     "weapp-tailwindcss": "^5.0.6"
   }
 }
