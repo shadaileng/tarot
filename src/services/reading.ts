@@ -298,9 +298,9 @@ export async function checkBackendHealth(): Promise<BackendStatus> {
       { auth: false, timeout: appConfig.HEALTH_CHECK_TIMEOUT }
     )
     return {
-      status: data.status || 'error',
-      worker: data.worker || 'down',
-      gemini: data.gemini || 'unknown',
+      status: (data.status || 'error') as BackendStatus['status'],
+      worker: (data.worker || 'down') as BackendStatus['worker'],
+      gemini: (data.gemini || 'unknown') as BackendStatus['gemini'],
     }
   } catch {
     return { status: 'error', worker: 'down', gemini: 'unknown' }

@@ -89,7 +89,7 @@ async function wechatLogin(): Promise<LoginResult> {
     // #ifdef MP-WEIXIN
     logInfo('auth', 'wechat_login_start')
     wx.login({
-      success: async (res) => {
+      success: async (res: any) => {
         if (!res.code) {
           logError('auth', 'wechat_login_fail', '微信登录凭证获取失败')
           reject(new Error('获取微信登录凭证失败'))
@@ -106,7 +106,7 @@ async function wechatLogin(): Promise<LoginResult> {
           reject(err)
         }
       },
-      fail: (err) => {
+      fail: (err: any) => {
         logError('auth', 'wechat_login_fail', err.errMsg)
         reject(new Error(err.errMsg || '微信登录失败'))
       },
@@ -157,7 +157,7 @@ export async function emailRegister(email: string, password: string): Promise<Lo
  */
 export async function bindEmail(email: string, password: string): Promise<{ message: string; email: string }> {
   try {
-    const result = await apiPost(API_ENDPOINTS.AUTH.BIND_EMAIL, { email, password })
+    const result = await apiPost<{ message: string; email: string }>(API_ENDPOINTS.AUTH.BIND_EMAIL, { email, password })
     logInfo('auth', 'bind_email', { result: 'success' })
     return result
   } catch (err) {

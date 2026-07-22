@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import TarotCard from '@/components/TarotCard/TarotCard.vue'
+import TarotCard from '@/components/TarotCard/index.vue'
 import { spreadConfigs } from './spreads'
 import type { CardSpreadProps } from './types'
 

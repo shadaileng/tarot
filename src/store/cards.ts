@@ -29,6 +29,7 @@ function formatDate(ts: number): string {
 export const useCardStore = defineStore('cards', () => {
   // ========== State ==========
   const currentReading = ref<{
+    id?: string
     cards: DrawnCard[]
     spreadType: SpreadType
     question: string
@@ -219,6 +220,7 @@ export const useCardStore = defineStore('cards', () => {
       !!(record.interpretation && !record.fallbackReason)
     )
     currentReading.value = {
+      id: record.id,
       cards: record.cards,
       spreadType: record.spreadType,
       question: record.question,

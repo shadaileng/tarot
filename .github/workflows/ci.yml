@@ -18,7 +18,7 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: npx vue-tsc --noEmit
+      - run: pnpm vue-tsc --noEmit
 
   build:
     name: Build Verification

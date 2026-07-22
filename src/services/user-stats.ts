@@ -2,7 +2,7 @@
 // 签到 / 任务 / 邀请 / 统计 API
 
 import { apiPost, apiGet } from '@/utils/request'
-import type { UserLevelInfo, CheckinResult, CheckinStatus, UserTaskItem, InviteRecord, LevelDefinition } from '@/types'
+import type { UserLevelInfo, CheckinResult, CheckinStatus, UserTaskItem, InviteRecord, InviterInfo, LevelDefinition } from '@/types'
 import { API_ENDPOINTS } from '@/constants/api'
 
 export async function fetchUserStats(): Promise<UserLevelInfo> {

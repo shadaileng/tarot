@@ -25,7 +25,6 @@ const uniMock = {
   onShareTimeline: vi.fn(),
 }
 
-// @ts-expect-error: mock uni global
-globalThis.uni = uniMock
-globalThis.wx = undefined
-globalThis.__APP_VERSION__ = '2.15.4'
+vi.stubGlobal('uni', uniMock)
+vi.stubGlobal('wx', undefined)
+vi.stubGlobal('__APP_VERSION__', '2.15.4')

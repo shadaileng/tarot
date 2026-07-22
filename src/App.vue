@@ -58,7 +58,7 @@ onLaunch(() => {
 
   // 屏蔽框架内部 showShareMenu 权限报错（appId 审核通过后删除）
   // #ifdef MP-WEIXIN
-  wx.onError((err) => {
+  wx.onError((err: any) => {
     if (typeof err === 'string' && err.includes('showShareMenu')) return
   })
   // #endif

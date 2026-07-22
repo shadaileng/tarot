@@ -114,8 +114,9 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   try {
     const fs = uni.getFileSystemManager()
     const data = fs.readFileSync(dlRes.tempFilePath)
-    savePath = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
-    fs.writeFileSync(savePath, data)
+    const path = `${wx.env.USER_DATA_PATH}/poster-save-${Date.now()}.png`
+    fs.writeFileSync(path, data)
+    savePath = path
   } catch (e) {
     logError('poster', 'poster_generate_step_fail', String(e), { step: 'write_persist_file' })
     console.error('[poster] 写入持久文件失败:', e)

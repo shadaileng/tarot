@@ -16,7 +16,7 @@ export interface ClientEvent {
   level: EventLevel
   category: EventCategory
   event: string
-  result?: 'success' | 'fail' | 'degraded' | 'fallback'
+  result?: 'success' | 'fail' | 'degraded' | 'fallback' | 'error'
   action?: string
   schemaVersion: number
   data?: Record<string, any>

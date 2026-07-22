@@ -57,6 +57,10 @@ const tabList = [
   { pagePath: 'pages/profile/profile', text: '我的' },
 ]
 
+function handleToggleOnline(e: any) {
+  useOnlineReading.value = e.detail.value
+}
+
 function handleDraw() {
   // 触觉反馈
   // #ifdef MP-WEIXIN
@@ -149,7 +153,7 @@ onShareTimeline(() => ({
             :checked="useOnlineReading"
             color="#c9a96e"
             style="transform: scale(0.7);"
-            @change="useOnlineReading = $event.detail.value"
+              @change="handleToggleOnline"
           />
         </view>
       </view>

@@ -68,11 +68,12 @@ async function generatePosterImage() {
   startTrace()
   posterError.value = ''
   try {
+    let template: string
     // #ifdef H5
-    const template = 'default'
+    template = 'default'
     // #endif
     // #ifdef MP-WEIXIN
-    const template = 'wechat'
+    template = 'wechat'
     // #endif
 
     const data: PosterData = {

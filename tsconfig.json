@@ -19,5 +19,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["node_modules", "dist", "src/**/*.nvue"]
+  "exclude": ["node_modules", "dist", "src/**/*.nvue", "src/__tests__"]
 }

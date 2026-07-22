@@ -55,7 +55,7 @@ function handleScroll(e: any) {
 onMounted(() => {
   const query = uni.createSelectorQuery()
   query.select('.virtual-list').boundingClientRect((rect) => {
-    if (rect) {
+    if (rect && !Array.isArray(rect) && rect.height !== undefined) {
       containerHeight.value = rect.height
     }
   }).exec()

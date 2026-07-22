@@ -41,7 +41,7 @@ export function resetAuthRefreshLock(): void {
  * 内部请求方法
  */
 function request<T>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   url: string,
   data?: any,
   options: RequestOptions = {}
@@ -65,7 +65,7 @@ function request<T>(
   return new Promise((resolve, reject) => {
     uni.request({
       url: fullUrl,
-      method,
+      method: method as any,
       header,
       data,
       timeout: timeout ?? 15000,
