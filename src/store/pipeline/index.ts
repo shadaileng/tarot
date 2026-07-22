@@ -83,9 +83,9 @@ export function createPipeline(deps: {
   }
 
   return new ReadingPipeline(services)
-    .use(new CreateRecordStage(services))
+    .use(new CreateRecordStage())
     .use(new CheckLoginStage(services))
-    .use(new RouteSourceStage(services))
+    .use(new RouteSourceStage())
     .use(new FetchOnlineStage(services))
     .use(new FallbackLocalStage(services))
     .use(new ResumePollingStage(services))

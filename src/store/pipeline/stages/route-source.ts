@@ -1,10 +1,8 @@
-import type { PipelineStage, ReadingContext, StageResult, PipelineServices } from '../types'
+import type { PipelineStage, ReadingContext, StageResult } from '../types'
 
 /** Stage 3: 路由日志标记 */
 export class RouteSourceStage implements PipelineStage {
   name = 'RouteSource'
-
-  constructor(private services: PipelineServices) {}
 
   shouldRun(_ctx: ReadingContext): boolean {
     return true

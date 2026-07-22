@@ -31,9 +31,7 @@ export class FetchOnlineStage implements PipelineStage {
           ctx.uiState = 'polling'
         } else {
           // 配额/错误降级
-          const reason = (result.fallbackReason === 'quota' ? 'quota' : 'error') as 'quota' | 'error'
           ctx.fallbackReason = result.fallbackReason as 'quota' | 'error' || 'error'
-          void reason // 已赋值
           ctx.toastMessage = result.fallbackReason === 'quota'
             ? '今日分析额度已用完，已切换为本地分析'
             : '卡牌分析暂时不可用，已切换为本地分析'
