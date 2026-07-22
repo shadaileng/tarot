@@ -151,8 +151,9 @@ async function pollPosterTask(taskId: string, maxWaitMs = 90000, pollInterval = 
 
 /** 下载并保存海报 */
 async function downloadAndSavePoster(cacheKey: string) {
-  // #ifdef MP-WEIXIN
   const token = uni.getStorageSync('auth_token')
+
+  // #ifdef MP-WEIXIN
   const dlRes = await new Promise<any>((resolve, reject) => {
     uni.downloadFile({
       url: `${BACKEND_API}/api/poster/${cacheKey}`,
@@ -176,7 +177,23 @@ async function downloadAndSavePoster(cacheKey: string) {
   // #endif
 
   // #ifdef H5
-  posterUrl.value = `${BACKEND_API}/api/poster/${cacheKey}`
+  const response = await new Promise<any>((resolve, reject) => {
+    uni.request({
+      url: `${BACKEND_API}/api/poster/${cacheKey}`,
+      method: 'GET',
+      header: token ? { 'Authorization': `Bearer ${token}` } : {},
+      responseType: 'arraybuffer',
+      success: (res) => resolve(res),
+      fail: (err) => reject(new Error(err.errMsg)),
+    })
+  })
+  if (response.statusCode !== 200) {
+    throw new Error(`海报下载失败 (${response.statusCode})`)
+  }
+
+  const blob = new Blob([response.data as ArrayBuffer], { type: 'image/png' })
+  posterUrl.value = URL.createObjectURL(blob)
+  posterSavePath.value = cacheKey
   posterReady.value = true
   // #endif
 }
