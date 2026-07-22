@@ -38,5 +38,5 @@ jobs:
           VITE_BACKEND_API: ${{ vars.VITE_BACKEND_API }}
       - uses: cloudflare/wrangler-action@v3
         with:
-          api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --name=${{ vars.CLOUDFLARE_WORKER_NAME }}
