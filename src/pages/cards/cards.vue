@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { allCards, majorArcana, minorArcana } from '@/data/cards'
 import type { Card } from '@/types'
 import TabBar from '@/components/TabBar/TabBar.vue'
@@ -84,6 +85,18 @@ function getSuitLabel(type: string): string {
 function handleTabChange(path: string) {
   uni.switchTab({ url: '/' + path })
 }
+
+onShareAppMessage(() => ({
+  title: '塔罗牌牌库 - 78张牌的神秘世界',
+  path: '/pages/cards/cards',
+  imageUrl: '/static/share-default.png'
+}))
+
+onShareTimeline(() => ({
+  title: '塔罗牌牌库 - 78张牌的神秘世界',
+  query: '',
+  imageUrl: '/static/share-default.png'
+}))
 </script>
 
 <template>

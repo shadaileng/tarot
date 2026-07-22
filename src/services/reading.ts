@@ -4,6 +4,8 @@ import type { DrawnCard } from '@/types'
 import { apiPost, apiGet } from '@/utils/request'
 import { log } from '@/services/client-logger'
 import { appConfig } from '@/services/app-config'
+import { API_ENDPOINTS } from '@/constants/api'
+import { generateSummary } from '@/services/reading/local-summary'
 
 /** 从解读文本中提取综合解读部分 */
 function extractComprehensive(text: string): string | null {
@@ -35,7 +37,7 @@ export interface ReadingResult {
  */
 async function startReading(question: string, cards: DrawnCard[]): Promise<string> {
   const data = await apiPost<{ taskId: string; status: string }>(
-    '/api/reading/start',
+    API_ENDPOINTS.READING.START,
     {
       question,
       cards: cards.map((c) => ({
@@ -65,7 +67,7 @@ export async function pollTaskOnce(taskId: string): Promise<{
   warning?: string
   error?: string
 }> {
-  return apiGet(`/api/reading/result/${taskId}`, undefined, { skipAuthRefresh: true })
+  return apiGet(API_ENDPOINTS.READING.RESULT(taskId), undefined, { skipAuthRefresh: true })
 }
 
 /**
@@ -91,7 +93,7 @@ export async function cancelReading(taskId: string): Promise<{
   quotaRefunded: boolean
   message?: string
 }> {
-  return apiPost(`/api/reading/cancel/${taskId}`, {}, { skipAuthRefresh: true })
+  return apiPost(API_ENDPOINTS.READING.CANCEL(taskId), {}, { skipAuthRefresh: true })
 }
 
 /** 等待 */
@@ -244,7 +246,7 @@ export function generateLocalReading(question: string, cards: DrawnCard[]): stri
     return `📍 位置：${c.position} — ${c.card.name}（${orientation}）\n${contextHint}\n牌面含义：${meaning}`
   })
 
-  const summary = generateSummary(question, cards, category)
+  const summary = _generateSummary(question, cards, category)
 
   return `${parts.join('\n\n')}\n\n✨ 综合解读\n${summary}`
 }
@@ -254,41 +256,7 @@ export function generateLocalReading(question: string, cards: DrawnCard[]): stri
  */
 function generateSummaryOnly(question: string, cards: DrawnCard[]): string {
   const category = detectCategory(question)
-  const uprightCount = cards.filter((c) => c.orientation === 'upright').length
-  const reversedCount = cards.length - uprightCount
-  const dominant = uprightCount >= reversedCount ? '积极' : '挑战'
-
-  const mainCard = cards[cards.length - 1]
-  const mainKeyword = mainCard.card.keywords[0]
-
-  let summaryBody = ''
-  if (category === 'love') {
-    summaryBody = `关于你的感情问题「${question}」，从牌面整体来看，${dominant}的能量占主导。${
-      uprightCount >= reversedCount
-        ? '整体趋势向好，建议你保持开放和真诚的态度。'
-        : '虽然面临一些挑战，但逆位牌也暗示着成长的机会，勇敢面对问题才能突破。'
-    }${mainCard.card.name}作为关键牌，提醒你关注「${mainKeyword}」的力量。`
-  } else if (category === 'career') {
-    summaryBody = `关于你的事业问题「${question}」，牌面呈现${dominant}的态势。${
-      uprightCount >= reversedCount
-        ? '发展方向是积极的，抓住机遇，脚踏实地前行。'
-        : '前路有阻碍，但这也是审视自身策略的好时机，调整方向后更能走稳。'
-    }关键在于「${mainKeyword}」——${mainCard.card.name}给你的启示。`
-  } else if (category === 'study') {
-    summaryBody = `关于你的学业问题「${question}」，整体牌面${dominant}。${
-      uprightCount >= reversedCount
-        ? '学习状态良好，持续努力会有回报。'
-        : '可能遇到瓶颈，不妨换个方法或寻求帮助，逆位牌暗示突破需要新的视角。'
-    }记住「${mainKeyword}」的力量——这是${mainCard.card.name}给你的指引。`
-  } else {
-    summaryBody = `关于「${question}」，牌面整体呈现${dominant}的能量。${
-      uprightCount >= reversedCount
-        ? '积极的力量引导你前行，保持信心和行动力。'
-        : '挑战虽然存在，但每张逆位牌都在提醒你需要调整的方面，勇敢面对才能转逆为顺。'
-    }让「${mainKeyword}」成为你的指引——这是${mainCard.card.name}给你的启示。`
-  }
-
-  return `\n\n✨ 综合解读（本地补充）\n${summaryBody}`
+  return generateSummary({ question, cards, category, includePrefix: true, includeBody: true })
 }
 
 /**
@@ -296,76 +264,14 @@ function generateSummaryOnly(question: string, cards: DrawnCard[]): string {
  */
 function generateSummaryOnlyText(question: string, cards: DrawnCard[]): string {
   const category = detectCategory(question)
-  const uprightCount = cards.filter((c) => c.orientation === 'upright').length
-  const reversedCount = cards.length - uprightCount
-  const dominant = uprightCount >= reversedCount ? '积极' : '挑战'
-
-  const mainCard = cards[cards.length - 1]
-  const mainKeyword = mainCard.card.keywords[0]
-
-  if (category === 'love') {
-    return `关于你的感情问题「${question}」，从牌面整体来看，${dominant}的能量占主导。${
-      uprightCount >= reversedCount
-        ? '整体趋势向好，建议你保持开放和真诚的态度。'
-        : '虽然面临一些挑战，但逆位牌也暗示着成长的机会，勇敢面对问题才能突破。'
-    }${mainCard.card.name}作为关键牌，提醒你关注「${mainKeyword}」的力量。`
-  } else if (category === 'career') {
-    return `关于你的事业问题「${question}」，牌面呈现${dominant}的态势。${
-      uprightCount >= reversedCount
-        ? '发展方向是积极的，抓住机遇，脚踏实地前行。'
-        : '前路有阻碍，但这也是审视自身策略的好时机，调整方向后更能走稳。'
-    }关键在于「${mainKeyword}」——${mainCard.card.name}给你的启示。`
-  } else if (category === 'study') {
-    return `关于你的学业问题「${question}」，整体牌面${dominant}。${
-      uprightCount >= reversedCount
-        ? '学习状态良好，持续努力会有回报。'
-        : '可能遇到瓶颈，不妨换个方法或寻求帮助，逆位牌暗示突破需要新的视角。'
-    }记住「${mainKeyword}」的力量——这是${mainCard.card.name}给你的指引。`
-  } else {
-    return `关于「${question}」，牌面整体呈现${dominant}的能量。${
-      uprightCount >= reversedCount
-        ? '积极的力量引导你前行，保持信心和行动力。'
-        : '挑战虽然存在，但每张逆位牌都在提醒你需要调整的方面，勇敢面对才能转逆为顺。'
-    }让「${mainKeyword}」成为你的指引——这是${mainCard.card.name}给你的启示。`
-  }
+  return generateSummary({ question, cards, category, includePrefix: false, includeBody: true })
 }
 
 /**
  * 生成综合总结
  */
-function generateSummary(question: string, cards: DrawnCard[], category: string): string {
-  const uprightCount = cards.filter((c) => c.orientation === 'upright').length
-  const reversedCount = cards.length - uprightCount
-  const dominant = uprightCount >= reversedCount ? '积极' : '挑战'
-
-  const mainCard = cards[cards.length - 1] // 最后一张通常是"结果"或"未来"
-  const mainKeyword = mainCard.card.keywords[0]
-
-  if (category === 'love') {
-    return `关于你的感情问题「${question}」，从牌面整体来看，${dominant}的能量占主导。${
-      uprightCount >= reversedCount
-        ? '整体趋势向好，建议你保持开放和真诚的态度。'
-        : '虽然面临一些挑战，但逆位牌也暗示着成长的机会，勇敢面对问题才能突破。'
-    }${mainCard.card.name}作为关键牌，提醒你关注「${mainKeyword}」的力量。`
-  } else if (category === 'career') {
-    return `关于你的事业问题「${question}」，牌面呈现${dominant}的态势。${
-      uprightCount >= reversedCount
-        ? '发展方向是积极的，抓住机遇，脚踏实地前行。'
-        : '前路有阻碍，但这也是审视自身策略的好时机，调整方向后更能走稳。'
-    }关键在于「${mainKeyword}」——${mainCard.card.name}给你的启示。`
-  } else if (category === 'study') {
-    return `关于你的学业问题「${question}」，整体牌面${dominant}。${
-      uprightCount >= reversedCount
-        ? '学习状态良好，持续努力会有回报。'
-        : '可能遇到瓶颈，不妨换个方法或寻求帮助，逆位牌暗示突破需要新的视角。'
-    }记住「${mainKeyword}」的力量——这是${mainCard.card.name}给你的指引。`
-  } else {
-    return `关于「${question}」，牌面整体呈现${dominant}的能量。${
-      uprightCount >= reversedCount
-        ? '积极的力量引导你前行，保持信心和行动力。'
-        : '挑战虽然存在，但每张逆位牌都在提醒你需要调整的方面，勇敢面对才能转逆为顺。'
-    }让「${mainKeyword}」成为你的指引——这是${mainCard.card.name}给你的启示。`
-  }
+function _generateSummary(question: string, cards: DrawnCard[], category: string): string {
+  return generateSummary({ question, cards, category, includePrefix: false, includeBody: true })
 }
 
 /**
@@ -387,7 +293,7 @@ export interface BackendStatus {
 export async function checkBackendHealth(): Promise<BackendStatus> {
   try {
     const data = await apiGet<{ status?: string; worker?: string; gemini?: string }>(
-      '/api/health',
+      API_ENDPOINTS.READING.HEALTH,
       undefined,
       { auth: false, timeout: appConfig.HEALTH_CHECK_TIMEOUT }
     )

@@ -8,6 +8,7 @@ import { apiPost } from '@/utils/request'
 import { getStoredToken } from '@/utils/token'
 import { log, logInfo, logError } from '@/services/client-logger'
 import { appConfig } from '@/services/app-config'
+import { API_ENDPOINTS } from '@/constants/api'
 
 const BACKEND_API = (import.meta.env.VITE_BACKEND_API || '').replace(/\/+$/, '')
 
@@ -54,7 +55,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   // #ifdef H5
   let arrayBuffer: ArrayBuffer
   try {
-    arrayBuffer = await apiPost<ArrayBuffer>('/api/poster', payload, { responseType: 'arraybuffer', timeout: appConfig.POSTER_TIMEOUT })
+    arrayBuffer = await apiPost<ArrayBuffer>(API_ENDPOINTS.POSTER.GENERATE, payload, { responseType: 'arraybuffer', timeout: appConfig.POSTER_TIMEOUT })
     logInfo('poster', 'poster_generate_success')
   } catch (err: any) {
     logError('poster', 'poster_generate_fail', err.message || '未知错误')
@@ -70,7 +71,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   // Step 1: POST /api/poster/key → 从 JSON body 获取 cacheKey（不依赖 arraybuffer 响应头）
   const keyRes = await new Promise<any>((resolve, reject) => {
     uni.request({
-      url: `${BACKEND_API}/api/poster/key`,
+      url: `${BACKEND_API}${API_ENDPOINTS.POSTER.KEY}`,
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
@@ -97,7 +98,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
   // Step 2: 通过 GET 下载缓存海报 → tempFilePath（展示用）
   const dlRes = await new Promise<any>((resolve, reject) => {
     uni.downloadFile({
-      url: `${BACKEND_API}/api/poster/${cacheKey}`,
+      url: `${BACKEND_API}${API_ENDPOINTS.POSTER.DOWNLOAD(cacheKey)}`,
       header: token ? { 'Authorization': `Bearer ${token}` } : {},
       success: (res) => resolve(res),
       fail: (err) => reject(new Error(err.errMsg)),
@@ -130,7 +131,7 @@ export async function generatePoster(data: PosterData): Promise<{ url: string; s
 /** 提交异步海报任务 */
 export async function startPoster(data: PosterData): Promise<{ taskId: string }> {
   const payload = toPosterPayload(data)
-  return apiPost('/api/poster/start', payload)
+  return apiPost(API_ENDPOINTS.POSTER.START, payload)
 }
 
 /** 轮询海报任务结果 */
@@ -144,7 +145,7 @@ export async function pollPosterResult(taskId: string): Promise<{
   const token = getStoredToken()
   const res = await new Promise<any>((resolve, reject) => {
     uni.request({
-      url: `${BACKEND_API}/api/poster/result/${taskId}`,
+      url: `${BACKEND_API}${API_ENDPOINTS.POSTER.RESULT(taskId)}`,
       method: 'GET',
       header: token ? { 'Authorization': `Bearer ${token}` } : {},
       success: (res) => resolve(res),
@@ -163,7 +164,7 @@ export async function cancelPoster(taskId: string): Promise<void> {
   const token = getStoredToken()
   const res = await new Promise<any>((resolve, reject) => {
     uni.request({
-      url: `${BACKEND_API}/api/poster/cancel/${taskId}`,
+      url: `${BACKEND_API}${API_ENDPOINTS.POSTER.CANCEL(taskId)}`,
       method: 'POST',
       header: token ? { 'Authorization': `Bearer ${token}` } : {},
       success: (res) => resolve(res),

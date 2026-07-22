@@ -6,6 +6,7 @@ import { apiPost, apiGet, apiDelete, apiPatch } from '@/utils/request'
 import { isLoggedIn } from '@/services/auth'
 import { logInfo, logError, logWarn } from '@/services/client-logger'
 import { appConfig } from '@/services/app-config'
+import { API_ENDPOINTS } from '@/constants/api'
 
 // ========== 类型 ==========
 
@@ -40,7 +41,7 @@ export async function syncRecordToCloud(record: ReadingRecord): Promise<string |
   if (!isLoggedIn()) return null
 
   try {
-    const result = await apiPost<BackendRecord>('/api/user/records', {
+    const result = await apiPost<BackendRecord>(API_ENDPOINTS.RECORD.LIST, {
       spreadType: record.spreadType,
       question: record.question,
       cardsJson: JSON.stringify(record.cards),
@@ -68,7 +69,7 @@ async function fetchAllCloudRecords(): Promise<BackendRecord[]> {
   let page = 1
 
   while (true) {
-    const result = await apiGet<BackendRecordList>('/api/user/records', { page, limit: appConfig.RECORD_PAGE_SIZE }, { timeout: appConfig.SYNC_TIMEOUT })
+    const result = await apiGet<BackendRecordList>(API_ENDPOINTS.RECORD.LIST, { page, limit: appConfig.RECORD_PAGE_SIZE }, { timeout: appConfig.SYNC_TIMEOUT })
 
     allRecords.push(...result.records)
 
@@ -175,7 +176,7 @@ export async function deleteCloudRecord(backendId: string): Promise<boolean> {
   if (!isLoggedIn()) return false
 
   try {
-    await apiDelete(`/api/user/records/${backendId}`, { timeout: appConfig.SYNC_TIMEOUT })
+    await apiDelete(API_ENDPOINTS.RECORD.DETAIL(backendId), { timeout: appConfig.SYNC_TIMEOUT })
     logInfo('sync', 'record_delete_sync', { result: 'success' })
     return true
   } catch (err) {
@@ -196,7 +197,7 @@ export async function updateCloudRecordInterpretation(
   if (!isLoggedIn()) return false
 
   try {
-    await apiPatch(`/api/user/records/${backendId}`, { interpretation }, { timeout: appConfig.SYNC_TIMEOUT })
+    await apiPatch(API_ENDPOINTS.RECORD.DETAIL(backendId), { interpretation }, { timeout: appConfig.SYNC_TIMEOUT })
     logInfo('sync', 'update_cloud_interpretation', { result: 'success', backendId })
     return true
   } catch (err) {

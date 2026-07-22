@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { apiGet } from '@/utils/request'
+import { API_ENDPOINTS } from '@/constants/api'
 
 /**
  * 小程序运行时配置（从后端动态拉取）
@@ -35,7 +36,7 @@ export const appConfig = reactive<Record<string, number>>({
 export async function loadAppConfig(): Promise<void> {
   try {
     const remote = await apiGet<Record<string, number>>(
-      '/api/app-config',
+      API_ENDPOINTS.CONFIG.APP,
       undefined,
       { auth: false, timeout: 5000 },
     )

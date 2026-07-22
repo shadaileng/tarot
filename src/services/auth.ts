@@ -3,7 +3,8 @@
 
 import { apiPost, apiGet, apiPut, setUnauthorizedHandler } from '@/utils/request'
 import { getStoredToken, setStoredToken, removeStoredToken, isLoggedIn as _isLoggedIn, getToken as _getToken } from '@/utils/token'
-import { log, logInfo, logError } from '@/services/client-logger'
+import { logInfo, logError } from '@/services/client-logger'
+import { API_ENDPOINTS } from '@/constants/api'
 
 // 再导出 token 函数，兼容现有调用方（client-logger、record-sync、cards 等）
 export { isLoggedIn, getToken } from '@/utils/token'
@@ -95,7 +96,7 @@ async function wechatLogin(): Promise<LoginResult> {
           return
         }
         try {
-          const result = await apiPost<LoginResult>('/api/auth/wechat-login', { code: res.code }, { auth: false })
+          const result = await apiPost<LoginResult>(API_ENDPOINTS.AUTH.WECHAT_LOGIN, { code: res.code }, { auth: false })
           setStoredToken(result.token)
           setUserInfo(result.user)
           logInfo('auth', 'wechat_login_success', { isNewUser: result.isNewUser })
@@ -122,7 +123,7 @@ async function wechatLogin(): Promise<LoginResult> {
  */
 export async function emailLogin(email: string, password: string): Promise<LoginResult> {
   try {
-    const result = await apiPost<LoginResult>('/api/auth/email-login', { email, password }, { auth: false })
+    const result = await apiPost<LoginResult>(API_ENDPOINTS.AUTH.EMAIL_LOGIN, { email, password }, { auth: false })
     setStoredToken(result.token)
     setUserInfo(result.user)
     logInfo('auth', 'email_login_success')
@@ -138,7 +139,7 @@ export async function emailLogin(email: string, password: string): Promise<Login
  */
 export async function emailRegister(email: string, password: string): Promise<LoginResult> {
   try {
-    const result = await apiPost<LoginResult>('/api/auth/email-register', { email, password }, { auth: false })
+    const result = await apiPost<LoginResult>(API_ENDPOINTS.AUTH.EMAIL_REGISTER, { email, password }, { auth: false })
     setStoredToken(result.token)
     setUserInfo(result.user)
     logInfo('auth', 'email_register_success', { isNewUser: result.isNewUser })
@@ -156,7 +157,7 @@ export async function emailRegister(email: string, password: string): Promise<Lo
  */
 export async function bindEmail(email: string, password: string): Promise<{ message: string; email: string }> {
   try {
-    const result = await apiPost('/api/auth/bind-email', { email, password })
+    const result = await apiPost(API_ENDPOINTS.AUTH.BIND_EMAIL, { email, password })
     logInfo('auth', 'bind_email', { result: 'success' })
     return result
   } catch (err) {
@@ -177,7 +178,7 @@ export async function updateProfile(data: {
   birthday?: string
 }): Promise<{ user: UserInfo }> {
   try {
-    const result = await apiPut<{ user: UserInfo }>('/api/user/profile', data)
+    const result = await apiPut<{ user: UserInfo }>(API_ENDPOINTS.AUTH.PROFILE, data)
     // 同步更新本地缓存
     if (result.user) {
       setUserInfo(result.user)
@@ -195,7 +196,7 @@ export async function updateProfile(data: {
  */
 export async function refreshUserInfo(): Promise<UserInfo | null> {
   try {
-    const result = await apiGet<{ user: UserInfo }>('/api/user/profile')
+    const result = await apiGet<{ user: UserInfo }>(API_ENDPOINTS.AUTH.PROFILE)
     if (result.user) {
       setUserInfo(result.user)
       logInfo('auth', 'refresh_user_info', { result: 'success' })

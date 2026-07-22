@@ -3,7 +3,8 @@
 // 不依赖 request.ts，直接用 uni.request 发送，避免循环依赖
 // 注意：从 utils/token.ts 导入而非 services/auth.ts，打破 request→client-logger→auth 循环
 
-import { isLoggedIn, getToken } from '@/utils/token'
+import { isLoggedIn, getToken, base64UrlDecode } from '@/utils/token'
+import { API_ENDPOINTS } from '@/constants/api'
 
 // ========== 类型 ==========
 export type EventLevel = 'info' | 'warn' | 'error'
@@ -37,20 +38,8 @@ const TOKEN_KEY = 'auth_token'
 function parseUserIdFromToken(token: string): string | undefined {
   try {
     const payloadBase64 = token.split('.')[1]
-    let base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/')
-    while (base64.length % 4) base64 += '='
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-    let result = ''
-    for (let i = 0; i < base64.length; i += 4) {
-      const a = chars.indexOf(base64[i])
-      const b = chars.indexOf(base64[i + 1])
-      const c = chars.indexOf(base64[i + 2])
-      const d = chars.indexOf(base64[i + 3])
-      result += String.fromCharCode((a << 2) | (b >> 4))
-      if (c !== 64) result += String.fromCharCode(((b & 15) << 4) | (c >> 2))
-      if (d !== 64) result += String.fromCharCode(((c & 3) << 6) | d)
-    }
-    const payload = JSON.parse(decodeURIComponent(escape(result)))
+    const decoded = base64UrlDecode(payloadBase64)
+    const payload = JSON.parse(decoded)
     return payload.userId || payload.sub || payload.id
   } catch {
     return undefined
@@ -62,7 +51,7 @@ function postClientEvents(events: BufferedEvent[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const token = getToken() || uni.getStorageSync(TOKEN_KEY) || ''
     uni.request({
-      url: `${BACKEND_API}/api/client-events`,
+      url: `${BACKEND_API}${API_ENDPOINTS.LOG.CLIENT_EVENTS}`,
       method: 'POST',
       header: {
         'Content-Type': 'application/json',

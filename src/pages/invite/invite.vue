@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { showToast, getFullUrl } from '@/utils'
 import { fetchInviteCode, fetchInviteRecords } from '@/services/user-stats'
 import type { InviteRecord } from '@/types'
@@ -32,12 +32,17 @@ function copyCode() {
   })
 }
 
-function share() {
-  const app = getApp()
-  const pages = getCurrentPages()
-  const page = pages[pages.length - 1]
-  page?.onShareAppMessage?.({})
-}
+onShareAppMessage(() => ({
+  title: '邀请好友 - 一起探索命运',
+  path: '/pages/invite/invite',
+  imageUrl: '/static/share-default.png'
+}))
+
+onShareTimeline(() => ({
+  title: '邀请好友 - 一起探索命运',
+  query: '',
+  imageUrl: '/static/share-default.png'
+}))
 
 onShow(() => {
   loadData()

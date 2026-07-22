@@ -26,7 +26,7 @@ export function removeStoredToken(): void {
 // ========== Token 解析 ==========
 
 /** Base64 URL 解码（兼容微信小程序，不依赖 atob） */
-function base64UrlDecode(str: string): string {
+export function base64UrlDecode(str: string): string {
   let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
   while (base64.length % 4) base64 += '='
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='

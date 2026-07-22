@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { SpreadType } from '@/types'
 import { spreadList } from '@/data/spreads'
 import { useCardStore } from '@/store'
@@ -68,6 +69,18 @@ function handleDraw() {
 function handleTabChange(path: string) {
   uni.switchTab({ url: '/' + path })
 }
+
+onShareAppMessage(() => ({
+  title: '塔罗牌占卜 - 探索命运的指引',
+  path: '/pages/index/index',
+  imageUrl: '/static/share-default.png'
+}))
+
+onShareTimeline(() => ({
+  title: '塔罗牌占卜 - 探索命运的指引',
+  query: '',
+  imageUrl: '/static/share-default.png'
+}))
 </script>
 
 <template>

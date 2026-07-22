@@ -5,6 +5,27 @@ All notable changes to the Tarot MiniProgram will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-07-22
+
+### Added
+
+- API 端点常量化：新增 `src/constants/api.ts`，统一管理所有 API 端点
+- 微信分享 API 完善：index / result / cards / invite 页面添加标准 `onShareAppMessage` 和 `onShareTimeline`
+- CI/CD 增强：新增 `.github/workflows/ci.yml` 和增强版 `deploy.yml`（类型检查 + 单元测试 + 构建验证）
+- SVG 按需加载：新增 `src/utils/card-loader.ts`，支持动态导入 SVG 牌面图片
+- 虚拟滚动组件：新增 `src/components/VirtualList/VirtualList.vue`
+- reading.ts 重构：合并 `generateSummary` / `generateSummaryOnly` / `generateSummaryOnlyText` 三个重复函数为统一 `generateSummary()`，抽出 `src/services/reading/local-summary.ts`
+
+### Changed
+
+- 所有 service 文件使用 `API_ENDPOINTS` 常量替代硬编码 API 路径
+- `base64UrlDecode` 从 `utils/token.ts` 导出，`client-logger.ts` 复用统一实现
+- 迁移原有三个重复的摘要生成函数到 `local-summary.ts` 参数化版本
+
+### Fixed
+
+- 消除 `base64UrlDecode` 在 `token.ts` 和 `client-logger.ts` 之间的重复实现
+
 ## [2.16.0] - 2026-07-20
 
 ### Added

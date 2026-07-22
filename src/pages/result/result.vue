@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, nextTick } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { useCardStore } from '@/store'
 import { navTo, navBack } from '@/utils'
 import { isLoggedIn } from '@/services/auth'
@@ -212,6 +212,22 @@ function handleUpgradeReading() {
   store.upgradeToOnlineReading()
 }
 
+const sharePath = computed(() => {
+  const id = reading.value?.id
+  return id ? `/pages/result/result?id=${id}` : '/pages/result/result'
+})
+
+onShareAppMessage(() => ({
+  title: '我的塔罗牌占卜结果',
+  path: sharePath.value,
+  imageUrl: '/static/share-reading.png'
+}))
+
+onShareTimeline(() => ({
+  title: '我的塔罗牌占卜结果',
+  query: reading.value?.id ? `id=${reading.value.id}` : '',
+  imageUrl: '/static/share-reading.png'
+}))
 </script>
 
 <template>
